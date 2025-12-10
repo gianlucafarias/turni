@@ -1,0 +1,194 @@
+---
+// =============================================================================
+// Página de Callback de Mercado Pago - NO REQUIERE SESIÓN
+// Usa el preapproval_id para consultar MP y actualizar el plan
+// =============================================================================
+
+import Layout from '../../../layouts/Layout.astro';
+import { supabaseAdmin } from '../../../lib/supabase';
+import { getSubscription } from '../../../services/subscriptions';
+
+// Extraer preapproval_id de la URL (MP a veces formatea mal con ? en vez de &)
+const fullUrl = Astro.url.href;
+const searchParams = Astro.url.searchParams;
+
+let preapprovalId = searchParams.get('preapproval_id');
+if (!preapprovalId) {
+  const match = fullUrl.match(/preapproval_id=([a-f0-9]+)/i);
+  if (match) preapprovalId = match[1];
+}
+
+console.log('=== MP CALLBACK ===');
+console.log('URL:', fullUrl);
+console.log('preapproval_id:', preapprovalId);
+
+// Determinar el resultado
+let result: 'approved' | 'pending' | 'failure' = 'pending';
+let message = 'Procesando tu suscripción...';
+let storeId: string | null = null;
+
+if (preapprovalId) {
+  try {
+    // Consultar estado de la suscripción en Mercado Pago
+    const mpSubscription = await getSubscription(preapprovalId);
+    console.log('MP Status:', mpSubscription.status);
+    console.log('External Reference:', mpSubscription.external_reference);
+    
+    // Extraer store_id del external_reference (formato: store_UUID_timestamp)
+    const extRef = mpSubscription.external_reference || '';
+    const storeMatch = extRef.match(/store_([0-9a-f-]{36})/i);
+    if (storeMatch) {
+      storeId = storeMatch[1];
+    }
+    
+    console.log('Store ID:', storeId);
+    
+    if (storeId) {
+      // Obtener metadata de la suscripción para saber qué plan activar
+      const { data: currentSub } = await supabaseAdmin
+        .from('subscriptions')
+        .select('id, metadata')
+        .eq('store_id', storeId)
+        .single();
+      
+      const pendingPlanId = currentSub?.metadata?.pending_plan_id || 'premium';
+      const isAnnual = pendingPlanId === 'premium_annual';
+      
+      // Si está autorizada, actualizar a Premium
+      if (mpSubscription.status === 'authorized') {
+        result = 'approved';
+        message = '¡Suscripción activada correctamente!';
+        
+        // Calcular período
+        const now = new Date();
+        const periodEnd = new Date(now);
+        if (isAnnual) {
+          periodEnd.setFullYear(periodEnd.getFullYear() + 1);
+        } else {
+          periodEnd.setMonth(periodEnd.getMonth() + 1);
+        }
+        
+        // ACTUALIZAR EL PLAN A PREMIUM (usa admin para bypass RLS)
+        const { error: updateError } = await supabaseAdmin
+          .from('subscriptions')
+          .update({
+            plan_id: pendingPlanId,
+            status: 'active',
+            mp_subscription_id: mpSubscription.id,
+            mp_payer_id: mpSubscription.payer_id?.toString(),
+            current_period_start: now.toISOString(),
+            current_period_end: periodEnd.toISOString(),
+            updated_at: now.toISOString(),
+          })
+          .eq('store_id', storeId);
+        
+        if (updateError) {
+          console.error('❌ Error updating subscription:', updateError);
+        } else {
+          console.log('✅ Subscription updated to', pendingPlanId);
+        }
+        
+        // Registrar evento
+        if (currentSub) {
+          await supabaseAdmin.from('subscription_events').insert({
+            subscription_id: currentSub.id,
+            store_id: storeId,
+            event_type: 'subscription_activated',
+            event_data: {
+              mp_subscription_id: mpSubscription.id,
+              mp_status: mpSubscription.status,
+              plan_id: pendingPlanId,
+              preapproval_id: preapprovalId,
+            },
+          });
+        }
+      } else if (mpSubscription.status === 'pending') {
+        result = 'pending';
+        message = 'Tu suscripción está pendiente de confirmación del pago';
+      } else if (mpSubscription.status === 'cancelled' || mpSubscription.status === 'paused') {
+        result = 'failure';
+        message = 'La suscripción fue cancelada o pausada';
+      }
+    } else {
+      console.error('❌ Could not extract store_id from external_reference:', extRef);
+      result = 'failure';
+      message = 'Error al procesar la suscripción';
+    }
+  } catch (error) {
+    console.error('❌ Error fetching MP subscription:', error);
+    result = 'failure';
+    message = 'Error al verificar el estado del pago';
+  }
+} else {
+  console.error('❌ No preapproval_id found in URL');
+  result = 'failure';
+  message = 'No se encontró información del pago';
+}
+
+// Redirigir al dashboard después de 3 segundos
+const redirectUrl = `/dashboard/subscription?status=${result}`;
+---
+
+<Layout title="Procesando Suscripción - Tiendita">
+  <div class="min-h-[60vh] flex items-center justify-center">
+    <div class="max-w-md w-full mx-auto text-center p-8">
+      {result === 'approved' && (
+        <div class="mb-6">
+          <div class="inline-flex items-center justify-center w-20 h-20 bg-green-100 rounded-full mb-4">
+            <svg class="w-10 h-10 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h1 class="text-2xl font-bold text-gray-900 mb-2">¡Pago aprobado!</h1>
+          <p class="text-gray-600">{message}</p>
+        </div>
+      )}
+      
+      {result === 'pending' && (
+        <div class="mb-6">
+          <div class="inline-flex items-center justify-center w-20 h-20 bg-blue-100 rounded-full mb-4">
+            <svg class="w-10 h-10 text-blue-600 animate-spin" fill="none" viewBox="0 0 24 24">
+              <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+              <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+          </div>
+          <h1 class="text-2xl font-bold text-gray-900 mb-2">Procesando...</h1>
+          <p class="text-gray-600">{message}</p>
+        </div>
+      )}
+      
+      {result === 'failure' && (
+        <div class="mb-6">
+          <div class="inline-flex items-center justify-center w-20 h-20 bg-red-100 rounded-full mb-4">
+            <svg class="w-10 h-10 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </div>
+          <h1 class="text-2xl font-bold text-gray-900 mb-2">Pago no completado</h1>
+          <p class="text-gray-600">{message}</p>
+        </div>
+      )}
+      
+      <div class="mt-8">
+        <p class="text-sm text-gray-500 mb-4">Redirigiendo en unos segundos...</p>
+        <a 
+          href={redirectUrl}
+          class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-medium rounded-lg hover:bg-indigo-700 transition-colors"
+        >
+          Ir a mi suscripción
+          <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 8l4 4m0 0l-4 4m4-4H3" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+</Layout>
+
+<script define:vars={{ redirectUrl }}>
+  // Redirigir automáticamente después de 3 segundos
+  setTimeout(() => {
+    window.location.href = redirectUrl;
+  }, 3000);
+</script>
+

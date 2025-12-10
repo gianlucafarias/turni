@@ -1,0 +1,65 @@
+---
+interface Props {
+    productName: string;
+    productPrice: number;
+    planName: string;
+    planPrice: number;
+    paymentMethod?: 'efectivo' | 'financiado';
+}
+
+const { 
+    productName, 
+    productPrice, 
+    planName, 
+    planPrice, 
+    paymentMethod = 'efectivo' 
+} = Astro.props;
+
+const discount = paymentMethod === 'efectivo' ? 0.1 : 0;
+const total = (productPrice + planPrice) * (1 - discount);
+---
+
+<div class="bg-white rounded-xl p-6 shadow-lg">
+    <h3 class="text-lg font-semibold text-gray-900 mb-4">Resumen de la Publicación</h3>
+    
+    <div class="space-y-4">
+        <!-- Detalles del Producto -->
+        <div class="border-b border-gray-200 pb-4">
+            <h4 class="text-sm font-medium text-gray-700 mb-2">Producto</h4>
+            <div class="flex justify-between">
+                <span class="text-gray-600">{productName}</span>
+                <span class="font-medium">${productPrice}</span>
+            </div>
+        </div>
+
+        <!-- Detalles del Plan -->
+        <div class="border-b border-gray-200 pb-4">
+            <h4 class="text-sm font-medium text-gray-700 mb-2">Plan Seleccionado</h4>
+            <div class="flex justify-between">
+                <span class="text-gray-600">{planName}</span>
+                <span class="font-medium">${planPrice}</span>
+            </div>
+        </div>
+
+        <!-- Método de Pago -->
+        <div class="border-b border-gray-200 pb-4">
+            <h4 class="text-sm font-medium text-gray-700 mb-2">Método de Pago</h4>
+            <div class="flex justify-between">
+                <span class="text-gray-600">
+                    {paymentMethod === 'efectivo' ? 'Efectivo (10% descuento)' : 'Financiado'}
+                </span>
+                {discount > 0 && (
+                    <span class="text-green-600">-${((productPrice + planPrice) * discount).toFixed(2)}</span>
+                )}
+            </div>
+        </div>
+
+        <!-- Total -->
+        <div class="pt-2">
+            <div class="flex justify-between items-center">
+                <span class="text-lg font-bold text-gray-900">Total</span>
+                <span class="text-2xl font-bold text-indigo-600">${total.toFixed(2)}</span>
+            </div>
+        </div>
+    </div>
+</div> 

@@ -1,0 +1,9 @@
+---
+import DashboardLayout from '../../../layouts/DashboardLayout.astro';
+import ClientsList from '../../../components/dashboard/ClientsList';
+---
+
+<DashboardLayout title="Mis Clientes">
+  <ClientsList client:load />
+</DashboardLayout>
+

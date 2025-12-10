@@ -1,0 +1,86 @@
+---
+interface Feature {
+    text: string;
+    included: boolean;
+}
+
+interface Props {
+    id: string;
+    name: string;
+    price: number;
+    duration: string;
+    features: Feature[];
+    highlighted?: boolean;
+    description?: string;
+}
+
+const {
+    id,
+    name,
+    price,
+    duration,
+    features,
+    highlighted = false,
+    description = ""
+} = Astro.props;
+---
+
+<div class={`relative rounded-2xl ${highlighted ? 'border-2 border-indigo-600 shadow-xl' : 'border border-gray-200'} p-8`}>
+    {highlighted && (
+        <div class="absolute top-0 right-0 transform translate-x-2 -translate-y-2">
+            <span class="inline-flex rounded-full bg-indigo-600 px-3 py-1 text-xs font-semibold text-white">
+                Recomendado
+            </span>
+        </div>
+    )}
+    
+    <div class="mb-8">
+        <h3 class="text-2xl font-bold text-gray-900">{name}</h3>
+        {description && <p class="mt-2 text-gray-500">{description}</p>}
+        <div class="mt-4 flex items-baseline">
+            <span class="text-4xl font-bold tracking-tight text-gray-900">${price}</span>
+            <span class="ml-1 text-xl font-semibold text-gray-500">/{duration}</span>
+        </div>
+    </div>
+
+    <ul class="space-y-4 mb-8">
+        {features.map(feature => (
+            <li class="flex items-start">
+                <div class={`flex-shrink-0 ${feature.included ? 'text-indigo-600' : 'text-gray-400'}`}>
+                    {feature.included ? (
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                        </svg>
+                    ) : (
+                        <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                    )}
+                </div>
+                <span class={`ml-3 text-base ${feature.included ? 'text-gray-900' : 'text-gray-500'}`}>
+                    {feature.text}
+                </span>
+            </li>
+        ))}
+    </ul>
+
+    <button
+        type="button"
+        data-action={JSON.stringify({
+            type: 'SELECCIONAR_PLAN',
+            payload: {
+                id,
+                nombre: name,
+                precio: price,
+                duracion: duration,
+                caracteristicas: features.filter(f => f.included).map(f => f.text)
+            }
+        })}
+        class={`w-full rounded-xl px-6 py-3 text-center text-base font-medium transition-colors
+            ${highlighted ? 
+                'bg-indigo-600 text-white hover:bg-indigo-700' : 
+                'bg-indigo-50 text-indigo-600 hover:bg-indigo-100'}`}
+    >
+        Seleccionar Plan
+    </button>
+</div> 

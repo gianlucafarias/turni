@@ -1,0 +1,365 @@
+---
+// =============================================================================
+// Página de Pricing Pública - turni.pro
+// Muestra los planes disponibles enfocados en gestión de turnos
+// =============================================================================
+
+import LandingLayout from '../layouts/LandingLayout.astro';
+import MainNavbar from '../components/MainNavbar.astro';
+import { PLANS, PLAN_COMPARISON, PRICING } from '../lib/subscription';
+
+// Filtrar PLAN_COMPARISON para solo mostrar Turnos y Extras (sin Productos)
+const filteredComparison = PLAN_COMPARISON.filter(cat => cat.category !== 'Productos');
+
+const plans = [
+  {
+    ...PLANS.free,
+    features: [
+      '1 servicio para turnos',
+      '30 turnos por mes',
+      'Página pública de tu negocio',
+      'Link para compartir',
+      'Agenda visual',
+    ],
+    notIncluded: [
+      'Gestión de clientes',
+      'Notificaciones automáticas',
+      'Estadísticas avanzadas',
+      'Múltiples servicios',
+    ],
+  },
+  {
+    ...PLANS.premium,
+    features: [
+      'Servicios ilimitados',
+      'Turnos ilimitados',
+      'Gestión completa de clientes',
+      'Notificaciones por WhatsApp',
+      'Estadísticas avanzadas',
+      'Soporte prioritario',
+      'Exportar datos',
+      'Personalización avanzada',
+    ],
+    notIncluded: [],
+  },
+  {
+    ...PLANS.premium_annual,
+    features: [
+      'Todo lo de Premium',
+      '2 meses gratis',
+      'Precio congelado por 1 año',
+      'Soporte VIP',
+    ],
+    notIncluded: [],
+  },
+];
+---
+
+<LandingLayout 
+  title="Planes y Precios - turni.pro" 
+  description="Elegí el plan perfecto para gestionar tus turnos. Empezá gratis y actualizá cuando quieras."
+>
+  <MainNavbar />
+  
+  <main class="min-h-screen bg-white pt-16">
+    <!-- Header -->
+    <section class="relative bg-gradient-to-br from-brand-600 to-brand-700 py-20 lg:py-28 px-4 overflow-hidden">
+      <!-- Background Pattern -->
+      <div class="absolute inset-0 bg-grid-pattern-dark opacity-10" style="background-size: 40px 40px;"></div>
+      
+      <!-- Floating Elements -->
+      <div class="absolute top-20 left-10 w-72 h-72 bg-brand-400/20 rounded-full blur-3xl animate-pulse-soft"></div>
+      <div class="absolute bottom-20 right-10 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl animate-pulse-soft" style="animation-delay: 1s;"></div>
+      
+      <div class="relative max-w-4xl mx-auto text-center">
+        <div class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-500/20 backdrop-blur-sm border border-brand-400/30 text-white text-sm font-medium mb-6">
+          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+            <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+          </svg>
+          Sin tarjeta de crédito • Cancelá cuando quieras
+        </div>
+        
+        <h1 class="text-4xl md:text-5xl lg:text-6xl font-display font-bold text-white mb-6 text-balance">
+          Elegí el plan perfecto para tu negocio
+        </h1>
+        <p class="text-xl lg:text-2xl text-brand-100 max-w-2xl mx-auto leading-relaxed text-balance">
+          Empezá gratis y actualizá cuando quieras. Sin compromisos, cancelá en cualquier momento.
+        </p>
+      </div>
+    </section>
+
+    <!-- Planes -->
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-16 pb-20">
+      <div class="grid md:grid-cols-3 gap-6 lg:gap-8">
+        {plans.map((plan) => (
+          <div class={`relative bg-white rounded-2xl shadow-xl overflow-hidden border transition-all ${
+            plan.highlighted 
+              ? 'ring-2 ring-brand-500 scale-105 border-brand-200 lg:scale-110' 
+              : 'border-surface-200 hover:border-brand-200 hover:shadow-2xl'
+          }`}>
+            {plan.badge && (
+              <div class="bg-gradient-to-r from-brand-600 to-brand-700 text-white text-center py-2.5 text-sm font-semibold">
+                {plan.badge}
+              </div>
+            )}
+            
+            <div class="p-6 lg:p-8">
+              <h2 class="text-2xl lg:text-3xl font-display font-bold text-surface-900 mb-2">{plan.name}</h2>
+              <p class="text-surface-600 mb-6">{plan.description}</p>
+              
+              <div class="mb-8">
+                {plan.priceMonthly === 0 ? (
+                  <div>
+                    <p class="text-5xl font-bold text-surface-900 mb-1">Gratis</p>
+                    <p class="text-sm text-surface-500">Para siempre</p>
+                  </div>
+                ) : plan.priceAnnual ? (
+                  <div>
+                    <div class="flex items-baseline gap-2">
+                      <p class="text-5xl font-bold text-surface-900">
+                        ${Math.round(plan.priceAnnual / 12).toLocaleString('es-AR')}
+                      </p>
+                      <span class="text-lg font-normal text-surface-500">/mes</span>
+                    </div>
+                    <p class="text-sm text-surface-500 mt-2">
+                      ${plan.priceAnnual.toLocaleString('es-AR')} facturado anualmente
+                    </p>
+                    <p class="text-xs text-brand-600 font-medium mt-1">
+                      Ahorrás ${((plan.priceMonthly * 12) - plan.priceAnnual).toLocaleString('es-AR')} por año
+                    </p>
+                  </div>
+                ) : (
+                  <div>
+                    <div class="flex items-baseline gap-2">
+                      <p class="text-5xl font-bold text-surface-900">
+                        ${plan.priceMonthly.toLocaleString('es-AR')}
+                      </p>
+                      <span class="text-lg font-normal text-surface-500">/mes</span>
+                    </div>
+                    <p class="text-sm text-surface-500 mt-2">Facturación mensual</p>
+                  </div>
+                )}
+              </div>
+
+              <a
+                href={plan.priceMonthly === 0 ? '/registro' : '/registro?plan=' + plan.id}
+                class={`block w-full py-3.5 px-4 text-center font-semibold rounded-xl transition-all ${
+                  plan.highlighted
+                    ? 'bg-brand-600 text-white hover:bg-brand-700 shadow-lg hover:shadow-xl transform hover:-translate-y-0.5'
+                    : 'bg-surface-100 text-surface-900 hover:bg-surface-200 border border-surface-200'
+                }`}
+              >
+                {plan.priceMonthly === 0 ? 'Empezar gratis' : 'Suscribirse ahora'}
+              </a>
+
+              {plan.priceMonthly > 0 && (
+                <p class="text-center text-xs text-surface-500 mt-3">
+                  Cancelá cuando quieras
+                </p>
+              )}
+            </div>
+
+            <div class="border-t border-surface-200 px-6 lg:px-8 py-6 bg-surface-50/50">
+              <p class="font-semibold text-surface-900 mb-4 text-sm uppercase tracking-wide">Incluye:</p>
+              <ul class="space-y-3">
+                {plan.features.map((feature) => (
+                  <li class="flex items-start gap-3">
+                    <svg class="w-5 h-5 text-brand-600 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                    </svg>
+                    <span class="text-surface-700 text-sm leading-relaxed">{feature}</span>
+                  </li>
+                ))}
+                {plan.notIncluded.map((feature) => (
+                  <li class="flex items-start gap-3 opacity-50">
+                    <svg class="w-5 h-5 text-surface-400 flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                    <span class="text-surface-500 text-sm line-through">{feature}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </div>
+        ))}
+      </div>
+    </section>
+
+    <!-- Comparativa detallada -->
+    <section class="bg-gradient-to-b from-surface-50 to-white py-20 px-4">
+      <div class="max-w-5xl mx-auto">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl lg:text-4xl font-display font-bold text-surface-900 mb-4">
+            Comparar planes en detalle
+          </h2>
+          <p class="text-lg text-surface-600 max-w-2xl mx-auto">
+            Todas las diferencias entre nuestros planes en un solo lugar
+          </p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-lg overflow-hidden border border-surface-200">
+          <div class="overflow-x-auto">
+            <table class="w-full">
+              <thead>
+                <tr class="bg-surface-50 border-b border-surface-200">
+                  <th class="text-left py-4 px-6 font-semibold text-surface-700">Característica</th>
+                  <th class="text-center py-4 px-6 font-semibold text-surface-700">Gratis</th>
+                  <th class="text-center py-4 px-6 font-semibold text-brand-700 bg-brand-50">Premium</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredComparison.map((category) => (
+                  <>
+                    <tr class="bg-brand-50/30 border-b border-surface-100">
+                      <td colspan="3" class="py-3 px-6 font-semibold text-brand-900 text-sm uppercase tracking-wide">
+                        {category.category}
+                      </td>
+                    </tr>
+                    {category.features.map((feature, index) => (
+                      <tr class={`border-b border-surface-100 ${index % 2 === 0 ? 'bg-white' : 'bg-surface-50/50'}`}>
+                        <td class="py-4 px-6 text-surface-700 font-medium">{feature.name}</td>
+                        <td class="py-4 px-6 text-center text-surface-600">{feature.free}</td>
+                        <td class="py-4 px-6 text-center text-brand-600 font-semibold bg-brand-50/30">{feature.premium}</td>
+                      </tr>
+                    ))}
+                  </>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="py-20 px-4 bg-white">
+      <div class="max-w-3xl mx-auto">
+        <div class="text-center mb-12">
+          <h2 class="text-3xl lg:text-4xl font-display font-bold text-surface-900 mb-4">
+            Preguntas frecuentes
+          </h2>
+          <p class="text-lg text-surface-600">
+            Todo lo que necesitás saber sobre nuestros planes
+          </p>
+        </div>
+
+        <div class="space-y-4">
+          <details class="group bg-surface-50 rounded-xl p-6 border border-surface-200 hover:border-brand-300 transition-colors">
+            <summary class="font-semibold text-surface-900 cursor-pointer list-none flex items-center justify-between">
+              <span>¿Puedo cancelar en cualquier momento?</span>
+              <svg class="w-5 h-5 text-surface-500 group-open:rotate-180 transition-transform flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <p class="mt-4 text-surface-600 leading-relaxed">
+              Sí, podés cancelar tu suscripción en cualquier momento desde tu panel de control. 
+              Si cancelás, seguirás teniendo acceso a las funciones Premium hasta el fin de tu período de facturación.
+            </p>
+          </details>
+
+          <details class="group bg-surface-50 rounded-xl p-6 border border-surface-200 hover:border-brand-300 transition-colors">
+            <summary class="font-semibold text-surface-900 cursor-pointer list-none flex items-center justify-between">
+              <span>¿Cómo funciona el plan Gratis?</span>
+              <svg class="w-5 h-5 text-surface-500 group-open:rotate-180 transition-transform flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <p class="mt-4 text-surface-600 leading-relaxed">
+              El plan Gratis te permite usar la plataforma con límites básicos (1 servicio, 30 turnos/mes).
+              Podés actualizar a Premium en cualquier momento para desbloquear todas las funciones, incluyendo 
+              gestión de clientes, notificaciones automáticas y servicios ilimitados.
+            </p>
+          </details>
+
+          <details class="group bg-surface-50 rounded-xl p-6 border border-surface-200 hover:border-brand-300 transition-colors">
+            <summary class="font-semibold text-surface-900 cursor-pointer list-none flex items-center justify-between">
+              <span>¿Qué métodos de pago aceptan?</span>
+              <svg class="w-5 h-5 text-surface-500 group-open:rotate-180 transition-transform flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <p class="mt-4 text-surface-600 leading-relaxed">
+              Aceptamos todas las tarjetas de crédito y débito a través de Mercado Pago. 
+              También podés pagar con dinero en tu cuenta de Mercado Pago. Los pagos son seguros y procesados automáticamente.
+            </p>
+          </details>
+
+          <details class="group bg-surface-50 rounded-xl p-6 border border-surface-200 hover:border-brand-300 transition-colors">
+            <summary class="font-semibold text-surface-900 cursor-pointer list-none flex items-center justify-between">
+              <span>¿Pierdo mis datos si paso al plan Gratis?</span>
+              <svg class="w-5 h-5 text-surface-500 group-open:rotate-180 transition-transform flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <p class="mt-4 text-surface-600 leading-relaxed">
+              No, tus datos siempre están seguros. Si pasás al plan Gratis, simplemente se limitará 
+              el acceso a algunas funciones, pero toda tu información (servicios, clientes, turnos) 
+              se mantiene y podés acceder cuando actualices nuevamente.
+            </p>
+          </details>
+
+          <details class="group bg-surface-50 rounded-xl p-6 border border-surface-200 hover:border-brand-300 transition-colors">
+            <summary class="font-semibold text-surface-900 cursor-pointer list-none flex items-center justify-between">
+              <span>¿Hay descuento si pago anual?</span>
+              <svg class="w-5 h-5 text-surface-500 group-open:rotate-180 transition-transform flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+              </svg>
+            </summary>
+            <p class="mt-4 text-surface-600 leading-relaxed">
+              Sí, el plan Premium Anual incluye 2 meses gratis, lo que representa un ahorro significativo 
+              comparado con el pago mensual. Además, el precio queda congelado por un año completo.
+            </p>
+          </details>
+        </div>
+      </div>
+    </section>
+
+    <!-- CTA Final -->
+    <section class="bg-gradient-to-br from-brand-600 to-brand-700 py-20 px-4 relative overflow-hidden">
+      <div class="absolute inset-0 bg-grid-pattern-dark opacity-10" style="background-size: 40px 40px;"></div>
+      <div class="absolute top-20 left-10 w-72 h-72 bg-brand-400/20 rounded-full blur-3xl animate-pulse-soft"></div>
+      <div class="absolute bottom-20 right-10 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl animate-pulse-soft" style="animation-delay: 1s;"></div>
+      
+      <div class="relative max-w-3xl mx-auto text-center">
+        <h2 class="text-3xl lg:text-4xl font-display font-bold text-white mb-4 text-balance">
+          ¿Listo para gestionar tus turnos mejor?
+        </h2>
+        <p class="text-xl text-brand-100 mb-10 max-w-2xl mx-auto leading-relaxed">
+          Empezá gratis hoy y descubrí todo lo que turni.pro puede hacer por tu negocio.
+        </p>
+        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+          <a
+            href="/registro"
+            class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-white text-brand-600 font-semibold rounded-xl hover:bg-brand-50 shadow-xl hover:shadow-2xl transition-all transform hover:-translate-y-0.5"
+          >
+            Crear cuenta gratis
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            </svg>
+          </a>
+          <a
+            href="/"
+            class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-brand-500/20 text-white font-semibold rounded-xl border-2 border-white/30 hover:bg-brand-500/30 transition-all backdrop-blur-sm"
+          >
+            Ver más información
+          </a>
+        </div>
+      </div>
+    </section>
+  </main>
+</LandingLayout>
+
+<style>
+  @keyframes pulseSoft {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+  
+  .animate-pulse-soft {
+    animation: pulseSoft 3s ease-in-out infinite;
+  }
+</style>

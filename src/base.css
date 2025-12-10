@@ -1,0 +1,42 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=Instrument+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+	* {
+		@apply border-surface-200;
+	}
+	
+	html {
+		@apply antialiased;
+		scroll-behavior: smooth;
+	}
+	
+	body {
+		@apply bg-white text-surface-900;
+		font-feature-settings: 'kern' 1, 'liga' 1;
+		-webkit-font-smoothing: antialiased;
+		-moz-osx-font-smoothing: grayscale;
+	}
+	
+	h1, h2, h3, h4, h5, h6 {
+		@apply font-display;
+		letter-spacing: -0.02em;
+	}
+}
+
+@layer utilities {
+	.text-balance {
+		text-wrap: balance;
+	}
+	
+	.glass {
+		@apply bg-white/80 backdrop-blur-md border border-surface-200/50;
+	}
+	
+	.glass-dark {
+		@apply bg-surface-900/80 backdrop-blur-md border border-surface-700/50;
+	}
+}

@@ -1,0 +1,48 @@
+---
+interface Props {
+    label?: string;
+    name: string;
+    type?: 'text' | 'number' | 'email' | 'tel' | 'password' | 'url' | 'search';
+    required?: boolean;
+    placeholder?: string;
+    className?: string;
+    min?: number;
+    max?: number;
+    pattern?: string;
+    step?: string;
+}
+
+const { 
+    label, 
+    name, 
+    type = "text", 
+    required = false, 
+    placeholder = "", 
+    className = "",
+    min,
+    max,
+    pattern,
+    step
+} = Astro.props;
+---
+
+<div class="space-y-2">
+    {label && (
+        <label for={name} class="block text-sm font-medium text-gray-700">
+            {label} {required && <span class="text-red-500">*</span>}
+        </label>
+    )}
+    <input 
+        type={type}
+        id={name}
+        name={name}
+        required={required}
+        placeholder={placeholder}
+        min={min}
+        max={max}
+        pattern={pattern}
+        step={step}
+        class={`block w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:ring-0 focus:border-indigo-500 transition-colors text-gray-800 ${className}`}
+    />
+    <p id={`${name}-error`} class="text-red-500 text-sm mt-1 hidden"></p>
+</div> 

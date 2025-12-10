@@ -1,0 +1,109 @@
+---
+import { supabase } from '../lib/supabase';
+import UserMenu from './ui/UserMenu';
+
+// Obtener la sesión en el servidor (para SSR inicial)
+let initialSession = null;
+let initialStore = null;
+
+try {
+  const { data: { session } } = await supabase.auth.getSession();
+  initialSession = session;
+  
+  if (session) {
+    const { data } = await supabase
+      .from('stores')
+      .select('id, name')
+      .eq('user_id', session.user.id)
+      .single();
+    initialStore = data;
+  }
+} catch (error) {
+  // Si hay error, simplemente no mostrar nada (el cliente lo manejará)
+  console.error('Error obteniendo sesión inicial:', error);
+}
+
+const currentPath = Astro.url.pathname;
+---
+
+<nav class="bg-white/95 backdrop-blur-sm border-b border-surface-200/50 shadow-sm sticky top-0 z-50">
+  <div class="container mx-auto px-4">
+    <div class="flex justify-between items-center h-16">
+      <!-- Logo -->
+      <a href="/" class="flex items-center space-x-2 group">
+        <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center shadow-md group-hover:shadow-lg transition-all group-hover:scale-105">
+          <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+          </svg>
+        </div>
+        <span class="text-xl font-display font-bold bg-gradient-to-r from-brand-600 to-brand-700 bg-clip-text text-transparent">
+          turni.pro
+        </span>
+      </a>
+
+      <!-- Navigation -->
+      <div class="flex items-center space-x-4">
+        <a
+          href="/pricing"
+          class:list={[
+            'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+            currentPath === '/pricing'
+              ? 'bg-brand-50 text-brand-600 shadow-sm'
+              : 'text-surface-600 hover:text-surface-900 hover:bg-surface-50'
+          ]}
+        >
+          Precios
+        </a>
+        
+        <!-- UserMenu verifica la sesión del lado del cliente -->
+        <UserMenu client:load store={initialStore ? { id: initialStore.id } : undefined} />
+        
+        <!-- Botones de autenticación (se ocultan si hay sesión del lado del cliente) -->
+        <div id="auth-buttons" class="flex items-center space-x-3" data-auth-fallback>
+          <a
+            href="/login"
+            class:list={[
+              'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+              currentPath === '/login'
+                ? 'bg-brand-50 text-brand-600 shadow-sm'
+                : 'text-surface-600 hover:text-surface-900 hover:bg-surface-50'
+            ]}
+          >
+            Iniciar sesión
+          </a>
+          <a
+            href="/registro"
+            class="px-5 py-2.5 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 shadow-md hover:shadow-lg transition-all"
+          >
+            Empezar gratis
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<script is:inline>
+  // Script para ocultar/mostrar botones de auth basado en la sesión del cliente
+  // Este script se ejecuta después de que el componente UserMenu se hidrate
+  (function() {
+    // Esperar a que el DOM esté listo y los componentes React se hidraten
+    if (typeof window !== 'undefined') {
+      setTimeout(function() {
+        // Verificar si el UserMenu está visible (tiene contenido)
+        const userMenu = document.querySelector('[data-user-menu]') || 
+                        document.querySelector('nav > div > div:last-child > div');
+        const authButtons = document.getElementById('auth-buttons');
+        
+        if (userMenu && authButtons) {
+          // Ocultar botones de auth si UserMenu está visible
+          const userMenuVisible = userMenu.offsetParent !== null && 
+                                  userMenu.children.length > 0;
+          if (userMenuVisible) {
+            authButtons.style.display = 'none';
+          }
+        }
+      }, 100);
+    }
+  })();
+</script>

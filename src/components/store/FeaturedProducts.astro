@@ -1,0 +1,29 @@
+---
+import ProductCard from "./ProductCard.astro"
+
+interface Props {
+  products: {
+    id: string;
+    name: string;
+    price: number;
+    imageUrl?: string;
+    description?: string;
+  }[];
+}
+
+const { products } = Astro.props;
+---
+
+<section class="container mx-auto px-4 mt-8">
+  <h2 class="text-xl font-bold text-gray-900 mb-4">Destacado</h2>
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+    {products.map((product) => (
+      <ProductCard
+        name={product.name}
+        price={product.price}
+        imageUrl={product.imageUrl}
+        description={product.description}
+      />
+    ))}
+  </div>
+</section> 

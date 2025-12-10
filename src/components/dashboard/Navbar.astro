@@ -1,0 +1,29 @@
+import { supabase } from '../../lib/supabase';
+import UserMenu from '../ui/UserMenu';
+
+// Obtener la sesión y la tienda
+const { data: { session } } = await supabase.auth.getSession();
+
+let store = null;
+if (session) {
+  const { data } = await supabase
+    .from('stores')
+    .select('*')
+    .eq('user_id', session.user.id)
+    .single();
+  store = data;
+}
+
+<nav class="bg-white border-b">
+  <div class="container mx-auto px-4">
+    <div class="flex justify-between items-center h-16">
+      <!-- Logo -->
+      <a href="/" class="text-xl font-bold text-gray-800">
+        Mi Tienda Online
+      </a>
+
+      <!-- Navigation -->
+      <UserMenu client:load store={store} />
+    </div>
+  </div>
+</nav> 

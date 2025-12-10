@@ -1,0 +1,8 @@
+---
+import DashboardLayout from '../../../layouts/DashboardLayout.astro';
+import NewProductForm from '../../../components/dashboard/NewProductForm';
+---
+
+<DashboardLayout title="Nuevo Producto">
+  <NewProductForm client:only="react" />
+</DashboardLayout>

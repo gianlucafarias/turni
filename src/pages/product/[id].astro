@@ -1,0 +1,168 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { getProductoPorId, productos } from '../../data/productos';
+
+// Función requerida para rutas dinámicas en Astro
+export async function getStaticPaths() {
+    return productos.map(producto => ({
+        params: { id: producto.id.toString() },
+        props: { producto },
+    }));
+}
+
+const { producto } = Astro.props;
+
+// Número de WhatsApp del vendedor (reemplaza con el número real)
+const whatsappNumber = "5491112345678";
+
+if (!producto) {
+    return Astro.redirect('/404');
+}
+---
+
+<Layout title={producto.nombre}>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <!-- Galería de Imágenes -->
+            <div class="space-y-4">
+                <div class="aspect-w-1 aspect-h-1 bg-gray-200 rounded-lg overflow-hidden">
+                    <img 
+                        src={producto.imagen}
+                        alt={producto.nombre}
+                        class="w-full h-full object-center object-cover"
+                    />
+                </div>
+            </div>
+
+            <!-- Información del Producto -->
+            <div class="space-y-6">
+                <div class="space-y-2">
+                    <p class="text-sm text-indigo-600 font-medium">{producto.categoria}</p>
+                    <h1 class="text-3xl font-bold text-gray-900">{producto.nombre}</h1>
+                    <div class="flex items-baseline gap-2">
+                        <p class="text-2xl font-bold text-gray-900">${producto.precio}</p>
+                        {producto.precioAnterior && (
+                            <p class="text-lg text-gray-500 line-through">${producto.precioAnterior}</p>
+                        )}
+                    </div>
+                </div>
+
+                <div class="border-t border-b border-gray-200 py-4">
+                    <p class="text-gray-700">{producto.descripcion}</p>
+                </div>
+
+                <!-- Características -->
+                <div class="space-y-4">
+                    <h3 class="text-lg font-medium text-gray-900">Características</h3>
+                    <ul class="list-disc list-inside space-y-2">
+                        {producto.caracteristicas.map(caracteristica => (
+                            <li class="text-gray-700">{caracteristica}</li>
+                        ))}
+                    </ul>
+                </div>
+
+                <!-- Valoraciones -->
+                <div class="flex items-center gap-2">
+                    <div class="flex items-center">
+                        {Array.from({ length: 5 }).map((_, i) => (
+                            <svg 
+                                class={`w-5 h-5 ${i < producto.valoracion ? 'text-yellow-400' : 'text-gray-300'}`}
+                                fill="currentColor"
+                                viewBox="0 0 20 20"
+                            >
+                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                            </svg>
+                        ))}
+                    </div>
+                    <span class="text-sm text-gray-500">({producto.numResenas} reseñas)</span>
+                </div>
+
+                <!-- Opciones de Compra -->
+                <div class="space-y-6">
+                    <div class="flex items-center space-x-4">
+                        <label for="cantidad" class="text-sm font-medium text-gray-700">Cantidad</label>
+                        <select 
+                            id="cantidad" 
+                            class="rounded-md border-gray-300 py-2 px-4 focus:ring-indigo-500 focus:border-indigo-500"
+                        >
+                            {Array.from({length: producto.stock}, (_, i) => i + 1).map(num => (
+                                <option value={num}>{num}</option>
+                            ))}
+                        </select>
+                        <span class="text-sm text-gray-500">{producto.stock} disponibles</span>
+                    </div>
+
+                    <!-- Opciones de Pago -->
+                    <div class="space-y-3">
+                        <h4 class="font-medium text-gray-900">Forma de Pago</h4>
+                        <div class="space-y-2">
+                            <label class="flex items-center space-x-3">
+                                <input type="radio" name="formaPago" value="efectivo" checked
+                                       class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                                <span class="text-gray-700">Efectivo (10% de descuento)</span>
+                            </label>
+                            <label class="flex items-center space-x-3">
+                                <input type="radio" name="formaPago" value="financiado"
+                                       class="h-4 w-4 text-indigo-600 focus:ring-indigo-500 border-gray-300">
+                                <span class="text-gray-700">Financiado (hasta 12 cuotas)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="flex flex-col space-y-4">
+                        <button 
+                            id="iniciar-compra"
+                            class="w-full bg-green-600 text-white px-6 py-3 rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 flex items-center justify-center space-x-2"
+                        >
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946.003-6.556 5.338-11.891 11.893-11.891 3.181.001 6.167 1.24 8.413 3.488 2.245 2.248 3.481 5.236 3.48 8.414-.003 6.557-5.338 11.892-11.893 11.892-1.99-.001-3.951-.5-5.688-1.448l-6.305 1.654zm6.597-3.807c1.676.995 3.276 1.591 5.392 1.592 5.448 0 9.886-4.434 9.889-9.885.002-5.462-4.415-9.89-9.881-9.892-5.452 0-9.887 4.434-9.889 9.884-.001 2.225.651 3.891 1.746 5.634l-.999 3.648 3.742-.981zm11.387-5.464c-.074-.124-.272-.198-.57-.347-.297-.149-1.758-.868-2.031-.967-.272-.099-.47-.149-.669.149-.198.297-.768.967-.941 1.165-.173.198-.347.223-.644.074-.297-.149-1.255-.462-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.297-.347.446-.521.151-.172.2-.296.3-.495.099-.198.05-.372-.025-.521-.075-.148-.669-1.611-.916-2.206-.242-.579-.487-.501-.669-.51l-.57-.01c-.198 0-.52.074-.792.372s-1.04 1.016-1.04 2.479 1.065 2.876 1.213 3.074c.149.198 2.095 3.2 5.076 4.487.709.306 1.263.489 1.694.626.712.226 1.36.194 1.872.118.571-.085 1.758-.719 2.006-1.413.248-.695.248-1.29.173-1.414z"/>
+                            </svg>
+                            <span>Iniciar Compra por WhatsApp</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Información Adicional -->
+                <div class="space-y-4 border-t border-gray-200 pt-4">
+                    <div class="flex items-center space-x-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+                        </svg>
+                        <span class="text-sm text-gray-700">Envío gratis en compras mayores a $999</span>
+                    </div>
+                    <div class="flex items-center space-x-2">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span class="text-sm text-gray-700">Garantía de 30 días</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</Layout>
+
+<script define:vars={{ producto, whatsappNumber }}>
+    document.querySelector('#iniciar-compra')?.addEventListener('click', () => {
+        const cantidad = Number(document.querySelector('#cantidad')?.value || 1);
+        const formaPago = document.querySelector('input[name="formaPago"]:checked')?.value;
+        
+        // Calcular precio total
+        let precioTotal = producto.precio * cantidad;
+        if (formaPago === 'efectivo') {
+            precioTotal = precioTotal * 0.9; // 10% de descuento
+        }
+
+        // Crear mensaje para WhatsApp
+        const mensaje = `¡Hola! Me interesa comprar:%0A%0A` +
+            `*${producto.nombre}*%0A` +
+            `Cantidad: ${cantidad}%0A` +
+            `Precio unitario: $${producto.precio}%0A` +
+            `Forma de pago: ${formaPago === 'efectivo' ? 'Efectivo (10% desc.)' : 'Financiado'}%0A` +
+            `Total: $${precioTotal.toFixed(2)}%0A%0A` +
+            `¿Podemos coordinar la compra?`;
+
+        // Abrir WhatsApp
+        window.open(`https://wa.me/${whatsappNumber}?text=${mensaje}`, '_blank');
+    });
+</script> 

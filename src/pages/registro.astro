@@ -1,0 +1,126 @@
+---
+import LandingLayout from '../layouts/LandingLayout.astro';
+import MainNavbar from '../components/MainNavbar.astro';
+import MultiStepRegisterForm from '../components/auth/MultiStepRegisterForm'
+import { supabase } from '../lib/supabase'
+
+// Verificar si ya hay una sesión activa
+const { data: { session } } = await supabase.auth.getSession()
+
+// Si hay sesión, redirigir al dashboard
+if (session) {
+  return Astro.redirect('/dashboard')
+}
+---
+
+<LandingLayout title="Crear Cuenta - turni.pro">
+  <MainNavbar />
+  
+  <main class="min-h-screen bg-gradient-to-br from-surface-50 via-white to-brand-50/30 py-12 px-4 relative overflow-hidden pt-24">
+    <!-- Background Pattern -->
+    <div class="absolute inset-0 bg-grid-pattern opacity-30" style="background-size: 40px 40px;"></div>
+    
+    <!-- Floating Elements -->
+    <div class="absolute top-20 right-10 w-72 h-72 bg-brand-200/20 rounded-full blur-3xl animate-pulse-soft"></div>
+    <div class="absolute bottom-20 left-10 w-96 h-96 bg-brand-300/10 rounded-full blur-3xl animate-pulse-soft" style="animation-delay: 1s;"></div>
+    
+    <div class="relative max-w-4xl mx-auto">
+      <!-- Logo y título -->
+      <div class="text-center mb-10">
+        <a href="/" class="inline-flex items-center gap-2 group mb-6">
+          <div class="h-12 w-12 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center shadow-md group-hover:shadow-lg transition-all group-hover:scale-105">
+            <svg class="h-7 w-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+            </svg>
+          </div>
+          <span class="text-2xl font-display font-bold bg-gradient-to-r from-brand-600 to-brand-700 bg-clip-text text-transparent">
+            turni.pro
+          </span>
+        </a>
+        
+        <h1 class="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-surface-900 mb-4">
+          Empezá a gestionar turnos
+        </h1>
+        <p class="text-lg lg:text-xl text-surface-600 max-w-2xl mx-auto leading-relaxed">
+          Creá tu cuenta en minutos y comenzá a recibir turnos de forma profesional
+        </p>
+      </div>
+
+      <!-- Formulario de registro -->
+      <MultiStepRegisterForm client:load />
+      
+      <!-- Back to home -->
+      <div class="mt-8 text-center">
+        <a href="/" class="text-sm text-surface-600 hover:text-surface-900 transition-colors inline-flex items-center gap-1">
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Volver al inicio
+        </a>
+      </div>
+    </div>
+  </main>
+  
+  <!-- Footer -->
+  <footer class="bg-surface-900 text-surface-300 py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid md:grid-cols-4 gap-8 mb-8">
+        <div class="md:col-span-2">
+          <div class="flex items-center gap-2 mb-4">
+            <div class="h-8 w-8 rounded-lg bg-brand-600 flex items-center justify-center">
+              <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <span class="text-xl font-display font-bold text-white">turni.pro</span>
+          </div>
+          <p class="text-surface-400 max-w-md text-sm">
+            La plataforma de gestión de turnos que tu negocio necesita. Simple, profesional y confiable.
+          </p>
+        </div>
+        
+        <div>
+          <h3 class="font-semibold text-white mb-4">Producto</h3>
+          <ul class="space-y-2 text-sm">
+            <li><a href="/#como-funciona" class="hover:text-white transition-colors">Cómo funciona</a></li>
+            <li><a href="/pricing" class="hover:text-white transition-colors">Precios</a></li>
+            <li><a href="/registro" class="hover:text-white transition-colors">Empezar gratis</a></li>
+          </ul>
+        </div>
+        
+        <div>
+          <h3 class="font-semibold text-white mb-4">Soporte</h3>
+          <ul class="space-y-2 text-sm">
+            <li><a href="/login" class="hover:text-white transition-colors">Iniciar sesión</a></li>
+            <li><a href="/registro" class="hover:text-white transition-colors">Crear cuenta</a></li>
+          </ul>
+        </div>
+      </div>
+      
+      <div class="pt-8 border-t border-surface-800 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <p class="text-surface-500 text-sm">
+          © 2025 turni.pro. Todos los derechos reservados.
+        </p>
+        <div class="flex gap-6 text-sm">
+          <a href="#" class="text-surface-500 hover:text-white transition-colors">Términos</a>
+          <a href="#" class="text-surface-500 hover:text-white transition-colors">Privacidad</a>
+        </div>
+      </div>
+    </div>
+  </footer>
+</LandingLayout>
+
+<style>
+  @keyframes pulseSoft {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.7;
+    }
+  }
+  
+  .animate-pulse-soft {
+    animation: pulseSoft 3s ease-in-out infinite;
+  }
+</style>

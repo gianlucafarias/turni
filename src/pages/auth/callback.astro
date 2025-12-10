@@ -1,0 +1,16 @@
+import { supabase } from '../../lib/supabase';
+
+// Obtener el código de la URL
+const code = Astro.url.searchParams.get('code');
+
+if (code) {
+  const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+  
+  if (!error && data?.session) {
+    // Si el usuario está verificado, redirigir a setup de tienda
+    return Astro.redirect('/setup/store');
+  }
+}
+
+// Si hay error o no hay código, redirigir al login
+return Astro.redirect('/login'); 

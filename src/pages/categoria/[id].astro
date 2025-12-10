@@ -1,0 +1,93 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { CONFIG } from '../../config';
+import { getProductosPorCategoria } from '../../data/productos';
+
+export async function getStaticPaths() {
+    return CONFIG.categorias.map(categoria => ({
+        params: { id: categoria.id.toString() },
+        props: { categoria }
+    }));
+}
+
+const { categoria } = Astro.props;
+const productos = getProductosPorCategoria(categoria.nombre);
+---
+
+<Layout title={`${categoria.nombre} - Tiendita`}>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <!-- Encabezado de la Categoría -->
+        <div class="text-center mb-12">
+            <span class="text-6xl mb-4 block">{categoria.icono}</span>
+            <h1 class="text-4xl font-bold text-gray-900 mb-4">{categoria.nombre}</h1>
+            <div class="flex flex-wrap justify-center gap-2">
+                {categoria.subcategorias?.map(sub => (
+                    <a 
+                        href={`/categoria/${categoria.id}/${sub.toLowerCase()}`}
+                        class="px-4 py-2 bg-gray-100 rounded-full text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-colors"
+                    >
+                        {sub}
+                    </a>
+                ))}
+            </div>
+        </div>
+
+        <!-- Filtros -->
+        <div class="flex justify-between items-center mb-8">
+            <div class="flex gap-4">
+                <select class="rounded-lg border-gray-300 text-gray-700">
+                    <option value="">Ordenar por</option>
+                    <option value="precio_asc">Menor precio</option>
+                    <option value="precio_desc">Mayor precio</option>
+                    <option value="fecha_desc">Más recientes</option>
+                </select>
+                <select class="rounded-lg border-gray-300 text-gray-700">
+                    <option value="">Estado</option>
+                    <option value="nuevo">Nuevo</option>
+                    <option value="usado">Usado</option>
+                    <option value="reacondicionado">Reacondicionado</option>
+                </select>
+            </div>
+            <div class="flex gap-2">
+                <button class="p-2 text-gray-500 hover:text-indigo-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+                <button class="p-2 text-gray-500 hover:text-indigo-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                    </svg>
+                </button>
+            </div>
+        </div>
+
+        <!-- Grid de Productos -->
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {productos.map(producto => (
+                <a href={`/product/${producto.id}`} class="group">
+                    <div class="relative overflow-hidden rounded-lg mb-3">
+                        <img 
+                            src={producto.imagen} 
+                            alt={producto.nombre}
+                            class="w-full h-48 object-cover transform group-hover:scale-105 transition-transform duration-300"
+                        />
+                        {producto.estado && (
+                            <span class={`absolute top-2 right-2 px-2 py-1 rounded-full text-xs font-medium
+                                ${producto.estado === 'nuevo' ? 'bg-green-100 text-green-800' :
+                                producto.estado === 'usado' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-blue-100 text-blue-800'}`}>
+                                {producto.estado}
+                            </span>
+                        )}
+                    </div>
+                    <h3 class="text-lg font-medium text-gray-900 group-hover:text-indigo-600">
+                        {producto.nombre}
+                    </h3>
+                    <p class="text-2xl font-bold text-gray-900">${producto.precio}</p>
+                    <p class="text-sm text-gray-500">{producto.ubicacion}</p>
+                </a>
+            ))}
+        </div>
+    </div>
+</Layout> 

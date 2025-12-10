@@ -1,0 +1,8 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro';
+import CategoryManager from '../../components/dashboard/CategoryManager';
+---
+
+<DashboardLayout title="Categorías">
+  <CategoryManager client:only="react" />
+</DashboardLayout>

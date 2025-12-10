@@ -1,0 +1,245 @@
+---
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Usuarios - Admin">
+  <div id="admin-loading" class="min-h-screen bg-gray-900 flex items-center justify-center">
+    <div class="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+  </div>
+
+  <div id="admin-denied" class="min-h-screen bg-gray-900 flex items-center justify-center hidden">
+    <div class="text-center p-6">
+      <h1 class="text-2xl font-bold text-red-500 mb-4">Acceso Denegado</h1>
+      <p id="denied-reason" class="text-gray-400 mb-6"></p>
+      <a href="/dashboard" class="px-6 py-3 bg-indigo-600 text-white rounded-lg">Volver</a>
+    </div>
+  </div>
+
+  <div id="admin-content" class="min-h-screen bg-gray-900 hidden">
+    <div class="flex">
+      <!-- Sidebar -->
+      <aside class="w-64 min-h-screen bg-gray-800 border-r border-gray-700 fixed">
+        <div class="p-4 border-b border-gray-700">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-orange-500 rounded-lg flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div>
+              <h1 class="font-bold text-white">Admin Panel</h1>
+              <p class="text-xs text-gray-400">Tiendita</p>
+            </div>
+          </div>
+        </div>
+        <nav class="p-4 space-y-1">
+          <a href="/admin" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            Dashboard
+          </a>
+          <a href="/admin/users" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-600 text-white">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+            Usuarios
+          </a>
+          <a href="/admin/subscriptions" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+            Suscripciones
+          </a>
+          <a href="/admin/coupons" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+            Cupones
+          </a>
+          <a href="/admin/plans" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+            Planes
+          </a>
+          <div class="pt-4 mt-4 border-t border-gray-700">
+            <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-700">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" /></svg>
+              Volver al Dashboard
+            </a>
+          </div>
+        </nav>
+      </aside>
+      
+      <!-- Main -->
+      <main class="flex-1 ml-64 p-6">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="text-2xl font-bold text-white">Gestión de Usuarios</h2>
+          <div class="flex gap-2">
+            <input type="text" id="search-input" placeholder="Buscar por nombre o email..." 
+              class="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white placeholder-gray-500 focus:outline-none focus:border-indigo-500">
+          </div>
+        </div>
+        
+        <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+          <table class="w-full">
+            <thead class="bg-gray-700/50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Tienda</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Email</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Plan</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Creado</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Admin</th>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Acciones</th>
+              </tr>
+            </thead>
+            <tbody id="users-table" class="divide-y divide-gray-700">
+              <tr><td colspan="6" class="px-6 py-8 text-center text-gray-500">Cargando...</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </main>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { createClient } from '@supabase/supabase-js';
+  
+  const supabase = createClient(
+    import.meta.env.PUBLIC_SUPABASE_URL,
+    import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+  );
+
+  let allUsers: any[] = [];
+
+  async function checkAdmin() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return showDenied('No hay sesión activa');
+    
+    const { data: store } = await supabase.from('stores').select('is_admin').eq('user_id', session.user.id).single();
+    if (!store?.is_admin) return showDenied('No sos administrador');
+    
+    document.getElementById('admin-loading')?.classList.add('hidden');
+    document.getElementById('admin-content')?.classList.remove('hidden');
+    loadUsers();
+  }
+
+  function showDenied(reason: string) {
+    document.getElementById('admin-loading')?.classList.add('hidden');
+    document.getElementById('admin-denied')?.classList.remove('hidden');
+    const el = document.getElementById('denied-reason');
+    if (el) el.textContent = reason;
+  }
+
+  async function loadUsers() {
+    const { data: stores } = await supabase
+      .from('stores')
+      .select('*, subscriptions(plan_id, status)')
+      .order('created_at', { ascending: false });
+
+    allUsers = stores || [];
+    renderUsers(allUsers);
+  }
+
+  function renderUsers(users: any[]) {
+    const tbody = document.getElementById('users-table');
+    if (!tbody) return;
+
+    if (users.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="6" class="px-6 py-8 text-center text-gray-500">No se encontraron usuarios</td></tr>';
+      return;
+    }
+
+    tbody.innerHTML = users.map(store => {
+      const sub = store.subscriptions?.[0];
+      const planBadge = getPlanBadge(sub?.plan_id || 'free');
+      const date = new Date(store.created_at).toLocaleDateString('es-AR');
+      
+      return `
+        <tr class="hover:bg-gray-700/50">
+          <td class="px-6 py-4">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white font-medium">
+                ${store.name?.[0]?.toUpperCase() || '?'}
+              </div>
+              <div>
+                <p class="text-white font-medium">${store.name || 'Sin nombre'}</p>
+                <p class="text-gray-500 text-sm">@${store.slug || 'sin-slug'}</p>
+              </div>
+            </div>
+          </td>
+          <td class="px-6 py-4 text-gray-300">${store.contact_email || '-'}</td>
+          <td class="px-6 py-4">${planBadge}</td>
+          <td class="px-6 py-4 text-gray-400 text-sm">${date}</td>
+          <td class="px-6 py-4">
+            ${store.is_admin 
+              ? '<span class="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs">Admin</span>' 
+              : '<span class="text-gray-500 text-sm">-</span>'}
+          </td>
+          <td class="px-6 py-4">
+            <div class="flex gap-2">
+              <button onclick="toggleAdmin('${store.id}', ${!store.is_admin})" 
+                class="px-3 py-1 text-xs ${store.is_admin ? 'bg-gray-600 hover:bg-gray-500' : 'bg-indigo-600 hover:bg-indigo-500'} text-white rounded">
+                ${store.is_admin ? 'Quitar Admin' : 'Hacer Admin'}
+              </button>
+              <button onclick="changePlan('${store.id}')" 
+                class="px-3 py-1 text-xs bg-emerald-600 hover:bg-emerald-500 text-white rounded">
+                Cambiar Plan
+              </button>
+            </div>
+          </td>
+        </tr>
+      `;
+    }).join('');
+  }
+
+  function getPlanBadge(plan: string) {
+    const badges: Record<string, string> = {
+      'free': '<span class="px-2 py-1 bg-gray-600 text-gray-300 rounded text-xs">Free</span>',
+      'trial': '<span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs">Trial</span>',
+      'premium': '<span class="px-2 py-1 bg-indigo-500/20 text-indigo-400 rounded text-xs">Premium</span>',
+      'premium_annual': '<span class="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs">Premium Anual</span>',
+    };
+    return badges[plan] || badges['free'];
+  }
+
+  // Funciones globales
+  (window as any).toggleAdmin = async (storeId: string, makeAdmin: boolean) => {
+    if (!confirm(`¿Seguro que querés ${makeAdmin ? 'hacer admin' : 'quitar admin'} a este usuario?`)) return;
+    
+    const { error } = await supabase.from('stores').update({ is_admin: makeAdmin }).eq('id', storeId);
+    if (error) {
+      alert('Error: ' + error.message);
+    } else {
+      loadUsers();
+    }
+  };
+
+  (window as any).changePlan = async (storeId: string) => {
+    const plan = prompt('Ingresá el nuevo plan (free, premium, premium_annual):');
+    if (!plan || !['free', 'premium', 'premium_annual'].includes(plan)) {
+      alert('Plan inválido');
+      return;
+    }
+
+    const { error } = await supabase
+      .from('subscriptions')
+      .update({ 
+        plan_id: plan, 
+        status: plan === 'free' ? 'active' : 'active',
+        current_period_end: plan !== 'free' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null
+      })
+      .eq('store_id', storeId);
+
+    if (error) {
+      alert('Error: ' + error.message);
+    } else {
+      loadUsers();
+    }
+  };
+
+  // Búsqueda
+  document.getElementById('search-input')?.addEventListener('input', (e) => {
+    const query = (e.target as HTMLInputElement).value.toLowerCase();
+    const filtered = allUsers.filter(u => 
+      u.name?.toLowerCase().includes(query) || 
+      u.contact_email?.toLowerCase().includes(query) ||
+      u.slug?.toLowerCase().includes(query)
+    );
+    renderUsers(filtered);
+  });
+
+  checkAdmin();
+</script>

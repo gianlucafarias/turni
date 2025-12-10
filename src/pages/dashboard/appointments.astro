@@ -1,0 +1,8 @@
+---
+import DashboardLayout from '../../layouts/DashboardLayout.astro'
+import AppointmentsList from '../../components/dashboard/AppointmentsList'
+---
+
+<DashboardLayout title="Citas">
+  <AppointmentsList client:load />
+</DashboardLayout>

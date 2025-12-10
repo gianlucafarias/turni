@@ -1,0 +1,242 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { PLANS, FREE_LIMITS, PREMIUM_LIMITS, PRICING } from '../../lib/subscription/plans';
+---
+
+<Layout title="Planes y Límites - Admin">
+  <div id="admin-loading" class="min-h-screen bg-gray-900 flex items-center justify-center">
+    <div class="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
+  </div>
+
+  <div id="admin-denied" class="min-h-screen bg-gray-900 flex items-center justify-center hidden">
+    <div class="text-center p-6">
+      <h1 class="text-2xl font-bold text-red-500 mb-4">Acceso Denegado</h1>
+      <p id="denied-reason" class="text-gray-400 mb-6"></p>
+      <a href="/dashboard" class="px-6 py-3 bg-indigo-600 text-white rounded-lg">Volver</a>
+    </div>
+  </div>
+
+  <div id="admin-content" class="min-h-screen bg-gray-900 hidden">
+    <div class="flex">
+      <!-- Sidebar -->
+      <aside class="w-64 min-h-screen bg-gray-800 border-r border-gray-700 fixed">
+        <div class="p-4 border-b border-gray-700">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-orange-500 rounded-lg flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div>
+              <h1 class="font-bold text-white">Admin Panel</h1>
+              <p class="text-xs text-gray-400">Tiendita</p>
+            </div>
+          </div>
+        </div>
+        <nav class="p-4 space-y-1">
+          <a href="/admin" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+            Dashboard
+          </a>
+          <a href="/admin/users" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
+            Usuarios
+          </a>
+          <a href="/admin/subscriptions" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
+            Suscripciones
+          </a>
+          <a href="/admin/coupons" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
+            Cupones
+          </a>
+          <a href="/admin/plans" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-600 text-white">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
+            Planes
+          </a>
+          <div class="pt-4 mt-4 border-t border-gray-700">
+            <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-700">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" /></svg>
+              Volver al Dashboard
+            </a>
+          </div>
+        </nav>
+      </aside>
+      
+      <!-- Main -->
+      <main class="flex-1 ml-64 p-6">
+        <h2 class="text-2xl font-bold text-white mb-6">Configuración de Planes</h2>
+        
+        <!-- Info -->
+        <div class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 mb-6">
+          <p class="text-blue-400 text-sm">
+            <strong>Nota:</strong> Los límites están definidos en el código (<code class="bg-gray-800 px-1 rounded">src/lib/subscription/plans.ts</code>). 
+            Para modificarlos permanentemente, editá ese archivo y reiniciá el servidor.
+          </p>
+        </div>
+
+        <!-- Precios -->
+        <div class="bg-gray-800 rounded-xl border border-gray-700 p-6 mb-6">
+          <h3 class="text-lg font-semibold text-white mb-4">Precios Actuales</h3>
+          <div class="grid grid-cols-2 gap-4">
+            <div class="bg-gray-700/50 rounded-lg p-4">
+              <p class="text-gray-400 text-sm">Mensual</p>
+              <p class="text-2xl font-bold text-white">${(PRICING.MONTHLY / 100).toLocaleString('es-AR')} ARS</p>
+            </div>
+            <div class="bg-gray-700/50 rounded-lg p-4">
+              <p class="text-gray-400 text-sm">Anual</p>
+              <p class="text-2xl font-bold text-white">${(PRICING.ANNUAL / 100).toLocaleString('es-AR')} ARS</p>
+              <p class="text-emerald-400 text-xs">Ahorro: {Math.round((1 - PRICING.ANNUAL / (PRICING.MONTHLY * 12)) * 100)}%</p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Comparación de límites -->
+        <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+          <div class="p-4 border-b border-gray-700">
+            <h3 class="text-lg font-semibold text-white">Comparación de Límites</h3>
+          </div>
+          <table class="w-full">
+            <thead class="bg-gray-700/50">
+              <tr>
+                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Característica</th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase">Free</th>
+                <th class="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase">Premium</th>
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-gray-700">
+              <tr class="hover:bg-gray-700/50">
+                <td class="px-6 py-4 text-gray-300">Productos</td>
+                <td class="px-6 py-4 text-center text-white">{FREE_LIMITS.maxProducts}</td>
+                <td class="px-6 py-4 text-center text-emerald-400">{PREMIUM_LIMITS.maxProducts === -1 ? '∞' : PREMIUM_LIMITS.maxProducts}</td>
+              </tr>
+              <tr class="hover:bg-gray-700/50">
+                <td class="px-6 py-4 text-gray-300">Servicios</td>
+                <td class="px-6 py-4 text-center text-white">{FREE_LIMITS.maxServices}</td>
+                <td class="px-6 py-4 text-center text-emerald-400">{PREMIUM_LIMITS.maxServices === -1 ? '∞' : PREMIUM_LIMITS.maxServices}</td>
+              </tr>
+              <tr class="hover:bg-gray-700/50">
+                <td class="px-6 py-4 text-gray-300">Clientes</td>
+                <td class="px-6 py-4 text-center text-white">{FREE_LIMITS.maxClients}</td>
+                <td class="px-6 py-4 text-center text-emerald-400">{PREMIUM_LIMITS.maxClients === -1 ? '∞' : PREMIUM_LIMITS.maxClients}</td>
+              </tr>
+              <tr class="hover:bg-gray-700/50">
+                <td class="px-6 py-4 text-gray-300">Turnos/mes</td>
+                <td class="px-6 py-4 text-center text-white">{FREE_LIMITS.maxAppointmentsPerMonth}</td>
+                <td class="px-6 py-4 text-center text-emerald-400">{PREMIUM_LIMITS.maxAppointmentsPerMonth === -1 ? '∞' : PREMIUM_LIMITS.maxAppointmentsPerMonth}</td>
+              </tr>
+              <tr class="hover:bg-gray-700/50">
+                <td class="px-6 py-4 text-gray-300">Notificaciones</td>
+                <td class="px-6 py-4 text-center">
+                  {FREE_LIMITS.features.notifications 
+                    ? <span class="text-emerald-400">✓</span> 
+                    : <span class="text-red-400">✗</span>}
+                </td>
+                <td class="px-6 py-4 text-center text-emerald-400">✓</td>
+              </tr>
+              <tr class="hover:bg-gray-700/50">
+                <td class="px-6 py-4 text-gray-300">Recordatorios</td>
+                <td class="px-6 py-4 text-center">
+                  {FREE_LIMITS.features.reminders 
+                    ? <span class="text-emerald-400">✓</span> 
+                    : <span class="text-red-400">✗</span>}
+                </td>
+                <td class="px-6 py-4 text-center text-emerald-400">✓</td>
+              </tr>
+              <tr class="hover:bg-gray-700/50">
+                <td class="px-6 py-4 text-gray-300">Gestión de Clientes</td>
+                <td class="px-6 py-4 text-center">
+                  {FREE_LIMITS.features.clientManagement 
+                    ? <span class="text-emerald-400">✓</span> 
+                    : <span class="text-red-400">✗</span>}
+                </td>
+                <td class="px-6 py-4 text-center text-emerald-400">✓</td>
+              </tr>
+              <tr class="hover:bg-gray-700/50">
+                <td class="px-6 py-4 text-gray-300">Analytics</td>
+                <td class="px-6 py-4 text-center">
+                  {FREE_LIMITS.features.analytics 
+                    ? <span class="text-emerald-400">✓</span> 
+                    : <span class="text-red-400">✗</span>}
+                </td>
+                <td class="px-6 py-4 text-center text-emerald-400">✓</td>
+              </tr>
+              <tr class="hover:bg-gray-700/50">
+                <td class="px-6 py-4 text-gray-300">Soporte Prioritario</td>
+                <td class="px-6 py-4 text-center">
+                  {FREE_LIMITS.features.prioritySupport 
+                    ? <span class="text-emerald-400">✓</span> 
+                    : <span class="text-red-400">✗</span>}
+                </td>
+                <td class="px-6 py-4 text-center text-emerald-400">✓</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <!-- Código de referencia -->
+        <div class="mt-6 bg-gray-800 rounded-xl border border-gray-700 p-6">
+          <h3 class="text-lg font-semibold text-white mb-4">Archivo de Configuración</h3>
+          <p class="text-gray-400 text-sm mb-4">Para modificar los límites, editá este archivo:</p>
+          <pre class="bg-gray-900 rounded-lg p-4 overflow-x-auto text-sm text-gray-300">
+<code>// src/lib/subscription/plans.ts
+
+export const FREE_LIMITS: PlanLimits = {
+  maxProducts: {FREE_LIMITS.maxProducts},
+  maxServices: {FREE_LIMITS.maxServices},
+  maxClients: {FREE_LIMITS.maxClients},
+  maxAppointmentsPerMonth: {FREE_LIMITS.maxAppointmentsPerMonth},
+  features: {
+    notifications: {String(FREE_LIMITS.features.notifications)},
+    reminders: {String(FREE_LIMITS.features.reminders)},
+    clientManagement: {String(FREE_LIMITS.features.clientManagement)},
+    // ... más features
+  }
+};
+
+export const PREMIUM_LIMITS: PlanLimits = {
+  maxProducts: {PREMIUM_LIMITS.maxProducts},  // -1 = ilimitado
+  maxServices: {PREMIUM_LIMITS.maxServices},
+  maxClients: {PREMIUM_LIMITS.maxClients},
+  maxAppointmentsPerMonth: {PREMIUM_LIMITS.maxAppointmentsPerMonth},
+  features: {
+    notifications: true,
+    reminders: true,
+    clientManagement: true,
+    // ... todas las features habilitadas
+  }
+};</code></pre>
+        </div>
+      </main>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { createClient } from '@supabase/supabase-js';
+  
+  const supabase = createClient(
+    import.meta.env.PUBLIC_SUPABASE_URL,
+    import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+  );
+
+  async function checkAdmin() {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return showDenied('No hay sesión activa');
+    
+    const { data: store } = await supabase.from('stores').select('is_admin').eq('user_id', session.user.id).single();
+    if (!store?.is_admin) return showDenied('No sos administrador');
+    
+    document.getElementById('admin-loading')?.classList.add('hidden');
+    document.getElementById('admin-content')?.classList.remove('hidden');
+  }
+
+  function showDenied(reason: string) {
+    document.getElementById('admin-loading')?.classList.add('hidden');
+    document.getElementById('admin-denied')?.classList.remove('hidden');
+    const el = document.getElementById('denied-reason');
+    if (el) el.textContent = reason;
+  }
+
+  checkAdmin();
+</script>

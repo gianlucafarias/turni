@@ -1,0 +1,211 @@
+---
+// Admin Dashboard - Verificación 100% cliente
+import Layout from '../../layouts/Layout.astro';
+---
+
+<Layout title="Admin - Tiendita">
+  <div id="admin-loading" class="min-h-screen bg-gray-900 flex items-center justify-center">
+    <div class="text-center">
+      <div class="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+      <p class="text-gray-400">Verificando permisos...</p>
+    </div>
+  </div>
+
+  <div id="admin-denied" class="min-h-screen bg-gray-900 flex items-center justify-center hidden">
+    <div class="text-center p-6">
+      <div class="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+        <svg class="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold text-white mb-2">Acceso Denegado</h1>
+      <p id="denied-reason" class="text-gray-400 mb-6"></p>
+      <a href="/dashboard" class="inline-block px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">
+        Volver al Dashboard
+      </a>
+    </div>
+  </div>
+
+  <div id="admin-content" class="min-h-screen bg-gray-900 hidden">
+    <!-- Sidebar -->
+    <div class="flex">
+      <aside class="w-64 min-h-screen bg-gray-800 border-r border-gray-700 fixed">
+        <div class="p-4 border-b border-gray-700">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-orange-500 rounded-lg flex items-center justify-center">
+              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+              </svg>
+            </div>
+            <div>
+              <h1 class="font-bold text-white">Admin Panel</h1>
+              <p class="text-xs text-gray-400">Tiendita</p>
+            </div>
+          </div>
+        </div>
+        
+        <nav class="p-4 space-y-1">
+          <a href="/admin" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-600 text-white">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+            </svg>
+            Dashboard
+          </a>
+          <a href="/admin/users" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+            </svg>
+            Usuarios
+          </a>
+          <a href="/admin/subscriptions" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+            </svg>
+            Suscripciones
+          </a>
+          <a href="/admin/coupons" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+            </svg>
+            Cupones
+          </a>
+          <a href="/admin/plans" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+            </svg>
+            Planes
+          </a>
+          
+          <div class="pt-4 mt-4 border-t border-gray-700">
+            <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-700 hover:text-white">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+              </svg>
+              Volver al Dashboard
+            </a>
+          </div>
+        </nav>
+      </aside>
+      
+      <!-- Main -->
+      <main class="flex-1 ml-64 p-6">
+        <h2 class="text-2xl font-bold text-white mb-6">Dashboard Admin</h2>
+        
+        <div id="metrics" class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <!-- Se llenan con JS -->
+        </div>
+        
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <h3 class="text-lg font-semibold text-white mb-4">Bienvenido al Panel de Admin</h3>
+          <p class="text-gray-400">Desde aquí podés gestionar usuarios, suscripciones, cupones y configuración.</p>
+        </div>
+      </main>
+    </div>
+  </div>
+</Layout>
+
+<script>
+  import { createClient } from '@supabase/supabase-js';
+  
+  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+  const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+  const supabase = createClient(supabaseUrl, supabaseKey);
+
+  async function checkAdmin() {
+    const loadingEl = document.getElementById('admin-loading');
+    const deniedEl = document.getElementById('admin-denied');
+    const contentEl = document.getElementById('admin-content');
+    const reasonEl = document.getElementById('denied-reason');
+
+    try {
+      // 1. Obtener sesión
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      
+      if (sessionError || !session) {
+        showDenied('No hay sesión activa. Iniciá sesión primero.');
+        return;
+      }
+
+      // 2. Buscar tienda del usuario
+      const { data: store, error: storeError } = await supabase
+        .from('stores')
+        .select('id, name, is_admin')
+        .eq('user_id', session.user.id)
+        .single();
+
+      if (storeError || !store) {
+        showDenied('No se encontró tu tienda.');
+        return;
+      }
+
+      // 3. Verificar si es admin
+      if (!store.is_admin) {
+        showDenied(`Tu tienda "${store.name}" no tiene permisos de administrador.`);
+        return;
+      }
+
+      // 4. Es admin! Mostrar contenido
+      loadingEl?.classList.add('hidden');
+      deniedEl?.classList.add('hidden');
+      contentEl?.classList.remove('hidden');
+      
+      // Cargar métricas
+      loadMetrics();
+
+    } catch (err: any) {
+      showDenied(`Error: ${err.message}`);
+    }
+
+    function showDenied(reason: string) {
+      loadingEl?.classList.add('hidden');
+      contentEl?.classList.add('hidden');
+      deniedEl?.classList.remove('hidden');
+      if (reasonEl) reasonEl.textContent = reason;
+    }
+  }
+
+  async function loadMetrics() {
+    const metricsEl = document.getElementById('metrics');
+    if (!metricsEl) return;
+
+    try {
+      // Contar tiendas
+      const { count: storeCount } = await supabase
+        .from('stores')
+        .select('*', { count: 'exact', head: true });
+
+      // Contar suscripciones premium
+      const { data: subs } = await supabase
+        .from('subscriptions')
+        .select('plan_id, status');
+      
+      const premiumCount = subs?.filter(s => 
+        s.status === 'active' && (s.plan_id === 'premium' || s.plan_id === 'premium_annual')
+      ).length || 0;
+
+      metricsEl.innerHTML = `
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <p class="text-gray-400 text-sm">Total Tiendas</p>
+          <p class="text-3xl font-bold text-white mt-1">${storeCount || 0}</p>
+        </div>
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <p class="text-gray-400 text-sm">Suscripciones Premium</p>
+          <p class="text-3xl font-bold text-white mt-1">${premiumCount}</p>
+        </div>
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <p class="text-gray-400 text-sm">Total Suscripciones</p>
+          <p class="text-3xl font-bold text-white mt-1">${subs?.length || 0}</p>
+        </div>
+        <div class="bg-gray-800 rounded-xl p-6 border border-gray-700">
+          <p class="text-gray-400 text-sm">Tasa Conversión</p>
+          <p class="text-3xl font-bold text-white mt-1">${subs?.length ? Math.round((premiumCount / subs.length) * 100) : 0}%</p>
+        </div>
+      `;
+    } catch (err) {
+      console.error('Error loading metrics:', err);
+    }
+  }
+
+  // Ejecutar al cargar
+  checkAdmin();
+</script>

@@ -1,0 +1,253 @@
+---
+// =============================================================================
+// Layout para el Panel de Administración
+// =============================================================================
+
+import { supabase } from '../lib/supabase'
+
+interface Props {
+  title: string;
+}
+
+const { title } = Astro.props;
+
+// Nota: la verificación se hará en el cliente, porque las cookies no son httpOnly.
+// Aquí solo preparamos el layout; el script al final validará la sesión y mostrará/ocultará secciones.
+let debugInfo = 'Verificando sesión en el cliente...';
+
+const currentPath = Astro.url.pathname;
+
+const navItems = [
+  { href: '/admin', icon: 'chart', label: 'Dashboard', exact: true },
+  { href: '/admin/users', icon: 'users', label: 'Usuarios' },
+  { href: '/admin/subscriptions', icon: 'credit-card', label: 'Suscripciones' },
+  { href: '/admin/coupons', icon: 'tag', label: 'Cupones' },
+  { href: '/admin/plans', icon: 'sliders', label: 'Planes' },
+  { href: '/admin/config', icon: 'settings', label: 'Configuración' },
+];
+
+function isActive(href: string, exact: boolean = false) {
+  if (exact) return currentPath === href;
+  return currentPath.startsWith(href);
+}
+---
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{title} | Admin - Tiendita</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    * { font-family: 'Inter', sans-serif; }
+  </style>
+</head>
+<body class="bg-gray-900 min-h-screen">
+  <!-- Vista bloqueada -->
+  <div id="admin-denied" class="min-h-screen flex items-center justify-center p-4 hidden">
+    <div class="text-center">
+      <div class="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
+        <svg class="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+        </svg>
+      </div>
+      <h1 class="text-2xl font-bold text-white mb-2">Acceso Denegado</h1>
+      <p class="text-gray-400 mb-6">No tenés permisos de administrador para acceder a esta sección.</p>
+      
+      <!-- Debug info -->
+      <div class="bg-gray-800 rounded-lg p-4 mb-6 text-left max-w-md mx-auto">
+        <p class="text-xs text-gray-500 font-mono break-all" id="admin-debug">{debugInfo}</p>
+      </div>
+      
+      <a href="/dashboard" class="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors">
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+        </svg>
+        Volver al Dashboard
+      </a>
+
+      <div class="mt-6 space-y-2">
+        <button
+          id="retry-admin"
+          class="inline-flex items-center gap-2 px-4 py-2 bg-gray-800 text-white rounded-lg border border-gray-700 hover:bg-gray-700 transition-colors"
+        >
+          Reintentar con mi sesión
+        </button>
+        <p class="text-xs text-gray-500">Esto intentará leer tu sesión de Supabase y setear la cookie.</p>
+        <p class="text-xs text-gray-500">Si no funciona, cerrá sesión y volv&eacute; a iniciar.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Vista admin -->
+  <div id="admin-main" class="flex hidden">
+    <!-- Sidebar -->
+    <aside class="w-64 min-h-screen bg-gray-800 border-r border-gray-700 fixed">
+      <div class="p-4 border-b border-gray-700">
+        <div class="flex items-center gap-3">
+          <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-orange-500 rounded-lg flex items-center justify-center">
+            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+            </svg>
+          </div>
+          <div>
+            <h1 class="font-bold text-white">Admin Panel</h1>
+            <p class="text-xs text-gray-400">Tiendita</p>
+          </div>
+        </div>
+      </div>
+      
+      <nav class="p-4 space-y-1">
+        {navItems.map(item => (
+          <a
+            href={item.href}
+            class={`flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-colors ${
+              isActive(item.href, item.exact)
+                ? 'bg-indigo-600 text-white'
+                : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+            }`}
+          >
+            {item.icon === 'chart' && (
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+              </svg>
+            )}
+            {item.icon === 'users' && (
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            )}
+            {item.icon === 'credit-card' && (
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+              </svg>
+            )}
+            {item.icon === 'tag' && (
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+              </svg>
+            )}
+            {item.icon === 'sliders' && (
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
+              </svg>
+            )}
+            {item.icon === 'settings' && (
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            )}
+            {item.label}
+          </a>
+        ))}
+        
+        <div class="pt-4 mt-4 border-t border-gray-700">
+          <a
+            href="/dashboard"
+            class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-700 hover:text-white transition-colors"
+          >
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" />
+            </svg>
+            Volver al Dashboard
+          </a>
+        </div>
+      </nav>
+    </aside>
+    
+    <!-- Main Content -->
+    <main class="flex-1 ml-64">
+      <!-- Header -->
+      <header class="bg-gray-800 border-b border-gray-700 px-6 py-4">
+        <div class="flex items-center justify-between">
+          <h2 class="text-xl font-semibold text-white">{title}</h2>
+          <div class="flex items-center gap-4">
+            <span class="text-sm text-gray-400" id="admin-user-email">admin</span>
+            <div class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-full flex items-center justify-center text-white text-sm font-medium" id="admin-user-avatar">
+              A
+            </div>
+          </div>
+        </div>
+      </header>
+      
+      <!-- Page Content -->
+      <div class="p-6">
+        <slot />
+      </div>
+    </main>
+  </div>
+  </div>
+</body>
+</html>
+
+<script type="module">
+  import { supabase } from '../lib/supabase';
+
+  const deniedEl = document.getElementById('admin-denied');
+  const mainEl = document.getElementById('admin-main');
+  const debugEl = document.getElementById('admin-debug');
+  const btn = document.getElementById('retry-admin');
+  const userEmailEl = document.getElementById('admin-user-email');
+  const userAvatarEl = document.getElementById('admin-user-avatar');
+
+  async function checkAdmin() {
+    debugEl.textContent = 'Verificando sesión...';
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.access_token) {
+      debugEl.textContent = 'No hay sesión. Cerrá sesión y volvé a iniciar.';
+      showDenied();
+      return;
+    }
+
+    // Guardar cookie accesible para el servidor
+    await fetch('/api/auth/set-cookie', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token: session.access_token })
+    });
+
+    // Verificar admin via Supabase client (lectura directa)
+    const { data: store, error } = await supabase
+      .from('stores')
+      .select('is_admin, name')
+      .eq('user_id', session.user.id)
+      .single();
+
+    if (error) {
+      debugEl.textContent = `Error tienda: ${error.message}`;
+      showDenied();
+      return;
+    }
+
+    if (store?.is_admin) {
+      // Mostrar email en header
+      if (userEmailEl) userEmailEl.textContent = session.user.email || 'admin';
+      if (userAvatarEl) userAvatarEl.textContent = (session.user.email || 'A')[0].toUpperCase();
+
+      mainEl?.classList.remove('hidden');
+      deniedEl?.classList.add('hidden');
+    } else {
+      debugEl.textContent = `No sos admin. Tienda: ${store?.name || 'N/A'}`;
+      showDenied();
+    }
+  }
+
+  function showDenied() {
+    deniedEl?.classList.remove('hidden');
+    mainEl?.classList.add('hidden');
+  }
+
+  if (btn) {
+    btn.addEventListener('click', async () => {
+      await checkAdmin();
+    });
+  }
+
+  // Ejecutar al cargar
+  checkAdmin();
+</script>
+

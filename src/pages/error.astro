@@ -1,0 +1,30 @@
+---
+import Layout from '../layouts/Layout.astro';
+---
+
+<Layout title="Error">
+  <main class="container mx-auto px-4 py-20">
+    <div class="max-w-2xl mx-auto text-center">
+      <h1 class="text-4xl font-bold text-gray-900 mb-6">
+        Algo salió mal
+      </h1>
+      <p class="text-xl text-gray-600 mb-8">
+        Lo sentimos, ha ocurrido un error inesperado. Por favor, intenta nuevamente.
+      </p>
+      <div class="space-x-4">
+        <a
+          href="/"
+          class="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+        >
+          Volver al inicio
+        </a>
+        <a
+          href="/login"
+          class="text-blue-500 hover:text-blue-600"
+        >
+          Iniciar sesión
+        </a>
+      </div>
+    </div>
+  </main>
+</Layout> 

@@ -1,0 +1,17 @@
+---
+import SetupLayout from '../../layouts/SetupLayout.astro';
+import StoreSetupForm from '../../components/setup/StoreSetupForm';
+---
+
+<SetupLayout title="Configurar tienda">
+  <div class="mb-8">
+    <h1 class="text-3xl font-bold mb-2">Configura tu tienda</h1>
+    <p class="text-gray-600">
+      Ingresa la información básica de tu tienda para comenzar
+    </p>
+  </div>
+
+  <div class="bg-white rounded-lg shadow-sm p-6">
+    <StoreSetupForm client:load />
+  </div>
+</SetupLayout> 

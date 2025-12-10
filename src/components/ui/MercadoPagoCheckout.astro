@@ -1,0 +1,45 @@
+---
+interface Props {
+    preferenceId: string;
+}
+
+const { preferenceId } = Astro.props;
+import { initMercadoPago, Wallet } from '@mercadopago/sdk-react'
+
+---
+
+<div id="mp-checkout-container"></div>
+
+<script>
+    declare global {
+        interface Window {
+            MercadoPago: any;
+        }
+    }
+
+    // Cargar el SDK de Mercado Pago
+    const script = document.createElement('script');
+    script.src = "https://sdk.mercadopago.com/js/v2";
+    script.type = "text/javascript";
+    document.body.appendChild(script);
+
+    script.onload = () => {
+        const mp = new window.MercadoPago(import.meta.env.PUBLIC_MERCADOPAGO_PUBLIC_KEY, {
+            locale: 'es-AR'
+        });
+
+        mp.checkout({
+            preference: {
+                id: document.currentScript?.getAttribute('data-preference-id')
+            },
+            render: {
+                container: '#mp-checkout-container',
+                label: 'Pagar publicación',
+            },
+            theme: {
+                elementsColor: '#4F46E5',
+                headerColor: '#4F46E5',
+            }
+        });
+    };
+</script> 

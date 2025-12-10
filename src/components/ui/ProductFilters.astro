@@ -1,0 +1,98 @@
+---
+interface Props {
+    showViewToggle?: boolean;
+    className?: string;
+}
+
+const { showViewToggle = true, className = "" } = Astro.props;
+---
+
+<div class={`flex justify-between items-center ${className}`}>
+    <div class="flex gap-4">
+        <select 
+            id="sort-filter"
+            class="rounded-lg border-gray-300 text-gray-700 focus:ring-indigo-500 focus:border-indigo-500"
+        >
+            <option value="">Ordenar por</option>
+            <option value="precio_asc">Menor precio</option>
+            <option value="precio_desc">Mayor precio</option>
+            <option value="fecha_desc">Más recientes</option>
+        </select>
+
+        <select 
+            id="estado-filter"
+            class="rounded-lg border-gray-300 text-gray-700 focus:ring-indigo-500 focus:border-indigo-500"
+        >
+            <option value="">Estado</option>
+            <option value="nuevo">Nuevo</option>
+            <option value="usado">Usado</option>
+            <option value="reacondicionado">Reacondicionado</option>
+        </select>
+
+        <select 
+            id="ubicacion-filter"
+            class="rounded-lg border-gray-300 text-gray-700 focus:ring-indigo-500 focus:border-indigo-500"
+        >
+            <option value="">Ubicación</option>
+            <option value="caba">CABA</option>
+            <option value="gba_norte">GBA Norte</option>
+            <option value="gba_sur">GBA Sur</option>
+            <option value="gba_oeste">GBA Oeste</option>
+        </select>
+    </div>
+
+    {showViewToggle && (
+        <div class="flex gap-2">
+            <button 
+                id="view-list"
+                class="p-2 text-gray-500 hover:text-indigo-600 transition-colors"
+                aria-label="Vista de lista"
+            >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                </svg>
+            </button>
+            <button 
+                id="view-grid"
+                class="p-2 text-gray-500 hover:text-indigo-600 transition-colors"
+                aria-label="Vista de cuadrícula"
+            >
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"/>
+                </svg>
+            </button>
+        </div>
+    )}
+</div>
+
+<script>
+    const sortFilter = document.getElementById('sort-filter');
+    const estadoFilter = document.getElementById('estado-filter');
+    const ubicacionFilter = document.getElementById('ubicacion-filter');
+    const viewList = document.getElementById('view-list');
+    const viewGrid = document.getElementById('view-grid');
+    const productsContainer = document.querySelector('.products-container');
+
+    // Manejar cambios en los filtros
+    [sortFilter, estadoFilter, ubicacionFilter].forEach(filter => {
+        filter?.addEventListener('change', () => {
+            // Aquí implementaremos la lógica de filtrado
+            console.log('Filtro cambiado:', {
+                sort: sortFilter?.value,
+                estado: estadoFilter?.value,
+                ubicacion: ubicacionFilter?.value
+            });
+        });
+    });
+
+    // Manejar cambios en la vista
+    viewList?.addEventListener('click', () => {
+        productsContainer?.classList.remove('grid-cols-4');
+        productsContainer?.classList.add('grid-cols-1');
+    });
+
+    viewGrid?.addEventListener('click', () => {
+        productsContainer?.classList.remove('grid-cols-1');
+        productsContainer?.classList.add('grid-cols-4');
+    });
+</script> 

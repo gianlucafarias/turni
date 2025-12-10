@@ -1,0 +1,288 @@
+---
+interface Props {
+  isOpen: boolean;
+  items: any[];
+  storeWhatsapp: string;
+}
+
+const { isOpen, items, storeWhatsapp } = Astro.props;
+---
+
+<div
+  id="cart-slideover"
+  class:list={[
+    "fixed inset-0 overflow-hidden z-50",
+    { hidden: !isOpen }
+  ]}
+  aria-labelledby="slide-over-title"
+  role="dialog"
+  aria-modal="true"
+>
+  <div class="absolute inset-0 overflow-hidden">
+    <!-- Overlay de fondo -->
+    <div 
+      class="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity" 
+      id="cart-overlay"
+    ></div>
+
+    <div class="pointer-events-none fixed inset-y-0 right-0 flex max-w-full pl-10">
+      <div class="pointer-events-auto w-screen max-w-md">
+        <div class="flex h-full flex-col overflow-y-scroll bg-white shadow-xl">
+          <div class="flex-1 overflow-y-auto px-4 py-6 sm:px-6">
+            <div class="flex items-start justify-between">
+              <h2 class="text-lg font-medium text-gray-900" id="slide-over-title">
+                Carrito de compras
+              </h2>
+              <div class="ml-3 flex h-7 items-center">
+                <button
+                  type="button"
+                  class="relative -m-2 p-2 text-gray-400 hover:text-gray-500"
+                  id="close-cart"
+                >
+                  <span class="absolute -inset-0.5"></span>
+                  <span class="sr-only">Cerrar panel</span>
+                  <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <div class="mt-8" id="cart-items">
+              <!-- Los items del carrito se insertarán aquí -->
+            </div>
+          </div>
+
+          <div class="border-t border-gray-200 px-4 py-6 sm:px-6">
+            <div class="flex justify-between text-base font-medium text-gray-900">
+              <p>Total</p>
+              <p id="cart-total">$0.00</p>
+            </div>
+            <p class="mt-0.5 text-sm text-gray-500">Envío calculado al finalizar la compra.</p>
+            
+            <div class="mt-6">
+              <button
+                id="checkout-button"
+                class="flex w-full items-center justify-center rounded-md border border-transparent bg-indigo-600 px-6 py-3 text-base font-medium text-white shadow-sm hover:bg-indigo-700"
+                data-whatsapp={storeWhatsapp}
+              >
+                Completar compra por WhatsApp
+              </button>
+            </div>
+            
+            <div class="mt-6 flex justify-center text-center text-sm text-gray-500">
+              <button
+                type="button"
+                class="font-medium text-indigo-600 hover:text-indigo-500"
+                id="continue-shopping"
+              >
+                Seguir comprando
+                <span aria-hidden="true"> &rarr;</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  let cartItems: any[] = [];
+  const cartItemsContainer = document.getElementById('cart-items');
+  const cartTotal = document.getElementById('cart-total');
+  const cartSlideOver = document.getElementById('cart-slideover');
+  const cartOverlay = document.getElementById('cart-overlay');
+  const closeCartButton = document.getElementById('close-cart');
+  const continueShopping = document.getElementById('continue-shopping');
+  const checkoutButton = document.getElementById('checkout-button');
+
+  // Cargar carrito del localStorage
+  try {
+    const savedCart = localStorage.getItem('cart');
+    if (savedCart) {
+      cartItems = JSON.parse(savedCart);
+      updateCartUI();
+    }
+  } catch (error) {
+    console.error('Error loading cart:', error);
+  }
+
+  // Función para actualizar la UI del carrito
+  function updateCartUI() {
+    if (!cartItemsContainer || !cartTotal) return;
+
+    // Limpiar contenedor
+    cartItemsContainer.innerHTML = '';
+
+    if (cartItems.length === 0) {
+      cartItemsContainer.innerHTML = `
+        <div class="text-center py-8">
+          <p class="text-gray-500">Tu carrito está vacío</p>
+        </div>
+      `;
+      cartTotal.textContent = '$0.00';
+      return;
+    }
+
+    // Agregar items
+    cartItems.forEach((item, index) => {
+      const itemElement = document.createElement('div');
+      itemElement.className = 'flex py-6 border-b border-gray-200';
+      itemElement.innerHTML = `
+        <div class="h-24 w-24 flex-shrink-0 overflow-hidden rounded-md border border-gray-200">
+          <img
+            src="${item.image_url || '/placeholder.png'}"
+            alt="${item.name}"
+            class="h-full w-full object-cover object-center"
+          >
+        </div>
+
+        <div class="ml-4 flex flex-1 flex-col">
+          <div>
+            <div class="flex justify-between text-base font-medium text-gray-900">
+              <h3>${item.name}</h3>
+              <p class="ml-4">$${item.price.toFixed(2)}</p>
+            </div>
+          </div>
+          <div class="flex flex-1 items-end justify-between text-sm">
+            <div class="flex items-center space-x-2">
+              <button 
+                class="text-gray-500 hover:text-gray-700"
+                onclick="updateQuantity(${index}, ${item.quantity - 1})"
+                ${item.quantity <= 1 ? 'disabled' : ''}
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
+                </svg>
+              </button>
+              <span class="text-gray-500">Cantidad: ${item.quantity}</span>
+              <button 
+                class="text-gray-500 hover:text-gray-700"
+                onclick="updateQuantity(${index}, ${item.quantity + 1})"
+              >
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+              </button>
+            </div>
+            <button
+              type="button"
+              class="font-medium text-indigo-600 hover:text-indigo-500"
+              onclick="removeItem(${index})"
+            >
+              Eliminar
+            </button>
+          </div>
+        </div>
+      `;
+      cartItemsContainer.appendChild(itemElement);
+    });
+
+    // Actualizar total
+    const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    cartTotal.textContent = `$${total.toFixed(2)}`;
+  }
+
+  // Función para actualizar cantidad
+  function updateQuantity(index: number, newQuantity: number) {
+    if (newQuantity < 1) return;
+    cartItems[index].quantity = newQuantity;
+    localStorage.setItem('cart', JSON.stringify(cartItems));
+    updateCartUI();
+    // Disparar evento para actualizar contador
+    document.dispatchEvent(new Event('cart-updated'));
+  }
+
+  // Función para eliminar item
+  function removeItem(index: number) {
+    cartItems.splice(index, 1);
+    localStorage.setItem('cart', JSON.stringify(cartItems));
+    updateCartUI();
+    // Disparar evento para actualizar contador
+    document.dispatchEvent(new Event('cart-updated'));
+  }
+
+  // Evento para agregar al carrito
+  document.addEventListener('add-to-cart', async (e: any) => {
+    const product = e.detail;
+    console.log('Adding to cart:', product);
+
+    try {
+      // Llamar al endpoint
+      const response = await fetch('/api/cart/add', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(product)
+      });
+
+      const data = await response.json();
+      
+      if (data.error) {
+        console.error('Error adding to cart:', data.error);
+        return;
+      }
+
+      // Agregar al carrito local
+      const existingItem = cartItems.find(item => item.id === product.id);
+      if (existingItem) {
+        existingItem.quantity += 1;
+      } else {
+        cartItems.push({
+          ...product,
+          quantity: 1
+        });
+      }
+
+      localStorage.setItem('cart', JSON.stringify(cartItems));
+      updateCartUI();
+      
+      // Abrir carrito
+      cartSlideOver?.classList.remove('hidden');
+      
+      // Disparar evento para actualizar contador
+      document.dispatchEvent(new Event('cart-updated'));
+    } catch (error) {
+      console.error('Error adding to cart:', error);
+    }
+  });
+
+  // Cerrar carrito
+  closeCartButton?.addEventListener('click', () => {
+    cartSlideOver?.classList.add('hidden');
+  });
+
+  continueShopping?.addEventListener('click', () => {
+    cartSlideOver?.classList.add('hidden');
+  });
+
+  cartOverlay?.addEventListener('click', () => {
+    cartSlideOver?.classList.add('hidden');
+  });
+
+  // Checkout por WhatsApp
+  checkoutButton?.addEventListener('click', () => {
+    const whatsappNumber = checkoutButton.dataset.whatsapp;
+    if (!whatsappNumber) {
+      console.error('No WhatsApp number provided');
+      return;
+    }
+
+    const items = cartItems.map(item => 
+      `• ${item.name} x${item.quantity} - $${(item.price * item.quantity).toFixed(2)}`
+    ).join('\n');
+
+    const total = cartItems.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+    
+    const message = `¡Hola! Me gustaría hacer un pedido:\n\n${items}\n\nTotal: $${total.toFixed(2)}`;
+    
+    // Limpiar carrito después de enviar
+    cartItems = [];
+    localStorage.removeItem('cart');
+    updateCartUI();
+    document.dispatchEvent(new Event('cart-updated'));
+    
+    // Abrir WhatsApp
+    window.open(`https://wa.me/${whatsappNumber}?text=${encodeURIComponent(message)}`, '_blank');
+  });
+</script> 

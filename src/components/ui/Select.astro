@@ -1,0 +1,42 @@
+---
+interface Option {
+    value: string | number;
+    label: string;
+}
+
+interface Props {
+    label: string;
+    name: string;
+    options: Option[];
+    required?: boolean;
+    placeholder?: string;
+    className?: string;
+}
+
+const { 
+    label, 
+    name, 
+    options,
+    required = false, 
+    placeholder = "Seleccionar...", 
+    className = "" 
+} = Astro.props;
+---
+
+<div class="space-y-2">
+    <label for={name} class="block text-sm font-medium text-gray-700">
+        {label} {required && <span class="text-red-500">*</span>}
+    </label>
+    <select
+        id={name}
+        name={name}
+        required={required}
+        class={`block w-full px-4 py-3 rounded-xl border-2 border-gray-200 focus:ring-0 focus:border-indigo-500 transition-colors text-gray-800 ${className}`}
+    >
+        <option value="">{placeholder}</option>
+        {options.map(option => (
+            <option value={option.value}>{option.label}</option>
+        ))}
+    </select>
+    <p id={`${name}-error`} class="text-red-500 text-sm mt-1 hidden"></p>
+</div> 

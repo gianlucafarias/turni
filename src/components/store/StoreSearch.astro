@@ -1,0 +1,71 @@
+---
+interface Props {
+  categories: Array<{
+    id: string;
+    name: string;
+    count: number;
+  }>;
+}
+
+const { categories } = Astro.props;
+---
+
+<div class="container mx-auto px-4 mt-6">
+  <div class="flex flex-col sm:flex-row gap-4">
+    <!-- Categorías -->
+    <div class="relative w-full sm:w-48">
+      <select
+        class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-purple-500"
+      >
+        <option value="">Categorías</option>
+        {categories.map(category => (
+          <option value={category.id}>
+            {category.name} ({category.count})
+          </option>
+        ))}
+      </select>
+      <div class="absolute inset-y-0 right-0 flex items-center px-2 pointer-events-none">
+        <svg class="w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+        </svg>
+      </div>
+    </div>
+
+    <!-- Búsqueda -->
+    <div class="relative flex-1">
+      <input
+        type="text"
+        placeholder="Buscar..."
+        class="w-full px-4 py-2 bg-white border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-purple-500"
+      />
+      <div class="absolute inset-y-0 right-0 flex items-center px-4">
+        <svg class="w-4 h-4 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+          <path fill-rule="evenodd" d="M8 4a4 4 0 100 8 4 4 0 000-8zM2 8a6 6 0 1110.89 3.476l4.817 4.817a1 1 0 01-1.414 1.414l-4.816-4.816A6 6 0 012 8z" clip-rule="evenodd" />
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // Manejar cambios en la categoría
+  const categorySelect = document.querySelector('select');
+  categorySelect?.addEventListener('change', (e) => {
+    const category = (e.target as HTMLSelectElement).value;
+    // Aquí puedes implementar la lógica de filtrado
+    console.log('Categoría seleccionada:', category);
+  });
+
+  // Manejar la búsqueda
+  const searchInput = document.querySelector('input[type="text"]');
+  let timeoutId: ReturnType<typeof setTimeout>;
+  
+  searchInput?.addEventListener('input', (e) => {
+    clearTimeout(timeoutId);
+    timeoutId = setTimeout(() => {
+      const query = (e.target as HTMLInputElement).value;
+      // Aquí puedes implementar la lógica de búsqueda
+      console.log('Búsqueda:', query);
+    }, 300);
+  });
+</script> 
