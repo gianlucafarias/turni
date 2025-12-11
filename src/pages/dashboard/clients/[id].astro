@@ -2,10 +2,12 @@
 import DashboardLayout from '../../../layouts/DashboardLayout.astro';
 import ClientProfile from '../../../components/dashboard/ClientProfile';
 
-const { id } = Astro.params;
+const { id = '' } = Astro.params;
 ---
 
 <DashboardLayout title="Perfil de Cliente">
   <ClientProfile client:load clientId={id} />
 </DashboardLayout>
+
+
 

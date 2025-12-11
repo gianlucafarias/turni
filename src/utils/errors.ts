@@ -1,4 +1,12 @@
-import type { AppErrorData } from '../types';
+import type { AppErrorData } from '../types/index';
+
+// Errores de validación simples para formularios/inputs
+export class ValidationError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'ValidationError';
+  }
+}
 
 export class AppError extends Error {
   constructor(

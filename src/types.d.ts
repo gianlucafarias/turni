@@ -1,4 +1,4 @@
-import type { User } from '@supabase/supabase-js';
+import type { User, Session } from '@supabase/supabase-js';
 
 export interface Store {
   id: string;
@@ -14,5 +14,6 @@ declare namespace App {
   interface Locals {
     user?: User;
     store?: Store;
+    session?: Session;
   }
 } 

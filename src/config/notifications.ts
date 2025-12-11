@@ -268,3 +268,5 @@ export type WhatsAppTemplateId = keyof typeof WHATSAPP_TEMPLATES;
 export type EmailTemplateId = keyof typeof EMAIL_TEMPLATES;
 export type NotificationChannel = typeof NOTIFICATIONS_CONFIG.channels[number];
 
+
+

@@ -9,3 +9,5 @@ COMMENT ON COLUMN public.services.available_days IS 'Días de la semana disponib
 COMMENT ON COLUMN public.services.start_date IS 'Fecha de inicio de disponibilidad (null = sin límite)';
 COMMENT ON COLUMN public.services.end_date IS 'Fecha de fin de disponibilidad (null = sin límite)';
 
+
+

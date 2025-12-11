@@ -12,3 +12,5 @@ CREATE INDEX IF NOT EXISTS idx_stores_business_category ON public.stores(busines
 -- Comentario para documentar los valores posibles
 COMMENT ON COLUMN public.stores.business_category IS 'Rubro del negocio: profesional, peluqueria, salud, estetica, fitness, otro';
 
+
+

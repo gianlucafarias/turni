@@ -86,3 +86,5 @@ COMMENT ON COLUMN public.stores.slug IS 'URL personalizada para la tienda (ej: m
 COMMENT ON COLUMN public.stores.gallery_images IS 'Array de URLs de imágenes para galería/carrusel';
 COMMENT ON COLUMN public.stores.short_bio IS 'Descripción breve o eslogan de la tienda';
 
+
+

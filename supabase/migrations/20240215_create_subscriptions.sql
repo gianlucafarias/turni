@@ -342,3 +342,5 @@ CREATE TRIGGER trigger_check_services_limit
 
 SELECT 'Sistema de suscripciones creado correctamente!' as resultado;
 
+
+

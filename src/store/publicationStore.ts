@@ -1,4 +1,4 @@
-import type { ProductData, Plan } from '../types';
+import type { ProductData, Plan } from '../types/index';
 import { showNotification } from '../utils/notifications';
 
 class PublicationStore {
@@ -48,12 +48,24 @@ class PublicationStore {
 
     setProductData(data: ProductData): void {
         this.productData = data;
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H1',location:'src/store/publicationStore.ts:50',message:'setProductData called',data:{step:this.currentStep,hasWhatsapp:!!data.whatsapp,hasCaracteristicas:Array.isArray(data.caracteristicas)},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
         showNotification('Información del producto guardada', 'success');
     }
 
-    setPlan(plan: Plan): void {
-        this.selectedPlan = plan;
-        showNotification(`Plan ${plan.nombre} seleccionado`, 'success');
+    setPlan(plan: Partial<Plan>): void {
+        const normalizedPlan: Plan = {
+            id: plan.id || 'custom',
+            nombre: plan.nombre || 'Plan personalizado',
+            precio: plan.precio || 0,
+            duracion: plan.duracion || '',
+            caracteristicas: plan.caracteristicas || [],
+            destacado: plan.destacado
+        };
+
+        this.selectedPlan = normalizedPlan;
+        showNotification(`Plan ${normalizedPlan.nombre} seleccionado`, 'success');
     }
 
     setImagePreview(preview: string | null): void {

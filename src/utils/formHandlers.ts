@@ -1,10 +1,9 @@
-import type { DragEventWithFiles, ProductForm } from '../types/events';
+import type { ProductForm } from '../types/events';
 import { publicationStore } from '../store/publicationStore';
 import { validateProduct, validateImage } from './validation';
 import { readImageAsDataURL, compressImage } from './imageHandling';
-import { createWhatsAppMessage, openWhatsApp } from '../services/whatsapp';
 import { showError } from '../utils/notifications';
-import type { ProductData } from '../types';
+import type { ProductData } from '../types/index';
 
 export const initializeImageUpload = () => {
     const dropZone = document.querySelector('.border-dashed');
@@ -15,7 +14,7 @@ export const initializeImageUpload = () => {
     dropZone?.parentElement?.appendChild(previewContainer);
 
     // Manejar drag & drop
-    dropZone?.addEventListener('dragover', (e: DragEvent) => {
+    dropZone?.addEventListener('dragover', (e) => {
         e.preventDefault();
         dropZone.classList.add('border-indigo-500');
     });
@@ -24,12 +23,13 @@ export const initializeImageUpload = () => {
         dropZone.classList.remove('border-indigo-500');
     });
 
-    dropZone?.addEventListener('drop', async (e: DragEventWithFiles) => {
-        e.preventDefault();
+    dropZone?.addEventListener('drop', async (e) => {
+        const dragEvent = e as DragEvent;
+        dragEvent.preventDefault();
         dropZone.classList.remove('border-indigo-500');
         
-        if (e.dataTransfer?.files.length) {
-            await handleImageUpload(e.dataTransfer.files[0]);
+        if (dragEvent.dataTransfer?.files.length) {
+            await handleImageUpload(dragEvent.dataTransfer.files[0]);
         }
     });
 

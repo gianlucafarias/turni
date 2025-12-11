@@ -67,8 +67,71 @@ export interface CartItem {
   image_url?: string;
 }
 
+// Tipos para catálogo y publicación de productos
+export interface Categoria {
+  id: number;
+  nombre: string;
+  icono: string;
+  color?: string;
+}
+
+export interface Producto {
+  id: number | string;
+  nombre: string;
+  precio: number;
+  precioAnterior?: number;
+  imagen?: string;
+  categoria: string;
+  descripcion: string;
+  etiqueta?: string;
+  stock: number;
+  destacado?: boolean;
+  valoracion?: number;
+  numResenas?: number;
+  caracteristicas: string[];
+  ubicacion?: string;
+  estado?: 'nuevo' | 'usado' | 'reacondicionado';
+  fecha?: string;
+}
+
+export interface ProductData {
+  id?: string | number;
+  nombre: string;
+  categoria: string;
+  descripcion?: string;
+  precio: number;
+  precioAnterior?: number;
+  stock: number;
+  caracteristicas: string[];
+  whatsapp?: string;
+  imagen?: string;
+  ubicacion?: string;
+  estado?: 'nuevo' | 'usado' | 'reacondicionado';
+  fecha?: string;
+}
+
+// Planes de publicación (distintos a los de suscripción)
+export interface Plan {
+  id: string;
+  nombre: string;
+  precio: number;
+  duracion: string;
+  caracteristicas: string[];
+  destacado?: boolean;
+}
+
 // Enums para constantes
 export enum StorageKeys {
   CART = 'cart',
   AUTH = 'auth'
-} 
+}
+
+// Re-export de tipos de suscripciones para conveniencia
+export type {
+  PlanId as SubscriptionPlanId,
+  Plan as SubscriptionPlan,
+  Subscription,
+  SubscriptionStatus,
+  PlanLimits,
+  PremiumFeature,
+} from './subscription';

@@ -1,5 +1,11 @@
 ---
-import type { Categoria } from '../../types';
+interface Categoria {
+    id: number;
+    nombre: string;
+    icono: string;
+    color?: string;
+    subcategorias?: string[];
+}
 
 interface Props {
     categorias: Categoria[];

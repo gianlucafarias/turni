@@ -2,10 +2,12 @@
 import DashboardLayout from '../../../layouts/DashboardLayout.astro'
 import EditAppointmentForm from '../../../components/dashboard/EditAppointmentForm'
 
-const { id } = Astro.params
+const { id = '' } = Astro.params
 ---
 
 <DashboardLayout title="Editar Cita">
   <EditAppointmentForm client:load appointmentId={id} />
 </DashboardLayout>
+
+
 

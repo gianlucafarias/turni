@@ -106,11 +106,8 @@ describe('Segmentation Filter Logic', () => {
       // Simular lógica de matching
       const clientTags = new Set(['tag-1', 'tag-2']);
       const filterTags = ['tag-2', 'tag-3'];
-      const matchMode = 'any';
       
-      const matches = matchMode === 'any'
-        ? filterTags.some(tag => clientTags.has(tag))
-        : filterTags.every(tag => clientTags.has(tag));
+      const matches = filterTags.some(tag => clientTags.has(tag));
       
       expect(matches).toBe(true);
     });
@@ -118,11 +115,8 @@ describe('Segmentation Filter Logic', () => {
     it('modo ALL: requiere todas las etiquetas', () => {
       const clientTags = new Set(['tag-1', 'tag-2']);
       const filterTags = ['tag-2', 'tag-3'];
-      const matchMode = 'all';
       
-      const matches = matchMode === 'any'
-        ? filterTags.some(tag => clientTags.has(tag))
-        : filterTags.every(tag => clientTags.has(tag));
+      const matches = filterTags.every(tag => clientTags.has(tag));
       
       expect(matches).toBe(false);
     });
@@ -130,11 +124,8 @@ describe('Segmentation Filter Logic', () => {
     it('modo ALL: coincide si tiene todas', () => {
       const clientTags = new Set(['tag-1', 'tag-2', 'tag-3']);
       const filterTags = ['tag-1', 'tag-2'];
-      const matchMode = 'all';
       
-      const matches = matchMode === 'any'
-        ? filterTags.some(tag => clientTags.has(tag))
-        : filterTags.every(tag => clientTags.has(tag));
+      const matches = filterTags.every(tag => clientTags.has(tag));
       
       expect(matches).toBe(true);
     });
@@ -167,4 +158,6 @@ describe('Segmentation Filter Logic', () => {
     });
   });
 });
+
+
 

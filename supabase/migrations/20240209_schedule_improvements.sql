@@ -36,3 +36,5 @@ COMMENT ON COLUMN public.schedules.afternoon_start IS 'Hora inicio turno tarde';
 COMMENT ON COLUMN public.schedules.afternoon_end IS 'Hora fin turno tarde';
 COMMENT ON TABLE public.days_off IS 'Días libres, feriados o vacaciones de cada tienda';
 
+
+

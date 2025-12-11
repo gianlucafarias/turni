@@ -258,6 +258,8 @@ export default function BookingWidget({ storeId }: Props) {
       return
     }
 
+    const slotDuration = schedule.slot_duration
+
     const dateStr = date.toISOString().split('T')[0]
     const slots: { time: string; count: number; available: boolean }[] = []
     const now = new Date()
@@ -306,7 +308,7 @@ export default function BookingWidget({ storeId }: Props) {
         if (isToday) {
           const currentTime = now.getHours() * 60 + now.getMinutes()
           if (currentMinutes <= currentTime) {
-            currentMinutes += schedule.slot_duration
+            currentMinutes += slotDuration
             continue
           }
         }
@@ -322,7 +324,7 @@ export default function BookingWidget({ storeId }: Props) {
           available: isAvailable
         })
         
-        currentMinutes += schedule.slot_duration
+        currentMinutes += slotDuration
       }
     }
 

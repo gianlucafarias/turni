@@ -81,12 +81,12 @@ import { PLANS, FREE_LIMITS, PREMIUM_LIMITS, PRICING } from '../../lib/subscript
           <div class="grid grid-cols-2 gap-4">
             <div class="bg-gray-700/50 rounded-lg p-4">
               <p class="text-gray-400 text-sm">Mensual</p>
-              <p class="text-2xl font-bold text-white">${(PRICING.MONTHLY / 100).toLocaleString('es-AR')} ARS</p>
+              <p class="text-2xl font-bold text-white">${(PRICING.PREMIUM_MONTHLY / 100).toLocaleString('es-AR')} ARS</p>
             </div>
             <div class="bg-gray-700/50 rounded-lg p-4">
               <p class="text-gray-400 text-sm">Anual</p>
-              <p class="text-2xl font-bold text-white">${(PRICING.ANNUAL / 100).toLocaleString('es-AR')} ARS</p>
-              <p class="text-emerald-400 text-xs">Ahorro: {Math.round((1 - PRICING.ANNUAL / (PRICING.MONTHLY * 12)) * 100)}%</p>
+              <p class="text-2xl font-bold text-white">${(PRICING.PREMIUM_ANNUAL / 100).toLocaleString('es-AR')} ARS</p>
+              <p class="text-emerald-400 text-xs">Ahorro: {Math.round((1 - PRICING.PREMIUM_ANNUAL / (PRICING.PREMIUM_MONTHLY * 12)) * 100)}%</p>
             </div>
           </div>
         </div>
@@ -128,16 +128,7 @@ import { PLANS, FREE_LIMITS, PREMIUM_LIMITS, PRICING } from '../../lib/subscript
               <tr class="hover:bg-gray-700/50">
                 <td class="px-6 py-4 text-gray-300">Notificaciones</td>
                 <td class="px-6 py-4 text-center">
-                  {FREE_LIMITS.features.notifications 
-                    ? <span class="text-emerald-400">✓</span> 
-                    : <span class="text-red-400">✗</span>}
-                </td>
-                <td class="px-6 py-4 text-center text-emerald-400">✓</td>
-              </tr>
-              <tr class="hover:bg-gray-700/50">
-                <td class="px-6 py-4 text-gray-300">Recordatorios</td>
-                <td class="px-6 py-4 text-center">
-                  {FREE_LIMITS.features.reminders 
+                  {FREE_LIMITS.features.includes('notifications') 
                     ? <span class="text-emerald-400">✓</span> 
                     : <span class="text-red-400">✗</span>}
                 </td>
@@ -146,7 +137,7 @@ import { PLANS, FREE_LIMITS, PREMIUM_LIMITS, PRICING } from '../../lib/subscript
               <tr class="hover:bg-gray-700/50">
                 <td class="px-6 py-4 text-gray-300">Gestión de Clientes</td>
                 <td class="px-6 py-4 text-center">
-                  {FREE_LIMITS.features.clientManagement 
+                  {FREE_LIMITS.features.includes('clients_management') 
                     ? <span class="text-emerald-400">✓</span> 
                     : <span class="text-red-400">✗</span>}
                 </td>
@@ -155,7 +146,7 @@ import { PLANS, FREE_LIMITS, PREMIUM_LIMITS, PRICING } from '../../lib/subscript
               <tr class="hover:bg-gray-700/50">
                 <td class="px-6 py-4 text-gray-300">Analytics</td>
                 <td class="px-6 py-4 text-center">
-                  {FREE_LIMITS.features.analytics 
+                  {FREE_LIMITS.features.includes('advanced_stats') 
                     ? <span class="text-emerald-400">✓</span> 
                     : <span class="text-red-400">✗</span>}
                 </td>
@@ -164,7 +155,7 @@ import { PLANS, FREE_LIMITS, PREMIUM_LIMITS, PRICING } from '../../lib/subscript
               <tr class="hover:bg-gray-700/50">
                 <td class="px-6 py-4 text-gray-300">Soporte Prioritario</td>
                 <td class="px-6 py-4 text-center">
-                  {FREE_LIMITS.features.prioritySupport 
+                  {FREE_LIMITS.features.includes('priority_support') 
                     ? <span class="text-emerald-400">✓</span> 
                     : <span class="text-red-400">✗</span>}
                 </td>
@@ -172,40 +163,6 @@ import { PLANS, FREE_LIMITS, PREMIUM_LIMITS, PRICING } from '../../lib/subscript
               </tr>
             </tbody>
           </table>
-        </div>
-
-        <!-- Código de referencia -->
-        <div class="mt-6 bg-gray-800 rounded-xl border border-gray-700 p-6">
-          <h3 class="text-lg font-semibold text-white mb-4">Archivo de Configuración</h3>
-          <p class="text-gray-400 text-sm mb-4">Para modificar los límites, editá este archivo:</p>
-          <pre class="bg-gray-900 rounded-lg p-4 overflow-x-auto text-sm text-gray-300">
-<code>// src/lib/subscription/plans.ts
-
-export const FREE_LIMITS: PlanLimits = {
-  maxProducts: {FREE_LIMITS.maxProducts},
-  maxServices: {FREE_LIMITS.maxServices},
-  maxClients: {FREE_LIMITS.maxClients},
-  maxAppointmentsPerMonth: {FREE_LIMITS.maxAppointmentsPerMonth},
-  features: {
-    notifications: {String(FREE_LIMITS.features.notifications)},
-    reminders: {String(FREE_LIMITS.features.reminders)},
-    clientManagement: {String(FREE_LIMITS.features.clientManagement)},
-    // ... más features
-  }
-};
-
-export const PREMIUM_LIMITS: PlanLimits = {
-  maxProducts: {PREMIUM_LIMITS.maxProducts},  // -1 = ilimitado
-  maxServices: {PREMIUM_LIMITS.maxServices},
-  maxClients: {PREMIUM_LIMITS.maxClients},
-  maxAppointmentsPerMonth: {PREMIUM_LIMITS.maxAppointmentsPerMonth},
-  features: {
-    notifications: true,
-    reminders: true,
-    clientManagement: true,
-    // ... todas las features habilitadas
-  }
-};</code></pre>
         </div>
       </main>
     </div>

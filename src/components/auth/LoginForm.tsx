@@ -22,7 +22,7 @@ export default function LoginForm() {
       })
 
       if (error) {
-        const errorMessage = error.message || error.error_description || '';
+        const errorMessage = error.message || (error as any)?.error_description || '';
         
         if (!import.meta.env.PROD && (errorMessage.includes('Email not confirmed') || errorMessage.includes('email_not_confirmed'))) {
           setError('La verificación de email está activada en Supabase. Por favor desactívala en Authentication → Settings → "Enable email confirmations" para desarrollo.')
@@ -56,7 +56,7 @@ export default function LoginForm() {
     } catch (err: any) {
       console.error('Error de login:', err)
       if (err instanceof Error || err?.message) {
-        const errorMessage = err.message || err.error_description || '';
+        const errorMessage = err.message || (err as any)?.error_description || '';
         
         if (errorMessage.includes('Invalid login credentials')) {
           setError('Email o contraseña incorrectos')

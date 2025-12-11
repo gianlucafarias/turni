@@ -1,4 +1,4 @@
-import type { ProductData, Plan } from '../types';
+import type { ProductData, Plan } from '../types/index';
 import { CONFIG } from '../config';
 
 export const createWhatsAppMessage = (productData: ProductData, plan: Plan): string => {
@@ -8,7 +8,7 @@ export const createWhatsAppMessage = (productData: ProductData, plan: Plan): str
         `Categoría: ${productData.categoria}%0A` +
         `Precio: $${productData.precio}%0A` +
         `Stock: ${productData.stock}%0A` +
-        `Características:%0A${productData.caracteristicas.map(c => `- ${c}`).join('%0A')}%0A%0A` +
+        `Características:%0A${productData.caracteristicas.map((c: string) => `- ${c}`).join('%0A')}%0A%0A` +
         `*Plan Seleccionado:*%0A` +
         `Plan: ${plan.nombre}%0A` +
         `Duración: ${plan.duracion}%0A` +

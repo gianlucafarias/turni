@@ -122,3 +122,5 @@ docker compose exec app node -e "console.log(process.env.AWS_REGION)"
 - Verificar que los logs no muestren errores críticos
 - Monitorear el uso de recursos (CPU, memoria, disco)
 
+
+

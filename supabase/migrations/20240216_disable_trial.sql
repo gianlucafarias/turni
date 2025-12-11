@@ -63,3 +63,5 @@ WHERE plan_id = 'free';
 
 SELECT 'Trial desactivado. Nuevos usuarios empiezan en plan Free.' as resultado;
 
+
+

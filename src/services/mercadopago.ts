@@ -1,8 +1,9 @@
 import MercadoPago from 'mercadopago';
-import type { Plan } from '../types';
+import type { Plan } from '../types/index';
 
 // Configurar MercadoPago con las credenciales
-MercadoPago.configure({
+const MercadoPagoAny: any = MercadoPago as any;
+MercadoPagoAny.configure({
     access_token: import.meta.env.MERCADOPAGO_ACCESS_TOKEN
 });
 
@@ -48,7 +49,7 @@ export const createPreference = async ({ plan, productData, paymentMethod }: Cre
             expiration_date_to: new Date(Date.now() + 24 * 60 * 60 * 1000).toISOString() // 24 horas
         };
 
-        const response = await MercadoPago.preferences.create(preference);
+        const response = await MercadoPagoAny.preferences.create(preference);
         return response.body;
     } catch (error) {
         console.error('Error al crear preferencia en Mercado Pago:', error);

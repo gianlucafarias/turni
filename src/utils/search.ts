@@ -1,8 +1,12 @@
 import { productos } from '../data/productos';
-import type { ProductData } from '../types';
+import type { ProductData } from '../types/index';
 
 export const searchProducts = (query: string, filters: SearchFilters = {}): ProductData[] => {
     const searchTerm = query.toLowerCase();
+
+    // #region agent log
+    fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H1',location:'src/utils/search.ts:6',message:'searchProducts called',data:{query,filtersKeys:Object.keys(filters),sampleProducto:productos[0]?.nombre},timestamp:Date.now()})}).catch(()=>{});
+    // #endregion
     
     return productos.filter(producto => {
         // Búsqueda por texto
@@ -21,7 +25,7 @@ export const searchProducts = (query: string, filters: SearchFilters = {}): Prod
 
         // Filtro por ubicación
         const matchesUbicacion = !filters.ubicacion || 
-            producto.ubicacion.toLowerCase().includes(filters.ubicacion.toLowerCase());
+            producto.ubicacion?.toLowerCase().includes(filters.ubicacion.toLowerCase());
 
         // Filtro por categoría
         const matchesCategoria = !filters.categoria || 
@@ -50,7 +54,7 @@ export const sortProducts = (products: ProductData[], sortBy: string): ProductDa
         case 'fecha_desc':
             // Aquí asumimos que tenemos un campo fecha en los productos
             return sortedProducts.sort((a, b) => 
-                new Date(b.fecha || '').getTime() - new Date(a.fecha || '').getTime()
+                new Date((b as any).fecha || '').getTime() - new Date((a as any).fecha || '').getTime()
             );
         default:
             return sortedProducts;

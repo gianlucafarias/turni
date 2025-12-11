@@ -102,7 +102,7 @@ export const onRequest = defineMiddleware(async (context, next) => {
   }
 
   // Guardar sesión en locals para uso posterior
-  locals.session = session
+  ;(locals as any).session = session
 
   // En desarrollo, no hacer redirecciones automáticas desde el middleware
   // Dejar que el cliente maneje la autenticación

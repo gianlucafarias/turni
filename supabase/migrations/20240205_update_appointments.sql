@@ -24,3 +24,5 @@ SET start_time = (date + time)::timestamp with time zone,
     end_time = (date + time + (duration * interval '1 minute'))::timestamp with time zone
 WHERE start_time IS NULL AND date IS NOT NULL;
 
+
+

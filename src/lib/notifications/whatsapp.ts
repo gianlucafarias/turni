@@ -509,3 +509,5 @@ export function isWhatsAppConfigured(): boolean {
   return getWhatsAppClient().isConfigured();
 }
 
+
+

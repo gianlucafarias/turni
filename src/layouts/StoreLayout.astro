@@ -53,7 +53,7 @@ const { title, storeId, whatsappNumber } = Astro.props;
 
 <script>
   // Inicializar estado del carrito
-  let cartItems = [];
+  let cartItems = [] as any[];
   let isCartOpen = false;
 
   // Elementos del DOM
@@ -83,7 +83,7 @@ const { title, storeId, whatsappNumber } = Astro.props;
 
   // Eventos globales del carrito
   document.addEventListener('add-to-cart', (e) => {
-    const product = e.detail;
+    const product = (e as CustomEvent<any>).detail;
     const existingItem = cartItems.find(item => item.id === product.id);
     
     if (existingItem) {

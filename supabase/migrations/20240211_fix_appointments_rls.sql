@@ -18,3 +18,5 @@ CREATE POLICY "Anyone can view appointments"
 -- 2. Es necesario para que los clientes vean qué horarios están ocupados
 -- 3. Los datos sensibles del cliente no se exponen en la consulta de disponibilidad
 
+
+

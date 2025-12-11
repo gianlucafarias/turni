@@ -1,4 +1,11 @@
 import { ValidationError } from './errors';
+import { CONFIG } from '../config';
+import type { ProductData } from '../types/index';
+
+export interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+}
 
 export function validateRequired(value: any, field: string): void {
   if (value === undefined || value === null || value === '') {
@@ -127,16 +134,59 @@ export function validateStore(data: any) {
   }
 }
 
-export function validateProduct(data: any) {
-  validateString(data.name, 'nombre', { minLength: 2, maxLength: 100 });
-  validateNumber(data.price, 'precio', { min: 0 });
-  validateNumber(data.stock, 'stock', { min: 0, integer: true });
-  
-  if (data.description) {
-    validateString(data.description, 'descripción', { maxLength: 1000 });
+export function validateProduct(data: Partial<ProductData>): ValidationResult {
+  const errors: string[] = [];
+
+  try {
+    validateString(data.nombre, 'nombre', { minLength: 2, maxLength: 100 });
+  } catch (err) {
+    errors.push((err as Error).message);
+  }
+
+  try {
+    validateNumber(data.precio, 'precio', { min: 0 });
+  } catch (err) {
+    errors.push((err as Error).message);
+  }
+
+  try {
+    validateNumber(data.stock, 'stock', { min: 0, integer: true });
+  } catch (err) {
+    errors.push((err as Error).message);
   }
   
-  if (data.image_url) {
-    validateImageUrl(data.image_url, 'imagen');
+  if (data.descripcion) {
+    try {
+      validateString(data.descripcion, 'descripción', { maxLength: 1000 });
+    } catch (err) {
+      errors.push((err as Error).message);
+    }
   }
-} 
+  
+  if (data.imagen) {
+    try {
+      validateImageUrl(data.imagen, 'imagen');
+    } catch (err) {
+      errors.push((err as Error).message);
+    }
+  }
+
+  return {
+    isValid: errors.length === 0,
+    errors,
+  };
+}
+
+export function validateImage(file: File): { isValid: boolean; error?: string } {
+  if (!file) return { isValid: false, error: 'No se proporcionó imagen' };
+  
+  if (!CONFIG.supportedImageTypes.includes(file.type)) {
+    return { isValid: false, error: 'Tipo de imagen no soportado' };
+  }
+
+  if (file.size > CONFIG.maxImageSize) {
+    return { isValid: false, error: 'La imagen supera el tamaño máximo' };
+  }
+
+  return { isValid: true };
+}

@@ -7,3 +7,5 @@ ADD COLUMN IF NOT EXISTS max_appointments_per_slot INTEGER DEFAULT 1;
 COMMENT ON COLUMN public.stores.allow_multiple_appointments IS 'Si permite múltiples turnos en el mismo horario';
 COMMENT ON COLUMN public.stores.max_appointments_per_slot IS 'Cantidad máxima de turnos simultáneos permitidos';
 
+
+

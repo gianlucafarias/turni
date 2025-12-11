@@ -2,10 +2,12 @@
 import DashboardLayout from '../../../layouts/DashboardLayout.astro'
 import EditProductForm from '../../../components/dashboard/EditProductForm'
 
-const { id } = Astro.params
+const { id = '' } = Astro.params
 ---
 
 <DashboardLayout title="Editar Producto">
   <EditProductForm client:load productId={id} />
 </DashboardLayout>
+
+
 

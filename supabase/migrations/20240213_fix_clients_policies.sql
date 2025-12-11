@@ -29,3 +29,5 @@ CREATE POLICY "Store owners can manage their clients" ON public.clients
 
 SELECT 'Políticas de clientes actualizadas!' as resultado;
 
+
+

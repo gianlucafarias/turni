@@ -61,8 +61,16 @@ import Layout from '../../layouts/Layout.astro'
   
   resendButton?.addEventListener('click', async () => {
     try {
+      const { data: { session } } = await supabase.auth.getSession()
+      const email = session?.user?.email
+      if (!email) {
+        alert('No pudimos obtener tu email de la sesión.')
+        return
+      }
+
       const { error } = await supabase.auth.resend({
-        type: 'signup'
+        type: 'signup',
+        email
       })
 
       if (error) throw error

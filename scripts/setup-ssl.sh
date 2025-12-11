@@ -36,3 +36,5 @@ chmod 600 nginx/ssl/privkey.pem
 echo "Certificado SSL configurado correctamente"
 echo "Reinicia nginx con: docker compose restart nginx"
 
+
+

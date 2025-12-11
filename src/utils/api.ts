@@ -1,4 +1,4 @@
-import type { ApiResponse } from '../types';
+import type { ApiResponse } from '../types/index';
 import { handleApiError } from './errors';
 
 export async function apiRequest<T>(
@@ -26,7 +26,9 @@ export async function apiRequest<T>(
 
     return data;
   } catch (error) {
-    return handleApiError(error);
+    return {
+      error: (error as Error)?.message || 'Error en la solicitud'
+    };
   }
 }
 

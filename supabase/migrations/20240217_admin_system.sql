@@ -273,3 +273,5 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 SELECT 'Sistema de admin creado correctamente' as resultado;
 
+
+

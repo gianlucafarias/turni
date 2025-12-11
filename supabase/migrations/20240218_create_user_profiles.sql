@@ -114,3 +114,5 @@ COMMENT ON COLUMN public.user_profiles.last_name IS 'Apellido del usuario';
 COMMENT ON COLUMN public.user_profiles.birth_date IS 'Fecha de nacimiento';
 COMMENT ON COLUMN public.user_profiles.provincia IS 'Provincia de residencia';
 COMMENT ON COLUMN public.user_profiles.localidad IS 'Ciudad/localidad de residencia';
+
+

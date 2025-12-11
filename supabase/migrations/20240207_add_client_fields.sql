@@ -12,3 +12,5 @@ COMMENT ON COLUMN public.appointments.client_email IS 'Correo electrónico del c
 COMMENT ON COLUMN public.appointments.client_location IS 'Localidad/ciudad del cliente';
 COMMENT ON COLUMN public.stores.show_prices IS 'Si mostrar precios en la página pública';
 
+
+

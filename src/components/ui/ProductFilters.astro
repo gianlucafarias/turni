@@ -66,9 +66,9 @@ const { showViewToggle = true, className = "" } = Astro.props;
 </div>
 
 <script>
-    const sortFilter = document.getElementById('sort-filter');
-    const estadoFilter = document.getElementById('estado-filter');
-    const ubicacionFilter = document.getElementById('ubicacion-filter');
+    const sortFilter = document.getElementById('sort-filter') as HTMLSelectElement | null;
+    const estadoFilter = document.getElementById('estado-filter') as HTMLSelectElement | null;
+    const ubicacionFilter = document.getElementById('ubicacion-filter') as HTMLInputElement | null;
     const viewList = document.getElementById('view-list');
     const viewGrid = document.getElementById('view-grid');
     const productsContainer = document.querySelector('.products-container');

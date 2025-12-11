@@ -318,3 +318,5 @@ UPDATE public.clients c SET
 
 SELECT 'Tablas de clientes creadas correctamente!' as resultado;
 
+
+

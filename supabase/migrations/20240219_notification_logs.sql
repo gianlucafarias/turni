@@ -353,3 +353,5 @@ COMMENT ON FUNCTION public.append_notification_status_history IS 'Agrega entrada
 
 SELECT 'Tablas de notificaciones creadas correctamente!' as resultado;
 
+
+

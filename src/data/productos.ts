@@ -19,6 +19,9 @@ export interface Producto {
     valoracion: number;
     numResenas: number;
     caracteristicas: string[];
+    ubicacion?: string;
+    estado?: 'nuevo' | 'usado' | 'reacondicionado';
+    fecha?: string;
 }
 
 export const categorias: Categoria[] = [

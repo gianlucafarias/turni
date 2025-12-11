@@ -118,7 +118,7 @@ const { productData, planData, whatsappNumber } = Astro.props;
     </div>
 </div> 
 
-<script>
+<script define:vars={{ planData, productData }}>
     const whatsappBtn = document.getElementById('whatsapp-payment');
     const mpBtn = document.getElementById('mp-payment');
     const mpContainer = document.getElementById('mp-checkout-container');
@@ -132,6 +132,7 @@ const { productData, planData, whatsappNumber } = Astro.props;
     mpBtn?.addEventListener('click', async () => {
         try {
             // Obtener preferencia de Mercado Pago
+            const paymentMethodInput = document.querySelector<HTMLInputElement>('input[name="paymentMethod"]:checked');
             const response = await fetch('/api/mercadopago/create-preference', {
                 method: 'POST',
                 headers: {
@@ -140,7 +141,7 @@ const { productData, planData, whatsappNumber } = Astro.props;
                 body: JSON.stringify({
                     plan: planData,
                     productData,
-                    paymentMethod: document.querySelector('input[name="paymentMethod"]:checked')?.value
+                    paymentMethod: paymentMethodInput?.value || 'efectivo'
                 })
             });
 
@@ -150,16 +151,19 @@ const { productData, planData, whatsappNumber } = Astro.props;
             mpContainer?.classList.remove('hidden');
             
             // Inicializar checkout
-            const mp = new MercadoPago(import.meta.env.PUBLIC_MERCADOPAGO_PUBLIC_KEY);
-            mp.checkout({
-                preference: {
-                    id: preferenceId
-                },
-                render: {
-                    container: '#mp-checkout-container',
-                    label: 'Pagar con Mercado Pago',
-                }
-            });
+            const MpConstructor = window.MercadoPago;
+            if (MpConstructor) {
+                const mp = new MpConstructor(import.meta.env.PUBLIC_MERCADOPAGO_PUBLIC_KEY);
+                mp.checkout({
+                    preference: {
+                        id: preferenceId
+                    },
+                    render: {
+                        container: '#mp-checkout-container',
+                        label: 'Pagar con Mercado Pago',
+                    }
+                });
+            }
         } catch (error) {
             console.error('Error al iniciar el pago:', error);
             alert('Error al iniciar el pago. Por favor intente nuevamente.');

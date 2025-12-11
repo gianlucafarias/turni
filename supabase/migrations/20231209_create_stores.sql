@@ -56,3 +56,5 @@ CREATE POLICY "Public can view stores"
     FOR SELECT
     USING (true);
 
+
+

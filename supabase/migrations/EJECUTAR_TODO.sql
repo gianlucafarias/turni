@@ -160,3 +160,5 @@ CREATE POLICY "Anyone can view appointments" ON public.appointments
 -- =====================
 SELECT 'Todas las migraciones ejecutadas correctamente!' as resultado;
 
+
+

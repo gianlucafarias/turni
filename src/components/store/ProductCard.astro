@@ -1,16 +1,25 @@
 ---
 interface Props {
   id: string;
-  storeId: string;
+  storeId?: string;
   name: string;
   price: number;
   imageUrl?: string;
   description?: string;
-  stock: number;
-  active: boolean;
+  stock?: number;
+  active?: boolean;
 }
 
-const { id, storeId, name, price, imageUrl, description, stock, active } = Astro.props;
+const {
+  id,
+  storeId = 'store',
+  name,
+  price,
+  imageUrl,
+  description,
+  stock = 0,
+  active = false
+} = Astro.props;
 ---
 
 <div class="group relative">

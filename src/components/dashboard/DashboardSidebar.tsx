@@ -4,12 +4,14 @@ import { PremiumBadge } from './UpgradePrompt'
 
 interface Props {
   currentPath: string
+  isOpen?: boolean
+  onClose?: () => void
 }
 
-export default function DashboardSidebar({ currentPath }: Props) {
+export default function DashboardSidebar({ currentPath, isOpen, onClose }: Props) {
   const [store, setStore] = useState<any>(null)
   const [isPremium, setIsPremium] = useState(false)
-  const [isMobileOpen, setIsMobileOpen] = useState(false)
+  const [isMobileOpen, setIsMobileOpen] = useState(isOpen ?? false)
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -60,9 +62,20 @@ export default function DashboardSidebar({ currentPath }: Props) {
     return null
   }
 
+  // Sincronizar estado externo si se proporciona
+  useEffect(() => {
+    if (isOpen !== undefined) {
+      setIsMobileOpen(isOpen)
+    }
+  }, [isOpen])
+
   const handleLinkClick = () => {
     if (window.innerWidth < 768) {
-      setIsMobileOpen(false)
+      if (onClose) {
+        onClose()
+      } else {
+        setIsMobileOpen(false)
+      }
     }
   }
 

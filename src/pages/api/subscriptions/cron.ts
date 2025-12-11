@@ -71,3 +71,5 @@ export const GET: APIRoute = async ({ request }) => {
 // También soportar POST para mayor compatibilidad con servicios de cron
 export const POST = GET;
 
+
+

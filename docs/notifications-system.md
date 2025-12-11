@@ -313,3 +313,5 @@ npm run test
 - Si WhatsApp falla, se intenta email automáticamente
 - Loguear todos los intentos para debugging
 
+
+

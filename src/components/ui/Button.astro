@@ -64,7 +64,8 @@ const sizes = {
         const button = target.closest('[data-action]') as HTMLButtonElement;
         
         if (!button) return;
-        
+
+        let originalContent = '';
         try {
             const action = JSON.parse(button.dataset.action || '{}');
             if (!action.type) return;
