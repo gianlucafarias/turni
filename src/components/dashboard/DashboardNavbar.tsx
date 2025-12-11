@@ -87,8 +87,8 @@ export default function DashboardNavbar({ currentPath, onMenuClick }: Props) {
     e.preventDefault()
     try {
       setLogoutLoading(true)
-      const { error } = await supabase.auth.signOut()
-      if (error) throw error
+      await supabase.auth.signOut({ scope: 'global' }).catch(() => {})
+      await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
       window.location.href = '/login'
     } catch (error) {
       console.error('Error al cerrar sesión:', error)

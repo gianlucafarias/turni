@@ -52,10 +52,15 @@ export async function signUp(email: string, password: string) {
   return { user: data.user, session: data.session }
 }
 
-// Función para cerrar sesión
+// Función para cerrar sesión (tolerante a ausencia de sesión local)
 export async function signOut() {
-  const { error } = await supabase.auth.signOut()
-  if (error) throw error
+  const { error } = await supabase.auth.signOut({ scope: 'global' })
+  if (error && error.message !== 'Auth session missing!') {
+    throw error
+  }
+  // Limpiar sesión local por si acaso
+  await supabase.auth.signOut({ scope: 'local' }).catch(() => {})
+  supabase.auth.onAuthStateChange(() => {}) // noop para forzar ciclo
 }
 
 // Función para obtener la tienda del usuario actual
