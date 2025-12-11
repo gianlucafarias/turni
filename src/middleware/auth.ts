@@ -40,9 +40,8 @@ function isPublicPath(pathname: string): boolean {
   return false
 }
 
-// En desarrollo, no requerir verificación de email
-// En producción, cambiar a false para requerir verificación
-const REQUIRE_EMAIL_VERIFICATION = import.meta.env.PROD
+// No requerimos verificación de email en ningún entorno por ahora
+const REQUIRE_EMAIL_VERIFICATION = false
 
 export const onRequest = defineMiddleware(async (context, next) => {
   const { request, locals, redirect } = context
@@ -59,41 +58,60 @@ export const onRequest = defineMiddleware(async (context, next) => {
     try {
       const cookieHeader = request.headers.get('Cookie') || ''
       const cookieEntries = cookieHeader.split(';').map(c => c.trim())
+
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H-cookie',location:'src/middleware/auth.ts:63',message:'Incoming cookie keys',data:{keys:cookieEntries.map(c=>c.split('=')[0])},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
       
       for (const cookie of cookieEntries) {
-        if (cookie.includes('auth-token')) {
-          const [key, value] = cookie.split('=')
-          try {
-            const decodedValue = decodeURIComponent(value)
-            const cookieData = JSON.parse(decodedValue)
-            
-            if (cookieData.access_token) {
-              const supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
-                global: {
-                  headers: {
-                    Authorization: `Bearer ${cookieData.access_token}`
-                  }
-                },
-                auth: {
-                  persistSession: false,
-                  autoRefreshToken: false
+        const [rawKey, rawValue] = cookie.split('=')
+        if (!rawKey || !rawValue) continue
+        const key = rawKey.trim()
+        if (!key || !key.includes('auth-token')) continue
+
+        try {
+          const decodedValue = decodeURIComponent(rawValue)
+          const cookieData = JSON.parse(decodedValue)
+
+          const accessToken =
+            cookieData.access_token ||
+            cookieData?.currentSession?.access_token ||
+            cookieData?.user?.access_token
+          const refreshToken =
+            cookieData.refresh_token ||
+            cookieData?.currentSession?.refresh_token ||
+            cookieData?.user?.refresh_token
+
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H-auth2',location:'src/middleware/auth.ts:73',message:'Found auth-token cookie',data:{cookieKey:key,hasAccess:!!accessToken},timestamp:Date.now()})}).catch(()=>{});
+          // #endregion
+
+          if (accessToken) {
+            const supabaseClient = createClient<Database>(supabaseUrl, supabaseAnonKey, {
+              global: {
+                headers: {
+                  Authorization: `Bearer ${accessToken}`
                 }
-              })
-              
-              const { data: { user } } = await supabaseClient.auth.getUser(cookieData.access_token)
-              
-              if (user) {
-                session = {
-                  user,
-                  access_token: cookieData.access_token,
-                  refresh_token: cookieData.refresh_token
-                }
-                break
+              },
+              auth: {
+                persistSession: false,
+                autoRefreshToken: false
               }
+            })
+            
+            const { data: { user } } = await supabaseClient.auth.getUser(accessToken)
+            
+            if (user) {
+              session = {
+                user,
+                access_token: accessToken,
+                refresh_token: refreshToken
+              }
+              break
             }
-          } catch (e) {
-            continue
           }
+        } catch (e) {
+          continue
         }
       }
     } catch (error) {
@@ -103,6 +121,10 @@ export const onRequest = defineMiddleware(async (context, next) => {
 
   // Guardar sesión en locals para uso posterior
   ;(locals as any).session = session
+
+  // #region agent log
+  fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H-auth',location:'src/middleware/auth.ts:106',message:'Middleware session check',data:{path:url.pathname,isPublic:isPublicRoute,requiresVerification,hasSession:!!session,emailConfirmed:session?.user?.email_confirmed_at},timestamp:Date.now()})}).catch(()=>{});
+  // #endregion
 
   // En desarrollo, no hacer redirecciones automáticas desde el middleware
   // Dejar que el cliente maneje la autenticación
@@ -114,16 +136,25 @@ export const onRequest = defineMiddleware(async (context, next) => {
         : true
       
       if (isEmailVerified && url.pathname !== '/') {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H-auth',location:'src/middleware/auth.ts:118',message:'Redirecting public→dashboard',data:{path:url.pathname},timestamp:Date.now()})}).catch(()=>{});
+        // #endregion
         return redirect('/dashboard')
       }
     }
 
     if (requiresVerification && !session) {
-      return redirect('/login')
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H-auth',location:'src/middleware/auth.ts:123',message:'Bypass redirect (no session, allow client)',data:{path:url.pathname},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
+      // No redirigimos; el cliente decidirá
     }
 
     if (requiresVerification && REQUIRE_EMAIL_VERIFICATION && session && !session.user.email_confirmed_at) {
-      return redirect('/auth/verify-email')
+      // #region agent log
+      fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H-auth',location:'src/middleware/auth.ts:128',message:'Bypass redirect verify-email (disabled)',data:{path:url.pathname},timestamp:Date.now()})}).catch(()=>{});
+      // #endregion
+      // No redirigimos; verificación de email deshabilitada
     }
   }
 

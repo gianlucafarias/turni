@@ -13,6 +13,7 @@ export default function DashboardSidebar({ currentPath, isOpen, onClose }: Props
   const [isPremium, setIsPremium] = useState(false)
   const [isMobileOpen, setIsMobileOpen] = useState(isOpen ?? false)
   const [loading, setLoading] = useState(false)
+  const storeType = store?.store_type ?? 'products'
 
   useEffect(() => {
     async function loadStore() {
@@ -20,8 +21,15 @@ export default function DashboardSidebar({ currentPath, isOpen, onClose }: Props
         const { data: { session } } = await supabase.auth.getSession()
         
         if (!session) {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'sidebar',hypothesisId:'H-sidebar',location:'DashboardSidebar:loadStore',message:'No session in sidebar',data:{},timestamp:Date.now()})}).catch(()=>{})
+          // #endregion
           return
         }
+
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'sidebar',hypothesisId:'H-sidebar',location:'DashboardSidebar:loadStore',message:'Session found',data:{userId:session.user.id},timestamp:Date.now()})}).catch(()=>{})
+        // #endregion
 
         const { data: storeData } = await supabase
           .from('stores')
@@ -30,6 +38,17 @@ export default function DashboardSidebar({ currentPath, isOpen, onClose }: Props
           .single()
 
         setStore(storeData)
+        
+        if (!storeData) {
+          // #region agent log
+          fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'sidebar',hypothesisId:'H-sidebar',location:'DashboardSidebar:loadStore',message:'No store for user',data:{userId:session.user.id},timestamp:Date.now()})}).catch(()=>{})
+          // #endregion
+          return
+        }
+        
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'sidebar',hypothesisId:'H-sidebar',location:'DashboardSidebar:loadStore',message:'Store loaded',data:{storeId:storeData.id,storeType:storeData.store_type},timestamp:Date.now()})}).catch(()=>{})
+        // #endregion
         
         if (storeData) {
           const { data: subscription } = await supabase
@@ -42,6 +61,9 @@ export default function DashboardSidebar({ currentPath, isOpen, onClose }: Props
           setIsPremium(subscription?.status === 'active' && premiumPlans.includes(subscription?.plan_id))
         }
       } catch (error) {
+        // #region agent log
+        fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'sidebar',hypothesisId:'H-sidebar',location:'DashboardSidebar:loadStore',message:'Error loading sidebar',data:{error: String(error)},timestamp:Date.now()})}).catch(()=>{})
+        // #endregion
         console.error('Error cargando tienda:', error)
       }
     }
@@ -57,10 +79,6 @@ export default function DashboardSidebar({ currentPath, isOpen, onClose }: Props
       window.removeEventListener('toggle-sidebar', handleToggle as EventListener)
     }
   }, [])
-
-  if (!store) {
-    return null
-  }
 
   // Sincronizar estado externo si se proporciona
   useEffect(() => {
@@ -114,11 +132,11 @@ export default function DashboardSidebar({ currentPath, isOpen, onClose }: Props
       {/* Sección catálogo/turnos */}
       <div className="pt-4">
         <p className="px-3 mb-2 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-          {store.store_type === 'products' ? 'Catálogo' : 'Turnos'}
+          {storeType === 'products' ? 'Catálogo' : 'Turnos'}
         </p>
       </div>
 
-      {store.store_type === 'products' ? (
+      {storeType === 'products' ? (
         <>
           <a
             href="/dashboard/products"
@@ -275,10 +293,20 @@ export default function DashboardSidebar({ currentPath, isOpen, onClose }: Props
       )}
 
       {/* Sidebar Desktop - altura completa */}
-      <aside className="hidden md:block w-64 flex-shrink-0">
+      <aside className="hidden md:block w-64 flex-shrink-0 h-full">
         <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 h-full flex flex-col justify-between">
-          {mainLinks}
-          {bottomLinks}
+          {store ? (
+            <>
+              {mainLinks}
+              {bottomLinks}
+            </>
+          ) : (
+            <div className="space-y-3">
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2"></div>
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+              <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3"></div>
+            </div>
+          )}
         </div>
       </aside>
 
@@ -301,8 +329,18 @@ export default function DashboardSidebar({ currentPath, isOpen, onClose }: Props
             </button>
           </div>
           <div className="flex-1 flex flex-col justify-between p-4 overflow-y-auto">
-            {mainLinks}
-            {bottomLinks}
+            {store ? (
+              <>
+                {mainLinks}
+                {bottomLinks}
+              </>
+            ) : (
+              <div className="space-y-3">
+                <div className="h-4 bg-gray-200 rounded animate-pulse w-1/2"></div>
+                <div className="h-4 bg-gray-200 rounded animate-pulse w-3/4"></div>
+                <div className="h-4 bg-gray-200 rounded animate-pulse w-2/3"></div>
+              </div>
+            )}
           </div>
         </div>
       </aside>
