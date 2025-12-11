@@ -42,11 +42,11 @@ const currentPath = Astro.url.pathname;
       </a>
 
       <!-- Navigation -->
-      <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-2 sm:space-x-4">
         <a
           href="/pricing"
           class:list={[
-            'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+            'px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all',
             currentPath === '/pricing'
               ? 'bg-brand-50 text-brand-600 shadow-sm'
               : 'text-surface-600 hover:text-surface-900 hover:bg-surface-50'
@@ -59,11 +59,11 @@ const currentPath = Astro.url.pathname;
         <UserMenu client:load store={initialStore ? { id: initialStore.id } : undefined} />
         
         <!-- Botones de autenticación (se ocultan si hay sesión del lado del cliente) -->
-        <div id="auth-buttons" class="flex items-center space-x-3" data-auth-fallback>
+        <div id="auth-buttons" class="flex items-center space-x-2 sm:space-x-3" data-auth-fallback>
           <a
             href="/login"
             class:list={[
-              'px-4 py-2 rounded-lg text-sm font-medium transition-all',
+              'px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap',
               currentPath === '/login'
                 ? 'bg-brand-50 text-brand-600 shadow-sm'
                 : 'text-surface-600 hover:text-surface-900 hover:bg-surface-50'
@@ -73,7 +73,7 @@ const currentPath = Astro.url.pathname;
           </a>
           <a
             href="/registro"
-            class="px-5 py-2.5 rounded-lg text-sm font-semibold text-white bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 shadow-md hover:shadow-lg transition-all"
+            class="px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-lg text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 shadow-md hover:shadow-lg transition-all whitespace-nowrap"
           >
             Empezar gratis
           </a>

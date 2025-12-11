@@ -487,8 +487,19 @@ export default function MultiStepRegisterForm() {
 
       if (!authData.user?.id) throw new Error('No se pudo crear el usuario')
 
-      // 2. Esperar un momento para que se establezca la sesión
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      // 2. Esperar y verificar que la sesión esté establecida
+      await new Promise(resolve => setTimeout(resolve, 1500))
+      
+      // Verificar sesión antes de continuar
+      const { data: { session } } = await supabase.auth.getSession()
+      if (!session) {
+        // Si no hay sesión, esperar un poco más
+        await new Promise(resolve => setTimeout(resolve, 1000))
+        const { data: { session: retrySession } } = await supabase.auth.getSession()
+        if (!retrySession) {
+          throw new Error('No se pudo establecer la sesión. Por favor intentá de nuevo.')
+        }
+      }
 
       // 3. Crear tienda
       const categoryName = BUSINESS_CATEGORIES.find(c => c.id === formData.businessCategory)?.name || formData.businessCategory
@@ -532,21 +543,32 @@ export default function MultiStepRegisterForm() {
           })
         }
 
-        // Crear horarios
-        for (const day of formData.workDays) {
-          await supabase.from('schedules').insert({
+        // Crear horarios - insertar todos de una vez
+        if (formData.workDays.length > 0) {
+          const schedulesToInsert = formData.workDays.map(day => ({
             store_id: store.id,
             day: day,
             enabled: true,
             is_continuous: formData.isContinuous,
-            start_time: formData.isContinuous ? formData.startTime : null,
-            end_time: formData.isContinuous ? formData.endTime : null,
+            // Si es continuo, usar start_time y end_time
+            // Si es dividido, usar los horarios de mañana y tarde
+            start_time: formData.isContinuous ? formData.startTime : formData.morningStart,
+            end_time: formData.isContinuous ? formData.endTime : formData.afternoonEnd,
             morning_start: formData.isContinuous ? null : formData.morningStart,
             morning_end: formData.isContinuous ? null : formData.morningEnd,
             afternoon_start: formData.isContinuous ? null : formData.afternoonStart,
             afternoon_end: formData.isContinuous ? null : formData.afternoonEnd,
             slot_duration: formData.serviceDuration,
-          })
+          }))
+
+          const { error: schedulesError } = await supabase
+            .from('schedules')
+            .insert(schedulesToInsert)
+
+          if (schedulesError) {
+            console.error('Error creando horarios:', schedulesError)
+            throw new Error(`Error al crear los horarios: ${schedulesError.message}`)
+          }
         }
 
         // Marcar setup como completado si tiene servicio y horarios
