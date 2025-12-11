@@ -15,21 +15,29 @@ export default function DashboardSidebar({ currentPath, isOpen, onClose }: Props
   const [loading, setLoading] = useState(false)
   const storeType = store?.store_type ?? 'products'
 
+  const logDebug = (payload: Record<string, unknown>) => {
+    if (typeof window !== 'undefined') {
+      const h = window.location.hostname
+      if (h !== 'localhost' && h !== '127.0.0.1') return
+    }
+    fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify(payload)
+    }).catch(()=>{})
+  }
+
   useEffect(() => {
     async function loadStore() {
       try {
         const { data: { session } } = await supabase.auth.getSession()
         
         if (!session) {
-          // #region agent log
-          fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'sidebar',hypothesisId:'H-sidebar',location:'DashboardSidebar:loadStore',message:'No session in sidebar',data:{},timestamp:Date.now()})}).catch(()=>{})
-          // #endregion
+          logDebug({sessionId:'debug-session',runId:'sidebar',hypothesisId:'H-sidebar',location:'DashboardSidebar:loadStore',message:'No session in sidebar',data:{},timestamp:Date.now()})
           return
         }
 
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'sidebar',hypothesisId:'H-sidebar',location:'DashboardSidebar:loadStore',message:'Session found',data:{userId:session.user.id},timestamp:Date.now()})}).catch(()=>{})
-        // #endregion
+        logDebug({sessionId:'debug-session',runId:'sidebar',hypothesisId:'H-sidebar',location:'DashboardSidebar:loadStore',message:'Session found',data:{userId:session.user.id},timestamp:Date.now()})
 
         const { data: storeData } = await supabase
           .from('stores')
@@ -46,9 +54,7 @@ export default function DashboardSidebar({ currentPath, isOpen, onClose }: Props
           return
         }
         
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'sidebar',hypothesisId:'H-sidebar',location:'DashboardSidebar:loadStore',message:'Store loaded',data:{storeId:storeData.id,storeType:storeData.store_type},timestamp:Date.now()})}).catch(()=>{})
-        // #endregion
+        logDebug({sessionId:'debug-session',runId:'sidebar',hypothesisId:'H-sidebar',location:'DashboardSidebar:loadStore',message:'Store loaded',data:{storeId:storeData.id,storeType:storeData.store_type},timestamp:Date.now()})
         
         if (storeData) {
           const { data: subscription } = await supabase
@@ -61,9 +67,7 @@ export default function DashboardSidebar({ currentPath, isOpen, onClose }: Props
           setIsPremium(subscription?.status === 'active' && premiumPlans.includes(subscription?.plan_id))
         }
       } catch (error) {
-        // #region agent log
-        fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'sidebar',hypothesisId:'H-sidebar',location:'DashboardSidebar:loadStore',message:'Error loading sidebar',data:{error: String(error)},timestamp:Date.now()})}).catch(()=>{})
-        // #endregion
+        logDebug({sessionId:'debug-session',runId:'sidebar',hypothesisId:'H-sidebar',location:'DashboardSidebar:loadStore',message:'Error loading sidebar',data:{error: String(error)},timestamp:Date.now()})
         console.error('Error cargando tienda:', error)
       }
     }

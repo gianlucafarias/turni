@@ -37,20 +37,27 @@ export default function AuthForm({ type }: AuthFormProps) {
         window.location.href = store ? '/dashboard/products' : '/setup/store'
       } else {
         // Registrar usuario
-        const { user } = await signUp(email, password)
-        if (!user) throw new Error('No se pudo crear el usuario')
+        const { user, session, confirmationSent, alreadyRegistered } = await signUp(email, password)
+        if (!user && !session && !confirmationSent) throw new Error('No se pudo crear el usuario')
 
-        setSuccess(
-          'Te hemos enviado un email de confirmación. Por favor revisa tu bandeja de entrada.'
-        )
+        if (alreadyRegistered) {
+          setSuccess('Ya hay una cuenta con este email. Te reenviamos el correo de confirmación.')
+        } else if (confirmationSent) {
+          setSuccess('Te hemos enviado un email de confirmación. Por favor revisa tu bandeja de entrada.')
+        } else {
+          setSuccess('Cuenta creada. Puedes iniciar sesión.')
+        }
       }
     } catch (error: any) {
-      console.error('Error:', error)
+      console.error('Error en AuthForm:', error)
+      if (typeof window !== 'undefined' && (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')) {
+        fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'auth',hypothesisId:'H-signup',location:'AuthForm:submit',message:'Error en auth',data:{type,errorMessage:error?.message,errorName:error?.name},timestamp:Date.now()})}).catch(()=>{})
+      }
       if (error.message.includes('Invalid login credentials')) {
         setError('Email o contraseña incorrectos')
       } else if (error.message.includes('Email not confirmed')) {
         setError('Por favor confirma tu email antes de iniciar sesión')
-      } else if (error.message.includes('already registered')) {
+      } else if (error.message.includes('already registered') || error.message.includes('User already registered')) {
         setError('Ya existe una cuenta con este email')
       } else {
         setError(error.message || 'Ocurrió un error inesperado')

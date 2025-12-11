@@ -45,11 +45,20 @@ export async function signUp(email: string, password: string) {
   const { data, error } = await supabase.auth.signUp({
     email,
     password,
+    options: {
+      emailRedirectTo: `${import.meta.env.PUBLIC_SITE_URL || window?.location.origin || ''}/auth/callback`
+    }
   })
+
+  if (error && error.message?.includes('already registered')) {
+    // Reenviar correo de confirmación si ya existe el usuario
+    await supabase.auth.resend({ type: 'signup', email }).catch(() => {})
+    return { user: null, session: null, confirmationSent: true, alreadyRegistered: true }
+  }
 
   if (error) throw error
 
-  return { user: data.user, session: data.session }
+  return { user: data.user, session: data.session, confirmationSent: !!data.user && !data.session }
 }
 
 // Función para cerrar sesión (tolerante a ausencia de sesión local)

@@ -4,9 +4,12 @@ import type { ProductData } from '../types/index';
 export const searchProducts = (query: string, filters: SearchFilters = {}): ProductData[] => {
     const searchTerm = query.toLowerCase();
 
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H1',location:'src/utils/search.ts:6',message:'searchProducts called',data:{query,filtersKeys:Object.keys(filters),sampleProducto:productos[0]?.nombre},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
+    if (typeof window !== 'undefined') {
+        const h = window.location.hostname;
+        if (h === 'localhost' || h === '127.0.0.1') {
+            fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H1',location:'src/utils/search.ts:6',message:'searchProducts called',data:{query,filtersKeys:Object.keys(filters),sampleProducto:productos[0]?.nombre},timestamp:Date.now()})}).catch(()=>{});
+        }
+    }
     
     return productos.filter(producto => {
         // Búsqueda por texto

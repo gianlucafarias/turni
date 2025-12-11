@@ -48,9 +48,12 @@ class PublicationStore {
 
     setProductData(data: ProductData): void {
         this.productData = data;
-    // #region agent log
-    fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H1',location:'src/store/publicationStore.ts:50',message:'setProductData called',data:{step:this.currentStep,hasWhatsapp:!!data.whatsapp,hasCaracteristicas:Array.isArray(data.caracteristicas)},timestamp:Date.now()})}).catch(()=>{});
-    // #endregion
+        if (typeof window !== 'undefined') {
+            const h = window.location.hostname
+            if (h === 'localhost' || h === '127.0.0.1') {
+                fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H1',location:'src/store/publicationStore.ts:50',message:'setProductData called',data:{step:this.currentStep,hasWhatsapp:!!data.whatsapp,hasCaracteristicas:Array.isArray(data.caracteristicas)},timestamp:Date.now()})}).catch(()=>{})
+            }
+        }
         showNotification('Información del producto guardada', 'success');
     }
 

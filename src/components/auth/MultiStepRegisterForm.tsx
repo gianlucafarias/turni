@@ -168,14 +168,20 @@ interface FormData {
   storeName: string
   storeType: 'products' | 'appointments'
   storeDescription: string
+  slug: string
   
   // Paso 3: Config inicial (para turnos)
   initialService: string
   serviceDuration: number
   servicePrice: number
   workDays: number[]
+  isContinuous: boolean
   startTime: string
   endTime: string
+  morningStart: string
+  morningEnd: string
+  afternoonStart: string
+  afternoonEnd: string
   
   // Paso 4: Plan
   selectedPlan: string
@@ -185,6 +191,7 @@ export default function MultiStepRegisterForm() {
   const [currentStep, setCurrentStep] = useState(1)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [slugError, setSlugError] = useState<string | null>(null)
   const [checkingEmail, setCheckingEmail] = useState(false)
   
   const [formData, setFormData] = useState<FormData>({
@@ -203,13 +210,19 @@ export default function MultiStepRegisterForm() {
     storeName: '',
     storeType: 'appointments',
     storeDescription: '',
+    slug: '',
     // Paso 3
     initialService: '',
     serviceDuration: 30,
     servicePrice: 0,
     workDays: [0, 1, 2, 3, 4], // Lunes a Viernes por defecto
+    isContinuous: true,
     startTime: '09:00',
     endTime: '18:00',
+    morningStart: '09:00',
+    morningEnd: '13:00',
+    afternoonStart: '16:00',
+    afternoonEnd: '20:00',
     // Paso 4
     selectedPlan: 'free',
   })
@@ -230,40 +243,81 @@ export default function MultiStepRegisterForm() {
     }))
   }
 
-  const checkEmailExists = async (email: string): Promise<boolean> => {
-    try {
-      // Intentar iniciar sesión con password incorrecto
-      // Si el email existe, Supabase devolverá "Invalid login credentials"
-      // Si no existe, devolverá otro error
-      const { error } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password: 'dummy_password_check_12345' // Password dummy solo para verificar existencia
-      })
-      
-      if (!error) {
-        // Si no hay error, algo raro pasó, pero asumimos que existe
-        return true
-      }
-      
-      // Si el error es "Invalid login credentials", significa que el email existe
-      // pero la contraseña es incorrecta (que es lo que esperamos)
-      if (error.message?.includes('Invalid login credentials')) {
-        return true
-      }
-      
-      // Si el error es "Email not confirmed", también significa que existe
-      if (error.message?.includes('Email not confirmed')) {
-        return true
-      }
-      
-      // Cualquier otro error probablemente significa que el email no existe
-      return false
-    } catch (err) {
-      // Si hay un error inesperado, asumimos que no existe para no bloquear el registro
-      console.log('Error verificando email:', err)
+  // Validar slug
+  const validateSlug = async (newSlug: string): Promise<boolean> => {
+    if (!newSlug.trim()) {
+      setSlugError(null)
+      return true // El slug es opcional
+    }
+
+    // Validar formato
+    const slugRegex = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+    if (!slugRegex.test(newSlug)) {
+      setSlugError('Solo letras minúsculas, números y guiones')
       return false
     }
+
+    // Verificar que no sea un UUID (reservado)
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (uuidRegex.test(newSlug)) {
+      setSlugError('No puedes usar un ID como URL')
+      return false
+    }
+
+    // Verificar disponibilidad
+    const { data: existing } = await supabase
+      .from('stores')
+      .select('id')
+      .eq('slug', newSlug)
+      .single()
+
+    if (existing) {
+      setSlugError('Esta URL ya está en uso')
+      return false
+    }
+
+    setSlugError(null)
+    return true
   }
+
+  // Formatear slug automáticamente
+  const handleSlugChange = async (value: string) => {
+    // Auto-formatear: minúsculas, sin espacios
+    const formatted = value.toLowerCase()
+      .replace(/\s+/g, '-')
+      .replace(/[^a-z0-9-]/g, '')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, '')
+    
+    updateField('slug', formatted)
+    
+    if (formatted) {
+      await validateSlug(formatted)
+    } else {
+      setSlugError(null)
+    }
+  }
+
+  // Verificar si el email ya existe en la base de datos
+  const checkEmailExists = async (email: string): Promise<boolean> => {
+    try {
+      const { data, error } = await supabase.rpc('check_email_exists', {
+        p_email: email.trim().toLowerCase()
+      })
+      
+      if (error) {
+        console.error('Error verificando email:', error)
+        return false // Si hay error, asumimos que no existe para no bloquear
+      }
+      
+      return data === true
+    } catch (err) {
+      console.error('Error verificando email:', err)
+      return false // Si hay error, asumimos que no existe para no bloquear
+    }
+  }
+
+
 
   const validateStep = async (step: number): Promise<boolean> => {
     switch (step) {
@@ -294,12 +348,11 @@ export default function MultiStepRegisterForm() {
           setError('Las contraseñas no coinciden')
           return false
         }
+        
         // Verificar si el email ya existe
         setCheckingEmail(true)
         setError(null)
         try {
-          // Intentar crear usuario temporalmente para verificar si existe
-          // Mejor usar una función que verifique directamente
           const emailExists = await checkEmailExists(formData.email.trim())
           if (emailExists) {
             setError('Ya existe una cuenta con este correo electrónico. ¿Querés iniciar sesión?')
@@ -319,6 +372,15 @@ export default function MultiStepRegisterForm() {
         }
         if (!formData.storeName.trim() || formData.storeName.length < 3) {
           setError('El nombre de la tienda debe tener al menos 3 caracteres')
+          return false
+        }
+        // Validar slug si se proporcionó
+        if (formData.slug.trim() && slugError) {
+          setError('Por favor corrige el error en la URL personalizada')
+          return false
+        }
+        if (formData.slug.trim() && !(await validateSlug(formData.slug.trim()))) {
+          setError('Por favor corrige el error en la URL personalizada')
           return false
         }
         return true
@@ -355,12 +417,31 @@ export default function MultiStepRegisterForm() {
     setError(null)
 
     try {
+      // Validaciones mínimas antes de llamar a Supabase
+      if (!formData.email || !formData.password || !formData.confirmPassword) {
+        setError('Completá email y contraseña')
+        setLoading(false)
+        return
+      }
+      if (formData.password.length < 6) {
+        setError('La contraseña debe tener al menos 6 caracteres')
+        setLoading(false)
+        return
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setError('Las contraseñas no coinciden')
+        setLoading(false)
+        return
+      }
+
       // 1. Crear usuario
       const trimmedEmail = formData.email.trim().toLowerCase()
+      const redirectBase = typeof window !== 'undefined' ? window.location.origin : ''
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: trimmedEmail,
         password: formData.password,
         options: {
+          emailRedirectTo: `${redirectBase}/auth/callback`,
           data: {
             first_name: formData.firstName,
             last_name: formData.lastName,
@@ -372,7 +453,38 @@ export default function MultiStepRegisterForm() {
         }
       })
 
-      if (authError) throw authError
+      if (authError) {
+        const msg = (authError.message || '').toLowerCase()
+        console.error('Supabase signup error:', authError)
+        
+        // Manejar diferentes tipos de errores
+        if (msg.includes('already registered') || 
+            msg.includes('user already registered') || 
+            msg.includes('already exists') ||
+            msg.includes('email address is already registered')) {
+          setError('Ya existe una cuenta con este correo electrónico. ¿Querés iniciar sesión?')
+          setLoading(false)
+          return
+        }
+        
+        if (msg.includes('invalid email') || msg.includes('email address')) {
+          setError('El correo electrónico no es válido. Por favor verifica que esté escrito correctamente.')
+          setLoading(false)
+          return
+        }
+        
+        if (msg.includes('password')) {
+          setError('La contraseña debe tener al menos 6 caracteres')
+          setLoading(false)
+          return
+        }
+        
+        // Mostrar el mensaje exacto de Supabase
+        setError(authError.message || 'Error al crear la cuenta')
+        setLoading(false)
+        return
+      }
+
       if (!authData.user?.id) throw new Error('No se pudo crear el usuario')
 
       // 2. Esperar un momento para que se establezca la sesión
@@ -380,21 +492,28 @@ export default function MultiStepRegisterForm() {
 
       // 3. Crear tienda
       const categoryName = BUSINESS_CATEGORIES.find(c => c.id === formData.businessCategory)?.name || formData.businessCategory
+      const storeData: any = {
+        name: formData.storeName,
+        user_id: authData.user.id,
+        store_type: formData.storeType,
+        plan: formData.selectedPlan === 'free' ? 'free' : 'premium',
+        products_count: 0,
+        setup_completed: false, // Se completará después de configurar servicios
+        description: formData.storeDescription || `Negocio de ${categoryName}`,
+        location: formData.localidad && formData.provincia 
+          ? `${formData.localidad}, ${formData.provincia}` 
+          : '',
+        business_category: formData.businessCategory,
+      }
+      
+      // Solo incluir slug si tiene valor y no hay error
+      if (formData.slug.trim() && !slugError) {
+        storeData.slug = formData.slug.trim()
+      }
+      
       const { data: store, error: storeError } = await supabase
         .from('stores')
-        .insert({
-          name: formData.storeName,
-          user_id: authData.user.id,
-          store_type: formData.storeType,
-          plan: formData.selectedPlan === 'free' ? 'free' : 'premium',
-          products_count: 0,
-          setup_completed: false, // Se completará después de configurar servicios
-          description: formData.storeDescription || `Negocio de ${categoryName}`,
-          location: formData.localidad && formData.provincia 
-            ? `${formData.localidad}, ${formData.provincia}` 
-            : '',
-          business_category: formData.businessCategory,
-        })
+        .insert(storeData)
         .select()
         .single()
 
@@ -419,8 +538,13 @@ export default function MultiStepRegisterForm() {
             store_id: store.id,
             day: day,
             enabled: true,
-            start_time: formData.startTime,
-            end_time: formData.endTime,
+            is_continuous: formData.isContinuous,
+            start_time: formData.isContinuous ? formData.startTime : null,
+            end_time: formData.isContinuous ? formData.endTime : null,
+            morning_start: formData.isContinuous ? null : formData.morningStart,
+            morning_end: formData.isContinuous ? null : formData.morningEnd,
+            afternoon_start: formData.isContinuous ? null : formData.afternoonStart,
+            afternoon_end: formData.isContinuous ? null : formData.afternoonEnd,
             slot_duration: formData.serviceDuration,
           })
         }
@@ -434,18 +558,14 @@ export default function MultiStepRegisterForm() {
         }
       }
 
-      // 5. Redirigir
-      if (import.meta.env.PROD) {
-        window.location.href = '/auth/verify-email'
-      } else {
-        window.location.href = '/dashboard'
-      }
+      // 5. Redirigir (sin forzar verificación de email)
+      window.location.href = '/dashboard'
 
     } catch (error: any) {
       console.error('Error en registro:', error)
       let errorMessage = 'Error al crear la cuenta'
       
-      if (error.message) {
+      if (error?.message) {
         const msg = error.message.toLowerCase()
         if (msg.includes('duplicate') || msg.includes('already')) {
           errorMessage = 'Ya existe una cuenta con este correo electrónico'
@@ -628,32 +748,6 @@ export default function MultiStepRegisterForm() {
 
             <div>
               <label className="block text-sm font-semibold text-surface-900 mb-2">
-                Rubro de tu negocio *
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 mb-6">
-                {BUSINESS_CATEGORIES.map((category) => (
-                  <button
-                    key={category.id}
-                    type="button"
-                    onClick={() => updateField('businessCategory', category.id)}
-                    className={`p-4 border-2 rounded-xl text-left transition-all ${
-                      formData.businessCategory === category.id
-                        ? 'border-brand-600 bg-brand-50 ring-2 ring-brand-600 ring-offset-2'
-                        : 'border-surface-200 hover:border-surface-300 hover:bg-surface-50'
-                    }`}
-                  >
-                    <div className={`mb-2 ${formData.businessCategory === category.id ? 'text-brand-600' : 'text-surface-400'}`}>
-                      {category.icon}
-                    </div>
-                    <h3 className="font-semibold text-surface-900 text-sm mb-1">{category.name}</h3>
-                    <p className="text-xs text-surface-600">{category.description}</p>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-semibold text-surface-900 mb-2">
                 Nombre de tu negocio *
               </label>
               <input
@@ -663,6 +757,30 @@ export default function MultiStepRegisterForm() {
                 className="w-full px-4 py-3 border border-surface-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all text-surface-900 placeholder-surface-400"
                 placeholder="Ej: Peluquería María, Consultorio Dr. García..."
               />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-surface-900 mb-2">
+                URL de tu sitio (opcional)
+              </label>
+              <div className="flex items-center gap-2">
+                <span className="text-surface-500 whitespace-nowrap">{typeof window !== 'undefined' ? window.location.origin : ''}/</span>
+                <input
+                  type="text"
+                  value={formData.slug}
+                  onChange={(e) => handleSlugChange(e.target.value)}
+                  className={`flex-1 px-4 py-3 border rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all text-surface-900 placeholder-surface-400 ${
+                    slugError ? 'border-red-300 focus:border-red-500' : 'border-surface-300'
+                  }`}
+                  placeholder="mi-negocio"
+                />
+              </div>
+              {slugError && (
+                <p className="mt-2 text-sm text-red-600">{slugError}</p>
+              )}
+              <p className="mt-2 text-sm text-surface-500">
+                Esta será la URL pública de tu negocio donde tus clientes reservarán sus turnos.
+              </p>
             </div>
 
             <div>
@@ -781,30 +899,103 @@ export default function MultiStepRegisterForm() {
                   </div>
                 </div>
 
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-semibold text-surface-900 mb-2">
-                      Hora de inicio
-                    </label>
-                    <input
-                      type="time"
-                      value={formData.startTime}
-                      onChange={(e) => updateField('startTime', e.target.value)}
-                      className="w-full px-4 py-3 border border-surface-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all text-surface-900 placeholder-surface-400"
+                {/* Tipo de horario */}
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-sm font-semibold text-surface-900">Horario de corrido</span>
+                  <button
+                    type="button"
+                    onClick={() => updateField('isContinuous', !formData.isContinuous)}
+                    className={`relative w-12 h-7 rounded-full transition-colors ${
+                      formData.isContinuous ? 'bg-brand-600' : 'bg-surface-300'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-all ${
+                        formData.isContinuous ? 'left-6' : 'left-1'
+                      }`}
                     />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-semibold text-surface-900 mb-2">
-                      Hora de fin
-                    </label>
-                    <input
-                      type="time"
-                      value={formData.endTime}
-                      onChange={(e) => updateField('endTime', e.target.value)}
-                      className="w-full px-4 py-3 border border-surface-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all text-surface-900 placeholder-surface-400"
-                    />
-                  </div>
+                  </button>
                 </div>
+
+                {formData.isContinuous ? (
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-surface-900 mb-2">
+                        Hora de inicio
+                      </label>
+                      <input
+                        type="time"
+                        value={formData.startTime}
+                        onChange={(e) => updateField('startTime', e.target.value)}
+                        className="w-full px-4 py-3 border border-surface-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all text-surface-900 placeholder-surface-400"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-surface-900 mb-2">
+                        Hora de fin
+                      </label>
+                      <input
+                        type="time"
+                        value={formData.endTime}
+                        onChange={(e) => updateField('endTime', e.target.value)}
+                        className="w-full px-4 py-3 border border-surface-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all text-surface-900 placeholder-surface-400"
+                      />
+                    </div>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    <div>
+                      <label className="block text-sm font-semibold text-surface-900 mb-3">
+                        Turno mañana
+                      </label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs text-surface-600 mb-1">Inicio</label>
+                          <input
+                            type="time"
+                            value={formData.morningStart}
+                            onChange={(e) => updateField('morningStart', e.target.value)}
+                            className="w-full px-4 py-3 border border-surface-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all text-surface-900 bg-amber-50"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-surface-600 mb-1">Fin</label>
+                          <input
+                            type="time"
+                            value={formData.morningEnd}
+                            onChange={(e) => updateField('morningEnd', e.target.value)}
+                            className="w-full px-4 py-3 border border-surface-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all text-surface-900 bg-amber-50"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                    <div>
+                      <label className="block text-sm font-semibold text-surface-900 mb-3">
+                        Turno tarde
+                      </label>
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <label className="block text-xs text-surface-600 mb-1">Inicio</label>
+                          <input
+                            type="time"
+                            value={formData.afternoonStart}
+                            onChange={(e) => updateField('afternoonStart', e.target.value)}
+                            className="w-full px-4 py-3 border border-surface-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all text-surface-900 bg-blue-50"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-surface-600 mb-1">Fin</label>
+                          <input
+                            type="time"
+                            value={formData.afternoonEnd}
+                            onChange={(e) => updateField('afternoonEnd', e.target.value)}
+                            className="w-full px-4 py-3 border border-surface-300 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all text-surface-900 bg-blue-50"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -953,7 +1144,7 @@ export default function MultiStepRegisterForm() {
             <button
               type="button"
               onClick={nextStep}
-              disabled={checkingEmail}
+              disabled={!!slugError || checkingEmail}
               className="px-8 py-3 bg-brand-600 text-white font-semibold rounded-xl hover:bg-brand-700 transition-colors shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none flex items-center gap-2"
             >
               {checkingEmail ? (
