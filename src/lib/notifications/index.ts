@@ -56,7 +56,10 @@ export class NotificationService {
     let result: SendNotificationResult;
     
     if (preferredChannel === 'whatsapp' && appointment.clientPhone && isWhatsAppConfigured()) {
-      result = await this.whatsapp.sendAppointmentReminder(appointment);
+      // Pasar solo el token si el template ya tiene la URL base
+      // El template debe tener: https://tu-dominio.com/appointment/{{1}}
+      const appointmentToken = appointment.publicToken || undefined;
+      result = await this.whatsapp.sendAppointmentReminder(appointment, appointmentToken);
       
       // Si falla, intentar con email
       if (!result.success && appointment.clientEmail && isEmailConfigured()) {
@@ -69,7 +72,8 @@ export class NotificationService {
       // Si falla y hay teléfono, intentar WhatsApp
       if (!result.success && appointment.clientPhone && isWhatsAppConfigured()) {
         console.log('[NotificationService] Email failed, trying WhatsApp fallback');
-        result = await this.whatsapp.sendAppointmentReminder(appointment);
+        const appointmentToken = appointment.publicToken || undefined;
+        result = await this.whatsapp.sendAppointmentReminder(appointment, appointmentToken);
       }
     } else {
       return {
@@ -113,7 +117,8 @@ export class NotificationService {
     const results: SendNotificationResult[] = [];
     
     if (appointment.clientPhone && isWhatsAppConfigured()) {
-      const waResult = await this.whatsapp.sendAppointmentConfirmed(appointment);
+      const appointmentToken = appointment.publicToken || undefined;
+      const waResult = await this.whatsapp.sendAppointmentConfirmed(appointment, appointmentToken);
       results.push(waResult);
       await this.logNotification({
         storeId: appointment.storeId,
@@ -170,7 +175,8 @@ export class NotificationService {
     let result: SendNotificationResult;
     
     if (appointment.clientPhone && isWhatsAppConfigured()) {
-      result = await this.whatsapp.sendAppointmentStatusChange(appointment, newStatus);
+      const appointmentToken = appointment.publicToken || undefined;
+      result = await this.whatsapp.sendAppointmentStatusChange(appointment, newStatus, appointmentToken);
     } else if (appointment.clientEmail && isEmailConfigured()) {
       // Email de cambio de estado (simplificado)
       result = await this.email.sendAppointmentConfirmed(appointment); // Reutilizar plantilla
@@ -477,6 +483,8 @@ export function getNotificationService(): NotificationService {
   }
   return notificationServiceInstance;
 }
+
+
 
 
 

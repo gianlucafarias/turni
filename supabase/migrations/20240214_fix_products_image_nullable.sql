@@ -21,3 +21,5 @@ SELECT 'Columnas image_url y description ahora son opcionales!' as resultado;
 
 
 
+
+

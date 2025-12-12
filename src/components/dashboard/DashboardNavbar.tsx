@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from 'react'
 import { supabase } from '../../lib/supabase'
+import { NotificationBell } from './notifications/NotificationBell'
 
 interface Props {
   currentPath: string
@@ -136,9 +137,13 @@ export default function DashboardNavbar({ currentPath, onMenuClick }: Props) {
             </a>
           </div>
 
-          {/* Derecha: usuario */}
-          <div className="flex items-center gap-4">
-           
+          {/* Derecha: notificaciones y usuario */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            
+            {/* Centro de Notificaciones */}
+            {store?.id && (
+              <NotificationBell storeId={store.id} />
+            )}
 
             {/* Ver tienda */}
             <a

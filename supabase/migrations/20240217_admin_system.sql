@@ -189,7 +189,7 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 8. FUNCIÓN PARA VALIDAR CUPÓN
 CREATE OR REPLACE FUNCTION public.validate_coupon(
     p_code TEXT,
-    p_user_id UUID,
+    p_user_id UUID DEFAULT NULL,
     p_plan_id TEXT DEFAULT NULL,
     p_amount NUMERIC DEFAULT 0
 )
@@ -222,13 +222,15 @@ BEGIN
         RETURN jsonb_build_object('valid', false, 'error', 'Cupón agotado');
     END IF;
     
-    -- Verificar usos por usuario
-    SELECT COUNT(*) INTO v_user_uses
-    FROM public.coupon_uses
-    WHERE coupon_id = v_coupon.id AND user_id = p_user_id;
-    
-    IF v_user_uses >= v_coupon.max_uses_per_user THEN
-        RETURN jsonb_build_object('valid', false, 'error', 'Ya usaste este cupón');
+    -- Verificar usos por usuario (solo si hay user_id)
+    IF p_user_id IS NOT NULL THEN
+        SELECT COUNT(*) INTO v_user_uses
+        FROM public.coupon_uses
+        WHERE coupon_id = v_coupon.id AND user_id = p_user_id;
+        
+        IF v_user_uses >= v_coupon.max_uses_per_user THEN
+            RETURN jsonb_build_object('valid', false, 'error', 'Ya usaste este cupón');
+        END IF;
     END IF;
     
     -- Verificar monto mínimo
@@ -272,6 +274,8 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- UPDATE public.stores SET is_admin = true WHERE user_id = 'TU_USER_ID';
 
 SELECT 'Sistema de admin creado correctamente' as resultado;
+
+
 
 
 

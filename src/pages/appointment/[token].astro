@@ -1,0 +1,33 @@
+---
+import PublicLayout from '../../layouts/PublicLayout.astro'
+import AppointmentView from '../../components/public/AppointmentView'
+import { supabase } from '../../lib/supabase'
+
+const { token } = Astro.params
+
+if (!token) {
+  return Astro.redirect('/404')
+}
+
+// Buscar turno por token público
+const { data: appointment, error } = await supabase
+  .from('appointments')
+  .select('*, stores(*)')
+  .eq('public_token', token)
+  .single()
+
+if (error || !appointment) {
+  return Astro.redirect('/404')
+}
+
+const store = Array.isArray(appointment.stores) ? appointment.stores[0] : appointment.stores
+
+if (!store) {
+  return Astro.redirect('/404')
+}
+---
+
+<PublicLayout title={`Turno - ${store.name}`}>
+  <AppointmentView appointment={appointment} store={store} client:load />
+</PublicLayout>
+

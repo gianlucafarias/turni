@@ -38,6 +38,10 @@ export default function ScheduleManager() {
   const [saving, setSaving] = useState(false)
   const [saved, setSaved] = useState(false)
   const [activeTab, setActiveTab] = useState<'schedule' | 'daysoff'>('schedule')
+  const [temporarilyClosed, setTemporarilyClosed] = useState(false)
+  const [savingTemporaryClose, setSavingTemporaryClose] = useState(false)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [pendingAction, setPendingAction] = useState<'close' | 'open' | null>(null)
   
   // Form para día libre individual
   const [addMode, setAddMode] = useState<'single' | 'range'>('single')
@@ -58,6 +62,7 @@ export default function ScheduleManager() {
       if (!storeData || storeData.store_type !== 'appointments') { window.location.href = '/dashboard'; return }
 
       setStore(storeData)
+      setTemporarilyClosed(storeData.temporarily_closed || false)
       
       const [schedulesRes, daysOffRes] = await Promise.all([
         supabase.from('schedules').select('*').eq('store_id', storeData.id),
@@ -217,6 +222,43 @@ export default function ScheduleManager() {
     }
   }
 
+  function handleToggleTemporarilyClosed() {
+    const newValue = !temporarilyClosed
+    setPendingAction(newValue ? 'close' : 'open')
+    setShowConfirmModal(true)
+  }
+
+  async function confirmToggle() {
+    if (!pendingAction) return
+    
+    const newValue = pendingAction === 'close'
+    setShowConfirmModal(false)
+    setSavingTemporaryClose(true)
+    
+    try {
+      const { error } = await supabase
+        .from('stores')
+        .update({ temporarily_closed: newValue })
+        .eq('id', store.id)
+      
+      if (error) throw error
+      
+      setTemporarilyClosed(newValue)
+      setStore({ ...store, temporarily_closed: newValue })
+    } catch (error) {
+      console.error('Error:', error)
+      alert('Error al actualizar el estado')
+    } finally {
+      setSavingTemporaryClose(false)
+      setPendingAction(null)
+    }
+  }
+
+  function cancelToggle() {
+    setShowConfirmModal(false)
+    setPendingAction(null)
+  }
+
   function formatDate(dateStr: string) {
     const date = new Date(dateStr + 'T12:00:00')
     return date.toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short' })
@@ -325,6 +367,32 @@ export default function ScheduleManager() {
       {/* Tab: Horario semanal */}
       {activeTab === 'schedule' && (
         <>
+          {/* Alerta de cerrado temporalmente */}
+          {temporarilyClosed && (
+            <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-5 mb-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-red-900 text-lg mb-1">Negocio cerrado temporalmente</p>
+                  <p className="text-sm text-red-700 mb-3">
+                    Los clientes no podrán reservar nuevos turnos hasta que desactives esta opción.
+                  </p>
+                  <button
+                    onClick={handleToggleTemporarilyClosed}
+                    disabled={savingTemporaryClose}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
+                  >
+                    {savingTemporaryClose ? 'Guardando...' : 'Abrir nuevamente'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Resumen */}
           <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-6 mb-6 text-white">
             <div className="flex items-center justify-between">
@@ -506,6 +574,60 @@ export default function ScheduleManager() {
       {/* Tab: Días libres */}
       {activeTab === 'daysoff' && (
         <>
+          {/* Alerta de cerrado temporalmente */}
+          {temporarilyClosed && (
+            <div className="bg-red-50 border-2 border-red-200 rounded-2xl p-5 mb-6">
+              <div className="flex items-start gap-4">
+                <div className="w-12 h-12 bg-red-100 rounded-xl flex items-center justify-center flex-shrink-0">
+                  <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-red-900 text-lg mb-1">Negocio cerrado temporalmente</p>
+                  <p className="text-sm text-red-700 mb-3">
+                    Los clientes no podrán reservar nuevos turnos hasta que desactives esta opción.
+                  </p>
+                  <button
+                    onClick={handleToggleTemporarilyClosed}
+                    disabled={savingTemporaryClose}
+                    className="px-4 py-2 bg-red-600 text-white rounded-lg text-sm font-medium hover:bg-red-700 disabled:opacity-50 transition-colors"
+                  >
+                    {savingTemporaryClose ? 'Guardando...' : 'Abrir nuevamente'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Toggle de cerrar temporalmente */}
+          <div className="bg-white rounded-2xl border border-gray-200 p-5 mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <label className="text-sm font-medium text-gray-700 block mb-1">
+                  Cerrar temporalmente
+                </label>
+                <p className="text-xs text-gray-500">
+                  Bloquea todas las reservas hasta que desactives esta opción
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={handleToggleTemporarilyClosed}
+                disabled={savingTemporaryClose}
+                className={`relative w-12 h-7 rounded-full transition-colors ${
+                  temporarilyClosed ? 'bg-red-600' : 'bg-gray-200'
+                } disabled:opacity-50`}
+              >
+                <span
+                  className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-all ${
+                    temporarilyClosed ? 'left-6' : 'left-1'
+                  }`}
+                />
+              </button>
+            </div>
+          </div>
+
           {/* Info */}
           <div className="bg-amber-50 rounded-2xl p-4 mb-6">
             <div className="flex gap-3">
@@ -741,6 +863,64 @@ export default function ScheduleManager() {
           </div>
         </>
       )}
+
+      {/* Modal de confirmación */}
+      {showConfirmModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 animate-fadeIn">
+            <div className="flex items-center justify-center w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full">
+              <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+            </div>
+            
+            <h3 className="text-xl font-bold text-gray-900 text-center mb-2">
+              {pendingAction === 'close' ? '¿Cerrar temporalmente?' : '¿Abrir nuevamente?'}
+            </h3>
+            
+            <p className="text-gray-600 text-center mb-6">
+              {pendingAction === 'close' ? (
+                <>
+                  Los clientes no podrán reservar nuevos turnos hasta que desactives esta opción.
+                  <br /><br />
+                  <span className="text-sm text-gray-500">Los turnos ya confirmados no se verán afectados.</span>
+                </>
+              ) : (
+                <>
+                  Los clientes podrán volver a reservar turnos normalmente.
+                </>
+              )}
+            </p>
+
+            <div className="flex gap-3">
+              <button
+                onClick={cancelToggle}
+                className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={confirmToggle}
+                className={`flex-1 py-3 px-4 rounded-xl font-medium transition-colors ${
+                  pendingAction === 'close'
+                    ? 'bg-red-600 text-white hover:bg-red-700'
+                    : 'bg-green-600 text-white hover:bg-green-700'
+                }`}
+              >
+                {pendingAction === 'close' ? 'Sí, cerrar' : 'Sí, abrir'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      <style>{`
+        @keyframes fadeIn {
+          from { opacity: 0; transform: scale(0.95); }
+          to { opacity: 1; transform: scale(1); }
+        }
+        .animate-fadeIn { animation: fadeIn 0.2s ease-out; }
+      `}</style>
     </div>
   )
 }

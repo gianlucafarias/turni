@@ -89,9 +89,8 @@ export default function NewAppointmentForm() {
 
   if (loading) {
     return (
-      <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-        <p className="text-gray-600">Cargando...</p>
+      <div className="flex items-center justify-center py-20">
+        <div className="w-10 h-10 border-4 border-indigo-200 border-t-indigo-600 rounded-full animate-spin" />
       </div>
     )
   }
@@ -99,19 +98,19 @@ export default function NewAppointmentForm() {
   return (
     <div className="max-w-2xl mx-auto">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Nueva Cita</h1>
-        <p className="mt-2 text-gray-600">Agenda una nueva cita para un cliente</p>
+        <h1 className="text-2xl font-bold text-gray-900">Nueva Cita</h1>
+        <p className="text-gray-500 mt-1">Agenda una nueva cita para un cliente</p>
       </div>
 
       {error && (
-        <div className="mb-6 bg-red-50 border border-red-200 text-red-600 px-4 py-3 rounded">
+        <div className="mb-6 bg-red-50 border-2 border-red-200 text-red-600 px-4 py-3 rounded-xl">
           {error}
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="bg-white shadow rounded-lg p-6 space-y-6">
+      <form onSubmit={handleSubmit} className="bg-white rounded-2xl border border-gray-200 shadow-sm p-6 sm:p-8 space-y-6">
         <div>
-          <label htmlFor="client_name" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="client_name" className="block text-sm font-medium text-gray-700 mb-2">
             Nombre del cliente *
           </label>
           <input
@@ -119,38 +118,54 @@ export default function NewAppointmentForm() {
             name="client_name"
             id="client_name"
             required
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 focus:border-indigo-500 focus:ring-0 transition-colors"
+            placeholder="Nombre completo"
           />
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
-            <label htmlFor="client_email" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="client_email" className="block text-sm font-medium text-gray-700 mb-2">
               Email
             </label>
             <input
               type="email"
               name="client_email"
               id="client_email"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 focus:border-indigo-500 focus:ring-0 transition-colors"
+              placeholder="email@ejemplo.com"
             />
           </div>
 
           <div>
-            <label htmlFor="client_phone" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="client_phone" className="block text-sm font-medium text-gray-700 mb-2">
               Teléfono
             </label>
             <input
               type="tel"
               name="client_phone"
               id="client_phone"
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 focus:border-indigo-500 focus:ring-0 transition-colors"
+              placeholder="+54 9 11 1234-5678"
             />
           </div>
         </div>
 
         <div>
-          <label htmlFor="date" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="service_name" className="block text-sm font-medium text-gray-700 mb-2">
+            Servicio
+          </label>
+          <input
+            type="text"
+            name="service_name"
+            id="service_name"
+            placeholder="Ej: Corte de cabello, Consulta, etc."
+            className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 focus:border-indigo-500 focus:ring-0 transition-colors"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="date" className="block text-sm font-medium text-gray-700 mb-2">
             Fecha *
           </label>
           <input
@@ -159,13 +174,13 @@ export default function NewAppointmentForm() {
             id="date"
             required
             min={new Date().toISOString().split('T')[0]}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 focus:border-indigo-500 focus:ring-0 transition-colors"
           />
         </div>
 
         <div className="grid grid-cols-2 gap-4">
           <div>
-            <label htmlFor="start_time" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="start_time" className="block text-sm font-medium text-gray-700 mb-2">
               Hora de inicio *
             </label>
             <input
@@ -173,12 +188,12 @@ export default function NewAppointmentForm() {
               name="start_time"
               id="start_time"
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 focus:border-indigo-500 focus:ring-0 transition-colors"
             />
           </div>
 
           <div>
-            <label htmlFor="end_time" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="end_time" className="block text-sm font-medium text-gray-700 mb-2">
               Hora de fin *
             </label>
             <input
@@ -186,48 +201,35 @@ export default function NewAppointmentForm() {
               name="end_time"
               id="end_time"
               required
-              className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 focus:border-indigo-500 focus:ring-0 transition-colors"
             />
           </div>
         </div>
 
         <div>
-          <label htmlFor="service_name" className="block text-sm font-medium text-gray-700">
-            Servicio
-          </label>
-          <input
-            type="text"
-            name="service_name"
-            id="service_name"
-            placeholder="Ej: Corte de cabello, Consulta, etc."
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
-          />
-        </div>
-
-        <div>
-          <label htmlFor="notes" className="block text-sm font-medium text-gray-700">
+          <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-2">
             Notas
           </label>
           <textarea
             name="notes"
             id="notes"
             rows={3}
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+            className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 focus:border-indigo-500 focus:ring-0 transition-colors resize-none"
             placeholder="Notas adicionales sobre la cita..."
           />
         </div>
 
-        <div className="flex justify-end space-x-4 pt-4 border-t">
+        <div className="flex justify-end gap-3 pt-4 border-t border-gray-100">
           <a
             href="/dashboard/appointments"
-            className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50"
+            className="px-6 py-3 text-sm font-medium text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors"
           >
             Cancelar
           </a>
           <button
             type="submit"
             disabled={saving}
-            className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 disabled:opacity-50"
+            className="px-6 py-3 text-sm font-medium text-white bg-indigo-600 rounded-xl hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-lg shadow-indigo-200"
           >
             {saving ? 'Guardando...' : 'Crear Cita'}
           </button>
@@ -236,4 +238,3 @@ export default function NewAppointmentForm() {
     </div>
   )
 }
-

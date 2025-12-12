@@ -197,9 +197,9 @@ export async function getOrCreateMPPlan(planId: PlanId): Promise<string> {
  * Solo enviar auto_recurring con los datos del plan. MP genera init_point para redirect.
  */
 export async function createSubscription(
-  params: CreateSubscriptionParams
+  params: CreateSubscriptionParams & { finalPrice?: number }
 ): Promise<{ subscriptionId: string; initPoint: string }> {
-  const { storeId, planId, payerEmail, backUrl, externalReference } = params;
+  const { storeId, planId, payerEmail, backUrl, externalReference, finalPrice } = params;
   const plan = getPlan(planId);
   
   // Solo permitir planes de pago
@@ -219,6 +219,11 @@ export async function createSubscription(
     endDate.setMonth(endDate.getMonth() + 12); // 12 meses de suscripción
   }
 
+  // Usar precio final con descuento si se proporciona
+  const transactionAmount = finalPrice !== undefined 
+    ? finalPrice 
+    : (isAnnual ? plan.priceAnnual : plan.priceMonthly)
+
   // Payload para checkout redirect - SIN preapproval_plan_id
   // Esto hace que MP nos devuelva init_point para redirect al checkout
   const payload = {
@@ -228,7 +233,7 @@ export async function createSubscription(
     auto_recurring: {
       frequency: isAnnual ? 12 : 1,
       frequency_type: 'months' as const,
-      transaction_amount: isAnnual ? plan.priceAnnual : plan.priceMonthly,
+      transaction_amount: transactionAmount,
       currency_id: 'ARS',
       start_date: startDate.toISOString(),
       end_date: endDate.toISOString(),

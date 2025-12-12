@@ -14,3 +14,5 @@ COMMENT ON COLUMN public.stores.business_category IS 'Rubro del negocio: profesi
 
 
 
+
+

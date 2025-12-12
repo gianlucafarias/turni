@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import AppointmentDetailModal from './AppointmentDetailModal'
+import NewAppointmentModal from './NewAppointmentModal'
 
 interface Stats {
   // Turnos
@@ -42,6 +44,9 @@ export default function DashboardOverview() {
   const [stats, setStats] = useState<Stats | null>(null)
   const [upcomingAppointments, setUpcomingAppointments] = useState<Appointment[]>([])
   const [loading, setLoading] = useState(true)
+  const [selectedAppointment, setSelectedAppointment] = useState<any | null>(null)
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [isNewAppointmentModalOpen, setIsNewAppointmentModalOpen] = useState(false)
 
   useEffect(() => {
     loadData()
@@ -488,9 +493,20 @@ export default function DashboardOverview() {
                   </svg>
                   Próximos turnos
                 </h3>
-                <a href="/dashboard/appointments" className="text-indigo-600 text-sm font-medium hover:text-indigo-700">
-                  Ver todos →
-                </a>
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={() => setIsNewAppointmentModalOpen(true)}
+                    className="inline-flex items-center gap-1.5 bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm font-medium hover:bg-indigo-700 transition-colors"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                    </svg>
+                    Nueva
+                  </button>
+                  <a href="/dashboard/appointments" className="text-indigo-600 text-sm font-medium hover:text-indigo-700">
+                    Ver todos →
+                  </a>
+                </div>
               </div>
 
               {upcomingAppointments.length > 0 ? (
@@ -498,9 +514,21 @@ export default function DashboardOverview() {
                   {upcomingAppointments.map((apt) => (
                     <div 
                       key={apt.id}
-                      className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 transition-colors"
+                      className="flex items-center gap-4 p-4 bg-gray-50 rounded-xl hover:bg-gray-100 hover:shadow-sm transition-all cursor-pointer group"
+                      onClick={async () => {
+                        // Cargar datos completos del turno
+                        const { data } = await supabase
+                          .from('appointments')
+                          .select('*')
+                          .eq('id', apt.id)
+                          .single()
+                        if (data) {
+                          setSelectedAppointment(data)
+                          setIsModalOpen(true)
+                        }
+                      }}
                     >
-                      <div className="w-12 h-12 bg-white rounded-xl flex flex-col items-center justify-center border border-gray-200 flex-shrink-0">
+                      <div className="w-12 h-12 bg-white rounded-xl flex flex-col items-center justify-center border border-gray-200 flex-shrink-0 group-hover:border-indigo-200 transition-colors">
                         <span className="text-xs text-gray-400 font-medium uppercase">
                           {formatDate(apt.date).split(' ')[0]}
                         </span>
@@ -514,14 +542,24 @@ export default function DashboardOverview() {
                       </div>
                       <div className="flex items-center gap-2">
                         {getStatusBadge(apt.status)}
-                        <a 
-                          href={`/dashboard/appointments/${apt.id}`}
-                          className="p-2 text-gray-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"
-                        >
+                        {apt.status === 'pending' && (
+                          <button
+                            onClick={async (e) => {
+                              e.stopPropagation()
+                              await supabase.from('appointments').update({ status: 'confirmed' }).eq('id', apt.id)
+                              loadData()
+                            }}
+                            className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 transition-colors"
+                            title="Confirmar rápidamente"
+                          >
+                            ✓
+                          </button>
+                        )}
+                        <div className="p-2 text-gray-400 group-hover:text-indigo-600 group-hover:bg-indigo-50 rounded-lg transition-colors">
                           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                           </svg>
-                        </a>
+                        </div>
                       </div>
                     </div>
                   ))}
@@ -534,15 +572,15 @@ export default function DashboardOverview() {
                     </svg>
                   </div>
                   <p className="text-gray-500 mb-3">No hay turnos próximos</p>
-                  <a 
-                    href="/dashboard/appointments/new"
+                  <button
+                    onClick={() => setIsNewAppointmentModalOpen(true)}
                     className="inline-flex items-center gap-2 text-indigo-600 font-medium hover:text-indigo-700"
                   >
                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                     </svg>
                     Crear turno manual
-                  </a>
+                  </button>
                 </div>
               )}
             </div>
@@ -722,6 +760,32 @@ export default function DashboardOverview() {
           </a>
         </div>
       )}
+
+      {/* Modal de detalles */}
+      {selectedAppointment && (
+        <AppointmentDetailModal
+          appointment={selectedAppointment}
+          isOpen={isModalOpen}
+          onClose={() => {
+            setIsModalOpen(false)
+            setSelectedAppointment(null)
+          }}
+          onUpdate={loadData}
+          onDelete={async () => {
+            await supabase.from('appointments').delete().eq('id', selectedAppointment.id)
+            setIsModalOpen(false)
+            setSelectedAppointment(null)
+            loadData()
+          }}
+        />
+      )}
+
+      {/* Modal de nueva cita */}
+      <NewAppointmentModal
+        isOpen={isNewAppointmentModalOpen}
+        onClose={() => setIsNewAppointmentModalOpen(false)}
+        onSuccess={loadData}
+      />
     </div>
   )
 }

@@ -116,3 +116,5 @@ COMMENT ON COLUMN public.user_profiles.provincia IS 'Provincia de residencia';
 COMMENT ON COLUMN public.user_profiles.localidad IS 'Ciudad/localidad de residencia';
 
 
+
+

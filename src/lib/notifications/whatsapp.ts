@@ -36,7 +36,9 @@ interface SendTemplatePayload {
   languageCode: string;
   components: Array<{
     type: 'body' | 'header' | 'button';
-    parameters: Array<{
+    sub_type?: 'url';
+    index?: number;
+    parameters?: Array<{
       type: 'text' | 'image' | 'document';
       text?: string;
       image?: { link: string };
@@ -146,6 +148,27 @@ export class WhatsAppClient {
     
     const formattedPhone = this.formatPhoneNumber(payload.to);
     
+    // Construir componentes según el tipo
+    const components = payload.components.map(comp => {
+      if (comp.type === 'button' && comp.sub_type === 'url') {
+        // Botón con URL dinámica
+        return {
+          type: 'button',
+          sub_type: 'url',
+          index: comp.index || 0,
+          parameters: comp.parameters?.map(param => ({
+            type: 'text',
+            text: param.text,
+          })) || [],
+        };
+      }
+      // Body o header normal
+      return {
+        type: comp.type,
+        parameters: comp.parameters,
+      };
+    });
+    
     const requestBody = {
       messaging_product: 'whatsapp',
       recipient_type: 'individual',
@@ -156,7 +179,7 @@ export class WhatsAppClient {
         language: {
           code: payload.languageCode,
         },
-        components: payload.components,
+        components,
       },
     };
     
@@ -218,7 +241,8 @@ export class WhatsAppClient {
    * Envía recordatorio de turno del día
    */
   async sendAppointmentReminder(
-    appointment: AppointmentForNotification
+    appointment: AppointmentForNotification,
+    appointmentUrl?: string
   ): Promise<SendNotificationResult> {
     if (!appointment.clientPhone) {
       return {
@@ -244,22 +268,39 @@ export class WhatsAppClient {
       month: 'long',
     });
     
+    const components: SendTemplatePayload['components'] = [
+      {
+        type: 'body',
+        parameters: [
+          { type: 'text', text: appointment.clientName },
+          { type: 'text', text: appointment.serviceName },
+          { type: 'text', text: formattedDate },
+          { type: 'text', text: appointment.time },
+          { type: 'text', text: appointment.storeName },
+        ],
+      },
+    ];
+    
+    // Agregar botón con URL si está disponible
+    // appointmentUrl puede ser:
+    // - Solo el token (si el template tiene la URL base): "abc123xyz"
+    // - URL completa (si el template solo tiene {{1}}): "https://tu-dominio.com/appointment/abc123xyz"
+    if (appointmentUrl) {
+      components.push({
+        type: 'button',
+        sub_type: 'url',
+        index: 0,
+        parameters: [
+          { type: 'text', text: appointmentUrl },
+        ],
+      });
+    }
+    
     return this.sendTemplate({
       to: appointment.clientPhone,
       templateName: template.name,
       languageCode: template.language,
-      components: [
-        {
-          type: 'body',
-          parameters: [
-            { type: 'text', text: appointment.clientName },
-            { type: 'text', text: appointment.serviceName },
-            { type: 'text', text: formattedDate },
-            { type: 'text', text: appointment.time },
-            { type: 'text', text: appointment.storeName },
-          ],
-        },
-      ],
+      components,
     });
   }
   
@@ -267,7 +308,8 @@ export class WhatsAppClient {
    * Envía confirmación de turno
    */
   async sendAppointmentConfirmed(
-    appointment: AppointmentForNotification
+    appointment: AppointmentForNotification,
+    appointmentUrl?: string
   ): Promise<SendNotificationResult> {
     if (!appointment.clientPhone) {
       return {
@@ -292,22 +334,39 @@ export class WhatsAppClient {
       month: 'long',
     });
     
+    const components: SendTemplatePayload['components'] = [
+      {
+        type: 'body',
+        parameters: [
+          { type: 'text', text: appointment.clientName },
+          { type: 'text', text: appointment.serviceName },
+          { type: 'text', text: formattedDate },
+          { type: 'text', text: appointment.time },
+          { type: 'text', text: appointment.storeName },
+        ],
+      },
+    ];
+    
+    // Agregar botón con URL si está disponible
+    // appointmentUrl puede ser:
+    // - Solo el token (si el template tiene la URL base): "abc123xyz"
+    // - URL completa (si el template solo tiene {{1}}): "https://tu-dominio.com/appointment/abc123xyz"
+    if (appointmentUrl) {
+      components.push({
+        type: 'button',
+        sub_type: 'url',
+        index: 0,
+        parameters: [
+          { type: 'text', text: appointmentUrl },
+        ],
+      });
+    }
+    
     return this.sendTemplate({
       to: appointment.clientPhone,
       templateName: template.name,
       languageCode: template.language,
-      components: [
-        {
-          type: 'body',
-          parameters: [
-            { type: 'text', text: appointment.clientName },
-            { type: 'text', text: appointment.serviceName },
-            { type: 'text', text: formattedDate },
-            { type: 'text', text: appointment.time },
-            { type: 'text', text: appointment.storeName },
-          ],
-        },
-      ],
+      components,
     });
   }
   
@@ -316,7 +375,8 @@ export class WhatsAppClient {
    */
   async sendAppointmentStatusChange(
     appointment: AppointmentForNotification,
-    newStatus: string
+    newStatus: string,
+    appointmentUrl?: string
   ): Promise<SendNotificationResult> {
     if (!appointment.clientPhone) {
       return {
@@ -347,21 +407,38 @@ export class WhatsAppClient {
       cancelled: 'Cancelado',
     };
     
+    const components: SendTemplatePayload['components'] = [
+      {
+        type: 'body',
+        parameters: [
+          { type: 'text', text: appointment.clientName },
+          { type: 'text', text: appointment.serviceName },
+          { type: 'text', text: formattedDate },
+          { type: 'text', text: statusTranslations[newStatus] || newStatus },
+        ],
+      },
+    ];
+    
+    // Agregar botón con URL si está disponible
+    // appointmentUrl puede ser:
+    // - Solo el token (si el template tiene la URL base): "abc123xyz"
+    // - URL completa (si el template solo tiene {{1}}): "https://tu-dominio.com/appointment/abc123xyz"
+    if (appointmentUrl) {
+      components.push({
+        type: 'button',
+        sub_type: 'url',
+        index: 0,
+        parameters: [
+          { type: 'text', text: appointmentUrl },
+        ],
+      });
+    }
+    
     return this.sendTemplate({
       to: appointment.clientPhone,
       templateName: template.name,
       languageCode: template.language,
-      components: [
-        {
-          type: 'body',
-          parameters: [
-            { type: 'text', text: appointment.clientName },
-            { type: 'text', text: appointment.serviceName },
-            { type: 'text', text: formattedDate },
-            { type: 'text', text: statusTranslations[newStatus] || newStatus },
-          ],
-        },
-      ],
+      components,
     });
   }
   
@@ -508,6 +585,8 @@ export function getWhatsAppClient(): WhatsAppClient {
 export function isWhatsAppConfigured(): boolean {
   return getWhatsAppClient().isConfigured();
 }
+
+
 
 
 

@@ -34,7 +34,13 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Parsear body
     const body = await request.json();
-    const { planId, storeId } = body as { planId: PlanId; storeId: string };
+    const { planId, storeId, couponCode, discountAmount, finalPrice } = body as { 
+      planId: PlanId; 
+      storeId: string; 
+      couponCode?: string; 
+      discountAmount?: number; 
+      finalPrice?: number; 
+    };
 
     // Validar datos
     if (!planId || !storeId) {
@@ -94,7 +100,14 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       payerEmail: user.email!,
       backUrl: `${siteUrl}/dashboard/subscription/callback`,
       externalReference: `store_${storeId}_${Date.now()}`,
+      finalPrice: finalPrice, // Precio con descuento si hay cupón
     });
+
+    // Si hay cupón, guardarlo en metadata de la suscripción
+    if (couponCode && discountAmount !== undefined) {
+      // Esto se procesará después cuando el pago sea exitoso
+      // Por ahora solo guardamos en metadata del store si aún no está
+    }
 
     // Actualizar la suscripción local con el ID de MP
     const { error: updateError } = await supabase

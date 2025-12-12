@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import ImageUpload from '../ui/ImageUpload'
+import { deleteImageFromStorage } from '../../utils/storage'
 
 export default function StoreSettings() {
   const [store, setStore] = useState<any>(null)
@@ -16,7 +18,8 @@ export default function StoreSettings() {
   const [slug, setSlug] = useState('')
   const [slugError, setSlugError] = useState<string | null>(null)
   const [galleryImages, setGalleryImages] = useState<string[]>([])
-  const [newGalleryUrl, setNewGalleryUrl] = useState('')
+  const [profileImageUrl, setProfileImageUrl] = useState('')
+  const [bannerImageUrl, setBannerImageUrl] = useState('')
 
   useEffect(() => {
     loadStore()
@@ -48,6 +51,8 @@ export default function StoreSettings() {
       setMaxPerSlot(storeData.max_appointments_per_slot || 1)
       setSlug(storeData.slug || '')
       setGalleryImages(storeData.gallery_images || [])
+      setProfileImageUrl(storeData.profile_image_url || '')
+      setBannerImageUrl(storeData.banner_image_url || '')
     } catch (error) {
       console.error('Error cargando tienda:', error)
       setError('Error al cargar la información de la tienda')
@@ -106,17 +111,27 @@ export default function StoreSettings() {
     validateSlug(formatted)
   }
 
-  function addGalleryImage() {
-    if (!newGalleryUrl.trim()) return
+  function handleGalleryImageUploaded(url: string) {
+    if (!url) return
     if (galleryImages.length >= 10) {
       alert('Máximo 10 imágenes')
       return
     }
-    setGalleryImages([...galleryImages, newGalleryUrl.trim()])
-    setNewGalleryUrl('')
+    setGalleryImages([...galleryImages, url])
   }
 
-  function removeGalleryImage(index: number) {
+  async function removeGalleryImage(index: number) {
+    const imageUrl = galleryImages[index]
+    
+    // Eliminar del storage si es de nuestro storage
+    if (imageUrl && imageUrl.includes('supabase.co/storage')) {
+      try {
+        await deleteImageFromStorage(imageUrl)
+      } catch (e) {
+        // Ignorar errores al eliminar
+      }
+    }
+    
     setGalleryImages(galleryImages.filter((_, i) => i !== index))
   }
 
@@ -160,8 +175,8 @@ export default function StoreSettings() {
         description: formData.get('description')?.toString() ?? store.description ?? '',
         location: formData.get('location')?.toString() ?? store.location ?? '',
         whatsapp_url: formData.get('whatsapp_url')?.toString() ?? store.whatsapp_url ?? '',
-        banner_image_url: formData.get('banner_image_url')?.toString() ?? store.banner_image_url ?? '',
-        profile_image_url: formData.get('profile_image_url')?.toString() ?? store.profile_image_url ?? '',
+        banner_image_url: bannerImageUrl,
+        profile_image_url: profileImageUrl,
         show_prices: showPrices,
         allow_multiple_appointments: allowMultiple,
         max_appointments_per_slot: allowMultiple ? maxPerSlot : 1
@@ -469,7 +484,7 @@ export default function StoreSettings() {
         )}
 
         {/* TAB: Imágenes */}
-        {activeTab === 'images' && (
+        {activeTab === 'images' && store && (
           <div className="space-y-6">
             {/* Logo */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
@@ -477,32 +492,18 @@ export default function StoreSettings() {
                 <span className="text-xl">👤</span> Logo o foto de perfil
               </h2>
               <div className="flex items-start gap-4">
-                <div className="w-28 h-28 rounded-2xl bg-gray-100 overflow-hidden border-2 border-dashed border-gray-200 flex-shrink-0">
-                  {store.profile_image_url ? (
-                    <img
-                      src={store.profile_image_url}
-                      alt="Logo"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                      <svg className="w-8 h-8 mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
-                      <span className="text-xs">400x400</span>
-                    </div>
-                  )}
-                </div>
+                <ImageUpload
+                  currentImageUrl={profileImageUrl}
+                  onImageUploaded={setProfileImageUrl}
+                  storeId={store.id}
+                  type="logo"
+                  aspectRatio="square"
+                  label=""
+                  description="Imagen cuadrada recomendada (400x400 px)"
+                />
                 <div className="flex-1">
-                  <input
-                    type="url"
-                    name="profile_image_url"
-                    defaultValue={store.profile_image_url || ''}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-                    placeholder="https://ejemplo.com/logo.jpg"
-                  />
-                  <p className="mt-2 text-sm text-gray-400">
-                    Imagen cuadrada recomendada (400x400 px)
+                  <p className="text-sm text-gray-500 mt-2">
+                    Tu logo aparecerá en tu perfil público. Imagen cuadrada recomendada (400x400 px).
                   </p>
                 </div>
               </div>
@@ -513,31 +514,15 @@ export default function StoreSettings() {
               <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
                 <span className="text-xl">🖼️</span> Banner principal
               </h2>
-              <div className="space-y-3">
-                <div className="aspect-[3/1] rounded-xl bg-gray-100 overflow-hidden border-2 border-dashed border-gray-200">
-                  {store.banner_image_url ? (
-                    <img
-                      src={store.banner_image_url}
-                      alt="Banner"
-                      className="w-full h-full object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-400">
-                      <svg className="w-12 h-12 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                      </svg>
-                      <span className="text-sm">1200 x 400 px</span>
-                    </div>
-                  )}
-                </div>
-                <input
-                  type="url"
-                  name="banner_image_url"
-                  defaultValue={store.banner_image_url || ''}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-                  placeholder="https://ejemplo.com/banner.jpg"
-                />
-              </div>
+              <ImageUpload
+                currentImageUrl={bannerImageUrl}
+                onImageUploaded={setBannerImageUrl}
+                storeId={store.id}
+                type="banner"
+                aspectRatio="banner"
+                label=""
+                description="Banner horizontal recomendado (1200 x 400 px)"
+              />
             </div>
 
             {/* Galería / Carrusel */}
@@ -604,22 +589,18 @@ export default function StoreSettings() {
               )}
 
               {/* Agregar nueva imagen */}
-              {galleryImages.length < 10 && (
-                <div className="flex gap-2">
-                  <input
-                    type="url"
-                    value={newGalleryUrl}
-                    onChange={(e) => setNewGalleryUrl(e.target.value)}
-                    className="flex-1 px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-                    placeholder="https://ejemplo.com/imagen.jpg"
+              {galleryImages.length < 10 && store && (
+                <div className="max-w-xs">
+                  <ImageUpload
+                    currentImageUrl=""
+                    onImageUploaded={handleGalleryImageUploaded}
+                    storeId={store.id}
+                    type="gallery"
+                    aspectRatio="square"
+                    label=""
+                    description=""
+                    resetAfterUpload={true}
                   />
-                  <button
-                    type="button"
-                    onClick={addGalleryImage}
-                    className="px-4 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
-                  >
-                    Agregar
-                  </button>
                 </div>
               )}
               

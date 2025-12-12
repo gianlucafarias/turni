@@ -90,12 +90,15 @@ export const WHATSAPP_TEMPLATES = {
     category: 'utility' as const,
     language: 'es_AR',
     // Variables: {{1}}=nombre, {{2}}=servicio, {{3}}=fecha, {{4}}=hora, {{5}}=negocio
+    // Botón: URL dinámica para ver el turno
     components: [
       {
         type: 'body',
         text: 'Hola {{1}}, te recordamos tu turno de {{2}} para hoy {{3}} a las {{4}} en {{5}}. ¡Te esperamos!',
       },
     ],
+    // Botón con URL dinámica (se define en el template de Meta)
+    // El botón debe estar definido en Meta Business Suite con tipo "URL" y variable {{1}}
   },
   
   // Confirmación de turno
@@ -267,6 +270,8 @@ export function estimateMonthlyNotificationCost(params: {
 export type WhatsAppTemplateId = keyof typeof WHATSAPP_TEMPLATES;
 export type EmailTemplateId = keyof typeof EMAIL_TEMPLATES;
 export type NotificationChannel = typeof NOTIFICATIONS_CONFIG.channels[number];
+
+
 
 
 

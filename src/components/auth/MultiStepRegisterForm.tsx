@@ -185,6 +185,7 @@ interface FormData {
   
   // Paso 4: Plan
   selectedPlan: string
+  couponCode: string
 }
 
 export default function MultiStepRegisterForm() {
@@ -193,6 +194,9 @@ export default function MultiStepRegisterForm() {
   const [error, setError] = useState<string | null>(null)
   const [slugError, setSlugError] = useState<string | null>(null)
   const [checkingEmail, setCheckingEmail] = useState(false)
+  const [validatingCoupon, setValidatingCoupon] = useState(false)
+  const [couponValidation, setCouponValidation] = useState<{ valid: boolean; discount?: number; discountType?: string; error?: string } | null>(null)
+  const [showCouponInput, setShowCouponInput] = useState(false)
   
   const [formData, setFormData] = useState<FormData>({
     // Paso 1
@@ -225,6 +229,7 @@ export default function MultiStepRegisterForm() {
     afternoonEnd: '20:00',
     // Paso 4
     selectedPlan: 'free',
+    couponCode: '',
   })
 
   const totalSteps = 4 // Siempre 4 pasos para turnos
@@ -314,6 +319,62 @@ export default function MultiStepRegisterForm() {
     } catch (err) {
       console.error('Error verificando email:', err)
       return false // Si hay error, asumimos que no existe para no bloquear
+    }
+  }
+
+  // Validar cupón
+  const validateCoupon = async (code: string) => {
+    if (!code.trim()) {
+      setCouponValidation(null)
+      return
+    }
+
+    setValidatingCoupon(true)
+    setError(null)
+
+    try {
+      // SIEMPRE validar como Premium, porque un cupón del 100% activa Premium
+      const planId = 'premium'
+      const planPrice = 2999
+
+      const response = await fetch('/api/coupons/validate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          code: code.toUpperCase(),
+          planId,
+          amount: planPrice
+        })
+      })
+
+      const data = await response.json()
+
+      if (data.valid) {
+        // La función devuelve discount_amount (el descuento calculado) o discount_value (el valor del cupón)
+        // Para porcentajes, necesitamos el porcentaje, no el monto calculado
+        const discount = data.discount_type === 'percentage' 
+          ? data.discount_value  // Para porcentajes, usar el valor del cupón (ej: 100)
+          : (data.discount_amount || data.discount_value) // Para montos fijos, usar el monto calculado
+        
+        setCouponValidation({
+          valid: true,
+          discount,
+          discountType: data.discount_type
+        })
+      } else {
+        setCouponValidation({
+          valid: false,
+          error: data.error || 'Cupón inválido'
+        })
+      }
+    } catch (err) {
+      console.error('Error validando cupón:', err)
+      setCouponValidation({
+        valid: false,
+        error: 'Error al validar el cupón'
+      })
+    } finally {
+      setValidatingCoupon(false)
     }
   }
 
@@ -492,22 +553,35 @@ export default function MultiStepRegisterForm() {
       
       // Verificar sesión antes de continuar
       const { data: { session } } = await supabase.auth.getSession()
-      if (!session) {
+      let currentSession = session
+      if (!currentSession) {
         // Si no hay sesión, esperar un poco más
         await new Promise(resolve => setTimeout(resolve, 1000))
         const { data: { session: retrySession } } = await supabase.auth.getSession()
         if (!retrySession) {
           throw new Error('No se pudo establecer la sesión. Por favor intentá de nuevo.')
         }
+        currentSession = retrySession
       }
 
       // 3. Crear tienda
       const categoryName = BUSINESS_CATEGORIES.find(c => c.id === formData.businessCategory)?.name || formData.businessCategory
+      // Si hay cupón del 100%, SIEMPRE Premium (sin importar el plan seleccionado)
+      const willBePremium = couponValidation?.valid && 
+                            couponValidation.discountType === 'percentage' && 
+                            couponValidation.discount === 100
+      
+      console.log('🏪 Creando tienda:', {
+        selectedPlan: formData.selectedPlan,
+        couponValidation,
+        willBePremium: willBePremium || formData.selectedPlan === 'premium'
+      })
+      
       const storeData: any = {
         name: formData.storeName,
         user_id: authData.user.id,
         store_type: formData.storeType,
-        plan: formData.selectedPlan === 'free' ? 'free' : 'premium',
+        plan: (willBePremium || formData.selectedPlan === 'premium') ? 'premium' : 'free',
         products_count: 0,
         setup_completed: false, // Se completará después de configurar servicios
         description: formData.storeDescription || `Negocio de ${categoryName}`,
@@ -580,7 +654,146 @@ export default function MultiStepRegisterForm() {
         }
       }
 
-      // 5. Redirigir (sin forzar verificación de email)
+      // 5. Aplicar cupón si es válido (INDEPENDIENTEMENTE del plan seleccionado)
+      console.log('🔍 Verificando cupón:', {
+        hasCode: !!formData.couponCode.trim(),
+        couponValidation,
+        selectedPlan: formData.selectedPlan
+      })
+
+      // Si hay cupón válido del 100%, siempre aplicar Premium
+      const isFullDiscount = couponValidation?.valid && 
+                             couponValidation.discountType === 'percentage' && 
+                             couponValidation.discount === 100
+
+      if (formData.couponCode.trim() && couponValidation?.valid) {
+        console.log('✅ Cupón válido, procesando...')
+        console.log('🎯 ¿Es descuento del 100%?', isFullDiscount, 'discountType:', couponValidation.discountType, 'discount:', couponValidation.discount)
+        
+        // Buscar el cupón para obtener su ID
+        const { data: couponData, error: couponError } = await supabase
+          .from('coupons')
+          .select('id')
+          .eq('code', formData.couponCode.toUpperCase())
+          .single()
+
+        if (couponError || !couponData) {
+          console.error('❌ Error buscando cupón:', couponError)
+          setError('Error al aplicar el cupón. Por favor intentá de nuevo.')
+          setLoading(false)
+          return
+        }
+
+        console.log('✅ Cupón encontrado en DB:', couponData.id)
+
+        // Si es cupón del 100%, SIEMPRE aplicar Premium (sin importar el plan seleccionado)
+        if (isFullDiscount) {
+          // Cupón 100%: Aplicar premium gratis por 1 mes sin pasar por Mercado Pago
+          console.log('🎯 Aplicando cupón 100% - llamando función RPC')
+          console.log('   Parámetros:', {
+            p_store_id: store.id,
+            p_coupon_id: couponData.id,
+            p_user_id: authData.user.id,
+            p_months: 1
+          })
+          
+          // Usar función de base de datos que maneja todo el proceso
+          const { data: result, error: rpcError } = await supabase.rpc('apply_coupon_premium', {
+            p_store_id: store.id,
+            p_coupon_id: couponData.id,
+            p_user_id: authData.user.id,
+            p_months: 1
+          })
+
+          console.log('📊 Respuesta RPC - Result:', result, 'Error:', rpcError)
+
+          if (rpcError) {
+            console.error('❌ Error RPC aplicando cupón premium:', rpcError)
+            setError('Error al aplicar el cupón: ' + rpcError.message)
+            setLoading(false)
+            return
+          }
+
+          if (!result || !result.success) {
+            console.error('❌ La función retornó error:', result?.error)
+            setError('Error al aplicar el cupón: ' + (result?.error || 'Error desconocido'))
+            setLoading(false)
+            return
+          }
+
+          console.log('✅ Cupón premium aplicado correctamente:', result)
+          
+          // Esperar un momento para que se actualice
+          await new Promise(resolve => setTimeout(resolve, 500))
+          
+          // Verificar que quedó actualizado
+          const { data: verifySub, error: verifyError } = await supabase
+            .from('subscriptions')
+            .select('plan_id, status, current_period_end')
+            .eq('store_id', store.id)
+            .single()
+          
+          console.log('✅ Verificación final de suscripción:', verifySub, 'Error:', verifyError)
+          
+          if (verifySub && verifySub.plan_id !== 'premium') {
+            console.error('❌ ERROR CRÍTICO: La suscripción NO quedó en premium!', verifySub)
+            setError('Error: La suscripción no se actualizó correctamente. Por favor contactá soporte.')
+            setLoading(false)
+            return
+          }
+          
+          // Redirigir al dashboard
+          console.log('✅ Todo correcto, redirigiendo al dashboard...')
+          window.location.href = '/dashboard'
+          return
+        } else if (formData.selectedPlan === 'premium' || isFullDiscount) {
+          // Cupón parcial con plan Premium: Redirigir a Mercado Pago con precio descontado
+          const planPrice = 2999
+          const discountAmount = couponValidation.discountType === 'percentage'
+            ? planPrice * ((couponValidation.discount || 0) / 100)
+            : (couponValidation.discount || 0)
+          const finalPrice = Math.max(0, planPrice - discountAmount)
+
+          // Guardar información del cupón en el store para usar en la creación de suscripción
+          await supabase
+            .from('stores')
+            .update({
+              metadata: {
+                pending_coupon_code: formData.couponCode.toUpperCase(),
+                pending_coupon_id: couponData.id,
+                pending_coupon_discount: couponValidation.discount,
+                pending_coupon_discount_type: couponValidation.discountType,
+                pending_discounted_price: finalPrice
+              }
+            })
+            .eq('id', store.id)
+
+          // Redirigir a crear suscripción con descuento
+          const response = await fetch('/api/subscriptions/create', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'Authorization': `Bearer ${currentSession.access_token}`
+            },
+            credentials: 'include',
+            body: JSON.stringify({
+              storeId: store.id,
+              planId: 'premium',
+              couponCode: formData.couponCode.toUpperCase(),
+              discountAmount: discountAmount,
+              finalPrice: finalPrice
+            })
+          })
+
+          const result = await response.json()
+          if (result.success && result.checkoutUrl) {
+            window.location.href = result.checkoutUrl
+            return
+          }
+        }
+      }
+
+      // 6. Si no hay cupón o es plan free, redirigir al dashboard
       window.location.href = '/dashboard'
 
     } catch (error: any) {
@@ -1095,10 +1308,111 @@ export default function MultiStepRegisterForm() {
               ))}
             </div>
 
+            {/* Campo de cupón */}
+            <div className="bg-surface-50 rounded-2xl p-6 border-2 border-surface-200">
+              <div className="flex items-center justify-between mb-4">
+                <label className="text-sm font-semibold text-surface-900">
+                  ¿Tenés un cupón?
+                </label>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (showCouponInput || formData.couponCode) {
+                      setShowCouponInput(false)
+                      updateField('couponCode', '')
+                      setCouponValidation(null)
+                    } else {
+                      setShowCouponInput(true)
+                    }
+                  }}
+                  className="text-sm text-brand-600 hover:text-brand-700 font-medium"
+                >
+                  {showCouponInput || formData.couponCode ? 'No tengo cupón' : 'Sí, tengo un cupón'}
+                </button>
+              </div>
+              
+              {showCouponInput && (
+                <div className="space-y-3">
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={formData.couponCode}
+                      onChange={(e) => {
+                        const code = e.target.value.toUpperCase()
+                        updateField('couponCode', code)
+                        if (code.trim()) {
+                          validateCoupon(code)
+                        } else {
+                          setCouponValidation(null)
+                        }
+                      }}
+                      placeholder="CÓDIGO DEL CUPÓN"
+                      className="flex-1 px-4 py-3 border-2 rounded-xl focus:ring-2 focus:ring-brand-500 focus:border-transparent transition-all text-surface-900 placeholder-surface-400 uppercase font-mono text-center"
+                      autoFocus
+                    />
+                    {validatingCoupon && (
+                      <div className="flex items-center px-4">
+                        <div className="w-5 h-5 border-2 border-brand-600 border-t-transparent rounded-full animate-spin" />
+                      </div>
+                    )}
+                  </div>
+                  
+                  {couponValidation && (
+                    <div className={`p-3 rounded-lg text-sm ${
+                      couponValidation.valid
+                        ? 'bg-green-50 border border-green-200 text-green-800'
+                        : 'bg-red-50 border border-red-200 text-red-800'
+                    }`}>
+                      {couponValidation.valid ? (
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                          </svg>
+                          <div>
+                            <p className="font-semibold">
+                              {couponValidation.discountType === 'percentage' 
+                                ? `Descuento del ${couponValidation.discount}% aplicado`
+                                : `Descuento de $${couponValidation.discount} aplicado`
+                              }
+                            </p>
+                            {couponValidation.discountType === 'percentage' && couponValidation.discount === 100 ? (
+                              <p className="text-xs mt-1">¡Premium gratis por 1 mes!</p>
+                            ) : formData.selectedPlan === 'premium' && couponValidation.discount !== undefined && (
+                              <p className="text-xs mt-1">
+                                Precio final: ${(2999 * (1 - (couponValidation.discount / 100))).toLocaleString('es-AR')}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2">
+                          <svg className="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                          </svg>
+                          <span>{couponValidation.error}</span>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+
             {formData.selectedPlan === 'premium' && (
-              <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 text-center">
-                <p className="text-amber-800 text-sm">
-                  💳 El pago se procesará después de crear tu cuenta
+              <div className={`rounded-xl p-4 text-center ${
+                couponValidation?.valid && couponValidation.discountType === 'percentage' && couponValidation.discount === 100
+                  ? 'bg-green-50 border border-green-200'
+                  : 'bg-amber-50 border border-amber-200'
+              }`}>
+                <p className={`text-sm ${
+                  couponValidation?.valid && couponValidation.discountType === 'percentage' && couponValidation.discount === 100
+                    ? 'text-green-800'
+                    : 'text-amber-800'
+                }`}>
+                  {couponValidation?.valid && couponValidation.discountType === 'percentage' && couponValidation.discount === 100
+                    ? '🎉 ¡Premium activado gratis por 1 mes!'
+                    : '💳 El pago se procesará después de crear tu cuenta'
+                  }
                 </p>
               </div>
             )}

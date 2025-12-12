@@ -13,6 +13,7 @@ interface Service {
   available_days: number[]
   start_date: string | null
   end_date: string | null
+  auto_confirm?: boolean
 }
 
 const DAYS = [
@@ -47,6 +48,7 @@ export default function ServicesManager() {
   const [formHasDateRange, setFormHasDateRange] = useState(false)
   const [formStartDate, setFormStartDate] = useState('')
   const [formEndDate, setFormEndDate] = useState('')
+  const [formAutoConfirm, setFormAutoConfirm] = useState(false)
 
   useEffect(() => { loadData() }, [])
 
@@ -79,6 +81,7 @@ export default function ServicesManager() {
       setFormHasDateRange(!!service.start_date || !!service.end_date)
       setFormStartDate(service.start_date || '')
       setFormEndDate(service.end_date || '')
+      setFormAutoConfirm(service.auto_confirm || false)
     } else {
       setEditingService(null)
       setFormName('')
@@ -89,6 +92,7 @@ export default function ServicesManager() {
       setFormHasDateRange(false)
       setFormStartDate('')
       setFormEndDate('')
+      setFormAutoConfirm(false)
     }
     setShowForm(true)
   }
@@ -126,6 +130,7 @@ export default function ServicesManager() {
       available_days: formDays,
       start_date: formHasDateRange && formStartDate ? formStartDate : null,
       end_date: formHasDateRange && formEndDate ? formEndDate : null,
+      auto_confirm: isPremium ? formAutoConfirm : false, // Solo permitir si es premium
       active: true
     }
 
@@ -544,6 +549,46 @@ export default function ServicesManager() {
                     </p>
                   </div>
                 )}
+              </div>
+
+              {/* Confirmación automática */}
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center gap-2">
+                    <label className="text-sm font-medium text-gray-700">
+                      Confirmar turnos automáticamente
+                    </label>
+                    {isPremium ? (
+                      <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded">
+                        PRO
+                      </span>
+                    ) : (
+                      <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gray-400 text-white rounded">
+                        PRO
+                      </span>
+                    )}
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (isPremium) {
+                        setFormAutoConfirm(!formAutoConfirm)
+                      }
+                    }}
+                    disabled={!isPremium}
+                    className={`relative w-12 h-7 rounded-full transition-colors ${
+                      !isPremium ? 'bg-gray-200 cursor-not-allowed opacity-50' : formAutoConfirm ? 'bg-indigo-600' : 'bg-gray-200'
+                    }`}
+                  >
+                    <span
+                      className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-all ${
+                        formAutoConfirm ? 'left-6' : 'left-1'
+                      }`}
+                    />
+                  </button>
+                </div>
+               
+               
               </div>
 
               {/* Botones */}

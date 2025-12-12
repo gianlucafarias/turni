@@ -15,6 +15,7 @@ interface Service {
   available_days: number[]
   start_date: string | null
   end_date: string | null
+  auto_confirm?: boolean
 }
 
 interface Schedule {
@@ -34,6 +35,7 @@ interface Store {
   show_prices: boolean
   allow_multiple_appointments: boolean
   max_appointments_per_slot: number
+  temporarily_closed?: boolean
 }
 
 interface DayOff {
@@ -109,13 +111,13 @@ export default function BookingWidget({ storeId }: Props) {
       // Cargar store con manejo de errores (las columnas nuevas pueden no existir)
       let storeData: any = null
       try {
-        const storeRes = await supabase.from('stores').select('show_prices, allow_multiple_appointments, max_appointments_per_slot').eq('id', storeId).single()
+        const storeRes = await supabase.from('stores').select('show_prices, allow_multiple_appointments, max_appointments_per_slot, temporarily_closed').eq('id', storeId).single()
         if (storeRes.error) throw storeRes.error
         storeData = storeRes.data
       } catch (error: any) {
         // Si falla, intentar sin las columnas nuevas
-        const { data: fallbackStore } = await supabase.from('stores').select('show_prices').eq('id', storeId).single()
-        storeData = fallbackStore ? { ...fallbackStore, allow_multiple_appointments: false, max_appointments_per_slot: 1 } : null
+        const { data: fallbackStore } = await supabase.from('stores').select('show_prices, temporarily_closed').eq('id', storeId).single()
+        storeData = fallbackStore ? { ...fallbackStore, allow_multiple_appointments: false, max_appointments_per_slot: 1, temporarily_closed: fallbackStore.temporarily_closed || false } : null
       }
       
       const [servicesRes, schedulesRes, daysOffRes] = await Promise.all([
@@ -352,6 +354,12 @@ export default function BookingWidget({ storeId }: Props) {
     e.preventDefault()
     if (!selectedDate || !selectedTime) return
     
+    // Verificar si está cerrado temporalmente
+    if (store?.temporarily_closed) {
+      setError('El negocio está cerrado temporalmente. No se pueden realizar nuevas reservas.')
+      return
+    }
+    
     // Validar que el slot aún esté disponible antes de reservar
     const dateStr = selectedDate.toISOString().split('T')[0]
     const allowMultiple = store?.allow_multiple_appointments || false
@@ -383,6 +391,21 @@ export default function BookingWidget({ storeId }: Props) {
     setError(null)
 
     try {
+      // Verificar si el servicio tiene auto_confirm y si el store es premium
+      let shouldAutoConfirm = false
+      if (selectedService && selectedService.id !== 'general' && selectedService.auto_confirm) {
+        // Verificar suscripción del store
+        const { data: subscription } = await supabase
+          .from('subscriptions')
+          .select('plan_id, status')
+          .eq('store_id', storeId)
+          .single()
+        
+        const premiumPlans = ['premium', 'premium_annual', 'trial']
+        const isPremium = subscription?.status === 'active' && premiumPlans.includes(subscription?.plan_id)
+        shouldAutoConfirm = isPremium
+      }
+
       const appointmentData: any = {
         store_id: storeId,
         date: dateStr,
@@ -392,7 +415,7 @@ export default function BookingWidget({ storeId }: Props) {
         client_email: clientEmail,
         client_phone: clientPhone,
         client_location: clientLocation,
-        status: 'pending'
+        status: shouldAutoConfirm ? 'confirmed' : 'pending'
       }
 
       // Solo agregar datos del servicio si no es el general
@@ -482,6 +505,26 @@ export default function BookingWidget({ storeId }: Props) {
     return (
       <div className="flex items-center justify-center py-16">
         <div className="w-10 h-10 border-3 border-gray-200 border-t-indigo-600 rounded-full animate-spin" />
+      </div>
+    )
+  }
+
+  // Verificar si está cerrado temporalmente
+  if (store?.temporarily_closed) {
+    return (
+      <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-8 text-center">
+        <div className="w-16 h-16 mx-auto mb-4 bg-red-100 rounded-full flex items-center justify-center">
+          <svg className="w-8 h-8 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+        </div>
+        <h3 className="text-xl font-semibold text-gray-900 mb-2">Cerrado temporalmente</h3>
+        <p className="text-gray-600 mb-4">
+          Este negocio está cerrado temporalmente y no está recibiendo nuevas reservas en este momento.
+        </p>
+        <p className="text-sm text-gray-500">
+          Por favor, intentá nuevamente más tarde.
+        </p>
       </div>
     )
   }

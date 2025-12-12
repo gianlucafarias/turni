@@ -92,6 +92,77 @@ import Layout from '../../layouts/Layout.astro';
       </main>
     </div>
   </div>
+
+  <!-- Modal de cambio de plan -->
+  <div id="change-plan-modal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+    <div class="bg-gray-800 rounded-2xl shadow-2xl max-w-md w-full p-6 border border-gray-700">
+      <div class="flex items-center justify-between mb-6">
+        <div>
+          <h2 class="text-2xl font-bold text-white">Cambiar Plan</h2>
+          <p id="modal-store-name" class="text-sm text-gray-400 mt-1"></p>
+        </div>
+        <button onclick="closeChangePlanModal()" class="p-2 hover:bg-gray-700 rounded-lg transition-colors">
+          <svg class="w-6 h-6 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+
+      <div id="modal-error" class="mb-6 bg-red-500/10 border border-red-500/50 text-red-400 px-4 py-3 rounded-xl hidden"></div>
+
+      <div class="mb-6">
+        <p class="text-sm font-medium text-gray-300 mb-3">Plan actual:</p>
+        <div id="modal-current-plan" class="px-4 py-3 rounded-xl border-2 border-gray-600 bg-gray-700/50"></div>
+      </div>
+
+      <div class="mb-6">
+        <p class="text-sm font-medium text-gray-300 mb-3">Seleccionar nuevo plan:</p>
+        <div class="space-y-2">
+          <button onclick="selectPlan('free')" data-plan="free" class="plan-option w-full text-left px-4 py-3 rounded-xl border-2 border-gray-600 bg-gray-700/50 hover:border-gray-500 transition-all">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-semibold text-white">Free</p>
+                <p class="text-xs text-gray-400 mt-0.5">Plan gratuito básico</p>
+              </div>
+            </div>
+          </button>
+          <button onclick="selectPlan('trial')" data-plan="trial" class="plan-option w-full text-left px-4 py-3 rounded-xl border-2 border-gray-600 bg-gray-700/50 hover:border-gray-500 transition-all">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-semibold text-white">Trial</p>
+                <p class="text-xs text-gray-400 mt-0.5">Plan de prueba</p>
+              </div>
+            </div>
+          </button>
+          <button onclick="selectPlan('premium')" data-plan="premium" class="plan-option w-full text-left px-4 py-3 rounded-xl border-2 border-gray-600 bg-gray-700/50 hover:border-gray-500 transition-all">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-semibold text-white">Premium</p>
+                <p class="text-xs text-gray-400 mt-0.5">Plan mensual</p>
+              </div>
+            </div>
+          </button>
+          <button onclick="selectPlan('premium_annual')" data-plan="premium_annual" class="plan-option w-full text-left px-4 py-3 rounded-xl border-2 border-gray-600 bg-gray-700/50 hover:border-gray-500 transition-all">
+            <div class="flex items-center justify-between">
+              <div>
+                <p class="font-semibold text-white">Premium Anual</p>
+                <p class="text-xs text-gray-400 mt-0.5">Plan anual</p>
+              </div>
+            </div>
+          </button>
+        </div>
+      </div>
+
+      <div class="flex gap-3">
+        <button onclick="closeChangePlanModal()" class="flex-1 px-4 py-3 bg-gray-700 text-gray-300 rounded-xl font-semibold hover:bg-gray-600 transition-colors">
+          Cancelar
+        </button>
+        <button onclick="savePlanChange()" id="save-plan-btn" class="flex-1 px-4 py-3 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+          Cambiar Plan
+        </button>
+      </div>
+    </div>
+  </div>
 </Layout>
 
 <script>
@@ -124,11 +195,32 @@ import Layout from '../../layouts/Layout.astro';
   }
 
   async function loadUsers() {
-    const { data: stores } = await supabase
+    console.log('Cargando usuarios...');
+    // Forzar recarga sin caché agregando timestamp
+    const { data: stores, error } = await supabase
       .from('stores')
-      .select('*, subscriptions(plan_id, status)')
+      .select('*, subscriptions(plan_id, status, store_id)')
       .order('created_at', { ascending: false });
 
+    if (error) {
+      console.error('Error cargando usuarios:', error);
+      alert('Error al cargar usuarios: ' + error.message);
+      return;
+    }
+
+    console.log('Usuarios cargados:', stores?.length);
+    console.log('Datos de usuarios (raw):', stores);
+    console.log('Datos de usuarios (procesados):', stores?.map(s => {
+      // subscriptions puede ser un objeto o un array dependiendo de la relación
+      const sub = Array.isArray(s.subscriptions) ? s.subscriptions[0] : s.subscriptions;
+      return {
+        id: s.id,
+        name: s.name,
+        plan: sub?.plan_id || 'free',
+        subscriptions: s.subscriptions,
+        subType: Array.isArray(s.subscriptions) ? 'array' : typeof s.subscriptions
+      };
+    }));
     allUsers = stores || [];
     renderUsers(allUsers);
   }
@@ -143,8 +235,13 @@ import Layout from '../../layouts/Layout.astro';
     }
 
     tbody.innerHTML = users.map(store => {
-      const sub = store.subscriptions?.[0];
-      const planBadge = getPlanBadge(sub?.plan_id || 'free');
+      // subscriptions puede ser un objeto (relación 1:1) o un array
+      const sub = Array.isArray(store.subscriptions) 
+        ? store.subscriptions[0] 
+        : store.subscriptions;
+      const planId = sub?.plan_id || 'free';
+      console.log(`Renderizando usuario ${store.name}: plan_id=${planId}, sub=`, sub, 'subscriptions type:', Array.isArray(store.subscriptions) ? 'array' : typeof store.subscriptions);
+      const planBadge = getPlanBadge(planId);
       const date = new Date(store.created_at).toLocaleDateString('es-AR');
       
       return `
@@ -207,26 +304,212 @@ import Layout from '../../layouts/Layout.astro';
     }
   };
 
-  (window as any).changePlan = async (storeId: string) => {
-    const plan = prompt('Ingresá el nuevo plan (free, premium, premium_annual):');
-    if (!plan || !['free', 'premium', 'premium_annual'].includes(plan)) {
-      alert('Plan inválido');
+  let currentModalStore: { id: string; plan: string; name: string } | null = null;
+  let selectedPlan: string = '';
+
+  function getPlanBadgeHTML(plan: string) {
+    const badges: Record<string, string> = {
+      'free': '<span class="px-2 py-1 bg-gray-600 text-gray-300 rounded text-xs">Free</span>',
+      'trial': '<span class="px-2 py-1 bg-yellow-500/20 text-yellow-400 rounded text-xs">Trial</span>',
+      'premium': '<span class="px-2 py-1 bg-indigo-500/20 text-indigo-400 rounded text-xs">Premium</span>',
+      'premium_annual': '<span class="px-2 py-1 bg-purple-500/20 text-purple-400 rounded text-xs">Premium Anual</span>',
+    };
+    return badges[plan] || badges['free'];
+  }
+
+  function getPlanName(plan: string) {
+    const names: Record<string, string> = {
+      'free': 'Free',
+      'trial': 'Trial',
+      'premium': 'Premium',
+      'premium_annual': 'Premium Anual',
+    };
+    return names[plan] || plan;
+  }
+
+  (window as any).changePlan = (storeId: string) => {
+    const store = allUsers.find(u => u.id === storeId);
+    if (!store) return;
+
+    // subscriptions puede ser un objeto (relación 1:1) o un array
+    const sub = Array.isArray(store.subscriptions) 
+      ? store.subscriptions[0] 
+      : store.subscriptions;
+    const currentPlan = sub?.plan_id || 'free';
+    currentModalStore = {
+      id: storeId,
+      plan: currentPlan,
+      name: store.name || 'Sin nombre'
+    };
+    // NO resetear selectedPlan aquí, se inicializa pero se puede cambiar
+    selectedPlan = currentPlan;
+    console.log('Modal abierto - Plan actual:', currentPlan, 'selectedPlan inicial:', selectedPlan, 'sub:', sub);
+
+    // Mostrar modal
+    const modal = document.getElementById('change-plan-modal');
+    const storeNameEl = document.getElementById('modal-store-name');
+    const currentPlanEl = document.getElementById('modal-current-plan');
+    const errorEl = document.getElementById('modal-error');
+    const saveBtn = document.getElementById('save-plan-btn');
+
+    if (modal && storeNameEl && currentPlanEl && errorEl && saveBtn) {
+      storeNameEl.textContent = currentModalStore.name;
+      currentPlanEl.innerHTML = `<p class="font-semibold text-white">${getPlanName(currentPlan)}</p>`;
+      errorEl.classList.add('hidden');
+      errorEl.textContent = '';
+      
+      // Reset selección
+      document.querySelectorAll('.plan-option').forEach(btn => {
+        const planId = (btn as HTMLElement).dataset.plan;
+        if (planId === currentPlan) {
+          btn.classList.add('border-indigo-500', 'bg-indigo-500/10');
+          btn.classList.remove('border-gray-600', 'bg-gray-700/50');
+        } else {
+          btn.classList.remove('border-indigo-500', 'bg-indigo-500/10');
+          btn.classList.add('border-gray-600', 'bg-gray-700/50');
+        }
+      });
+
+      // Habilitar/deshabilitar botón
+      saveBtn.disabled = true;
+      if (selectedPlan !== currentPlan) {
+        saveBtn.disabled = false;
+      }
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+    }
+  };
+
+  (window as any).selectPlan = (planId: string) => {
+    selectedPlan = planId;
+    console.log('Plan seleccionado:', planId, 'Plan actual del store:', currentModalStore?.plan);
+    const saveBtn = document.getElementById('save-plan-btn');
+    
+    // Actualizar estilos de botones
+    document.querySelectorAll('.plan-option').forEach(btn => {
+      const btnPlanId = (btn as HTMLElement).dataset.plan;
+      if (btnPlanId === planId) {
+        btn.classList.add('border-indigo-500', 'bg-indigo-500/10');
+        btn.classList.remove('border-gray-600', 'bg-gray-700/50');
+      } else {
+        btn.classList.remove('border-indigo-500', 'bg-indigo-500/10');
+        btn.classList.add('border-gray-600', 'bg-gray-700/50');
+      }
+    });
+
+    // Habilitar/deshabilitar botón guardar
+    if (saveBtn && currentModalStore) {
+      const isSamePlan = selectedPlan === currentModalStore.plan;
+      saveBtn.disabled = isSamePlan;
+      console.log('Botón guardar disabled:', isSamePlan, 'selectedPlan:', selectedPlan, 'currentPlan:', currentModalStore.plan);
+    }
+  };
+
+  (window as any).closeChangePlanModal = () => {
+    const modal = document.getElementById('change-plan-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+    currentModalStore = null;
+    selectedPlan = '';
+  };
+
+  (window as any).savePlanChange = async () => {
+    console.log('savePlanChange llamado - currentModalStore:', currentModalStore, 'selectedPlan:', selectedPlan);
+    
+    if (!currentModalStore) {
+      console.error('No hay currentModalStore');
+      return;
+    }
+    
+    if (!selectedPlan) {
+      console.error('No hay selectedPlan');
+      return;
+    }
+    
+    if (selectedPlan === currentModalStore.plan) {
+      console.log('El plan seleccionado es el mismo que el actual, no hacer nada');
       return;
     }
 
-    const { error } = await supabase
-      .from('subscriptions')
-      .update({ 
-        plan_id: plan, 
-        status: plan === 'free' ? 'active' : 'active',
-        current_period_end: plan !== 'free' ? new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString() : null
-      })
-      .eq('store_id', storeId);
+    const errorEl = document.getElementById('modal-error');
+    const saveBtn = document.getElementById('save-plan-btn');
+    
+    if (saveBtn) {
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Guardando...';
+    }
 
-    if (error) {
-      alert('Error: ' + error.message);
-    } else {
-      loadUsers();
+    if (errorEl) {
+      errorEl.classList.add('hidden');
+      errorEl.textContent = '';
+    }
+
+    try {
+      // Obtener el token de la sesión
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.access_token) {
+        throw new Error('No hay sesión activa. Por favor, recarga la página.');
+      }
+
+      // Capturar el valor actual de selectedPlan antes de hacer la petición
+      const planToSave = selectedPlan;
+      
+      console.log('Cambiando plan:', { 
+        storeId: currentModalStore.id, 
+        planId: planToSave,
+        currentPlan: currentModalStore.plan,
+        selectedPlan: selectedPlan,
+        'selectedPlan === currentPlan': selectedPlan === currentModalStore.plan
+      });
+
+      if (planToSave === currentModalStore.plan) {
+        throw new Error('No se puede cambiar al mismo plan');
+      }
+
+      const response = await fetch('/api/admin/change-plan', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${session.access_token}`
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          storeId: currentModalStore.id,
+          planId: planToSave
+        })
+      });
+
+      const data = await response.json();
+      console.log('Respuesta API:', { status: response.status, data });
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Error al cambiar el plan');
+      }
+
+      // Cerrar modal y recargar
+      (window as any).closeChangePlanModal();
+      
+      // Esperar un poco antes de recargar para asegurar que la BD se actualizó
+      // Recargar múltiples veces para asegurar que se actualice
+      setTimeout(() => {
+        loadUsers();
+      }, 300);
+      setTimeout(() => {
+        loadUsers();
+      }, 1000);
+    } catch (err: any) {
+      console.error('Error al cambiar plan:', err);
+      if (errorEl) {
+        errorEl.textContent = err.message || 'Error al cambiar el plan';
+        errorEl.classList.remove('hidden');
+      }
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Cambiar Plan';
+      }
     }
   };
 

@@ -180,12 +180,13 @@ export function validateProduct(data: Partial<ProductData>): ValidationResult {
 export function validateImage(file: File): { isValid: boolean; error?: string } {
   if (!file) return { isValid: false, error: 'No se proporcionó imagen' };
   
-  if (!CONFIG.supportedImageTypes.includes(file.type)) {
-    return { isValid: false, error: 'Tipo de imagen no soportado' };
+  const supportedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp'];
+  if (!supportedTypes.includes(file.type)) {
+    return { isValid: false, error: 'Tipo de imagen no soportado. Usa JPG, PNG o WEBP' };
   }
 
   if (file.size > CONFIG.maxImageSize) {
-    return { isValid: false, error: 'La imagen supera el tamaño máximo' };
+    return { isValid: false, error: `La imagen supera el tamaño máximo de ${Math.round(CONFIG.maxImageSize / 1024 / 1024)}MB` };
   }
 
   return { isValid: true };

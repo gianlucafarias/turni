@@ -34,6 +34,7 @@ export class NotificationScheduler {
         date,
         time,
         status,
+        public_token,
         stores:store_id (
           name
         )
@@ -391,6 +392,7 @@ export class NotificationScheduler {
         date,
         time,
         status,
+        public_token,
         stores:store_id (
           name
         )
@@ -422,6 +424,7 @@ export class NotificationScheduler {
       date: appointment.date,
       time: appointment.time,
       status: appointment.status,
+      publicToken: appointment.public_token || undefined,
     };
     
     const notificationService = getNotificationService();
@@ -483,6 +486,8 @@ export function getNotificationScheduler(): NotificationScheduler {
   }
   return schedulerInstance;
 }
+
+
 
 
 

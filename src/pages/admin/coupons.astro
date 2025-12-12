@@ -236,13 +236,27 @@ import Layout from '../../layouts/Layout.astro';
       discount_value: Number(formData.get('discount_value')),
       max_uses: Number(formData.get('max_uses')) || null,
       valid_until: formData.get('valid_until') || null,
-      active: true,
-      times_used: 0
     };
 
-    const { error } = await supabase.from('coupons').insert(coupon);
-    if (error) {
-      alert('Error: ' + error.message);
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) {
+      alert('No hay sesión activa');
+      return;
+    }
+
+    const response = await fetch('/api/admin/coupons', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify(coupon)
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      alert('Error: ' + (result.error || 'Error al crear el cupón'));
     } else {
       modal?.classList.add('hidden');
       form.reset();
@@ -251,16 +265,37 @@ import Layout from '../../layouts/Layout.astro';
   });
 
   (window as any).toggleCoupon = async (id: string, activate: boolean) => {
-    const { error } = await supabase.from('coupons').update({ active: activate }).eq('id', id);
-    if (error) alert('Error: ' + error.message);
-    else loadCoupons();
+    const response = await fetch('/api/admin/coupons', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ id, active: activate })
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      alert('Error: ' + (result.error || 'Error al actualizar el cupón'));
+    } else {
+      loadCoupons();
+    }
   };
 
   (window as any).deleteCoupon = async (id: string) => {
     if (!confirm('¿Eliminar este cupón?')) return;
-    const { error } = await supabase.from('coupons').delete().eq('id', id);
-    if (error) alert('Error: ' + error.message);
-    else loadCoupons();
+    
+    const response = await fetch('/api/admin/coupons', {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ id })
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      alert('Error: ' + (result.error || 'Error al eliminar el cupón'));
+    } else {
+      loadCoupons();
+    }
   };
 
   checkAdmin();

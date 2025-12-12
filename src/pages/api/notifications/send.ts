@@ -41,6 +41,7 @@ export const POST: APIRoute = async ({ request }) => {
           date,
           time,
           status,
+          public_token,
           stores:store_id (
             name
           )
@@ -68,6 +69,7 @@ export const POST: APIRoute = async ({ request }) => {
         date: appointment.date,
         time: appointment.time,
         status: appointment.status,
+        publicToken: appointment.public_token || undefined,
       };
       
       let result;
@@ -152,6 +154,8 @@ export const POST: APIRoute = async ({ request }) => {
     });
   }
 };
+
+
 
 
 

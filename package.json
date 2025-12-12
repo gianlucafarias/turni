@@ -9,7 +9,8 @@
     "preview": "astro preview",
     "astro": "astro",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "create-r2-credentials": "node scripts/create-r2-credentials.js"
   },
   "dependencies": {
     "@astrojs/check": "^0.9.4",
@@ -17,6 +18,8 @@
     "@astrojs/node": "^9.5.1",
     "@astrojs/react": "^4.0.0",
     "@astrojs/tailwind": "^5.1.2",
+    "@aws-sdk/client-s3": "^3.948.0",
+    "@aws-sdk/s3-request-presigner": "^3.948.0",
     "@mercadopago/sdk-react": "^0.0.19",
     "@supabase/supabase-js": "^2.47.3",
     "astro": "^5.16.5",

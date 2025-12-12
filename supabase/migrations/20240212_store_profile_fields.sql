@@ -88,3 +88,5 @@ COMMENT ON COLUMN public.stores.short_bio IS 'Descripción breve o eslogan de la
 
 
 
+
+

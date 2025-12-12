@@ -62,6 +62,7 @@ export interface AppointmentForNotification {
   date: string;                 // YYYY-MM-DD
   time: string;                 // HH:mm
   status: 'pending' | 'confirmed' | 'cancelled';
+  publicToken?: string;         // Token público para URL de acceso
 }
 
 /**
@@ -297,6 +298,8 @@ export interface ClientNotificationPreferences {
   updatedAt: Date;
   optOutReason?: string;
 }
+
+
 
 
 
