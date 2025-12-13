@@ -371,9 +371,11 @@ import Layout from '../../layouts/Layout.astro';
       });
 
       // Habilitar/deshabilitar botón
-      saveBtn.disabled = true;
-      if (selectedPlan !== currentPlan) {
-        saveBtn.disabled = false;
+      if (saveBtn instanceof HTMLButtonElement) {
+        saveBtn.disabled = true;
+        if (selectedPlan !== currentPlan) {
+          saveBtn.disabled = false;
+        }
       }
 
       modal.classList.remove('hidden');
@@ -399,7 +401,7 @@ import Layout from '../../layouts/Layout.astro';
     });
 
     // Habilitar/deshabilitar botón guardar
-    if (saveBtn && currentModalStore) {
+    if (saveBtn && currentModalStore && saveBtn instanceof HTMLButtonElement) {
       const isSamePlan = selectedPlan === currentModalStore.plan;
       saveBtn.disabled = isSamePlan;
       console.log('Botón guardar disabled:', isSamePlan, 'selectedPlan:', selectedPlan, 'currentPlan:', currentModalStore.plan);
@@ -437,7 +439,7 @@ import Layout from '../../layouts/Layout.astro';
     const errorEl = document.getElementById('modal-error');
     const saveBtn = document.getElementById('save-plan-btn');
     
-    if (saveBtn) {
+    if (saveBtn && saveBtn instanceof HTMLButtonElement) {
       saveBtn.disabled = true;
       saveBtn.textContent = 'Guardando...';
     }
@@ -506,7 +508,7 @@ import Layout from '../../layouts/Layout.astro';
         errorEl.textContent = err.message || 'Error al cambiar el plan';
         errorEl.classList.remove('hidden');
       }
-      if (saveBtn) {
+      if (saveBtn && saveBtn instanceof HTMLButtonElement) {
         saveBtn.disabled = false;
         saveBtn.textContent = 'Cambiar Plan';
       }

@@ -45,10 +45,13 @@ export async function uploadImageToR2(
     const client = getR2Client()
 
     // Subir a R2
+    const arrayBuffer = await file.arrayBuffer()
+    const uint8Array = new Uint8Array(arrayBuffer)
+    
     const command = new PutObjectCommand({
       Bucket: bucket,
       Key: path,
-      Body: await file.arrayBuffer(),
+      Body: uint8Array,
       ContentType: file.type,
       CacheControl: 'public, max-age=31536000', // Cache por 1 año
     })

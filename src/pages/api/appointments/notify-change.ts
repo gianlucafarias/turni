@@ -59,28 +59,32 @@ export const POST: APIRoute = async ({ request }) => {
     // Esto funciona como fallback si Realtime no está disponible
     try {
       // Intentar crear tabla si no existe
-      await supabase.rpc('create_notification_if_not_exists', {
-        p_store_id: store.id,
-        p_notification: notification
-      }).catch(() => {
+      try {
+        await supabase.rpc('create_notification_if_not_exists', {
+          p_store_id: store.id,
+          p_notification: notification
+        })
+      } catch (rpcError) {
         // Si la función no existe, intentar insertar directamente
         // (esto fallará si la tabla no existe, pero no es crítico)
-      })
+      }
 
       // Guardar en una tabla de notificaciones pendientes
       // El dashboard las detectará al hacer polling
-      const { error: insertError } = await supabase
-        .from('appointment_notifications_pending')
-        .insert({
-          store_id: store.id,
-          appointment_id: appointment.id,
-          notification_type: notification.type,
-          notification_data: notification,
-          created_at: new Date().toISOString()
-        })
-        .catch(() => {
-          // Si la tabla no existe, no es crítico - Realtime debería funcionar
-        })
+      try {
+        const { error: insertError } = await supabase
+          .from('appointment_notifications_pending')
+          .insert({
+            store_id: store.id,
+            appointment_id: appointment.id,
+            notification_type: notification.type,
+            notification_data: notification,
+            created_at: new Date().toISOString()
+          })
+        // Si la tabla no existe, no es crítico - Realtime debería funcionar
+      } catch (insertError) {
+        // Si la tabla no existe, no es crítico - Realtime debería funcionar
+      }
     } catch (error) {
       // No es crítico si falla - Realtime debería manejar esto
       console.log('No se pudo guardar notificación pendiente, se usará Realtime')
