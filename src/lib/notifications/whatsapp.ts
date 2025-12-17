@@ -184,21 +184,48 @@ export class WhatsAppClient {
     };
     
     try {
-      const response = await fetch(
-        `${this.baseUrl}/${this.config.phoneNumberId}/messages`,
-        {
-          method: 'POST',
-          headers: {
-            'Authorization': `Bearer ${this.config.apiToken}`,
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(requestBody),
-        }
-      );
+      const url = `${this.baseUrl}/${this.config.phoneNumberId}/messages`;
+      console.log('[WhatsApp] Sending message to:', url);
+      console.log('[WhatsApp] Request body:', JSON.stringify(requestBody, null, 2));
+      
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.config.apiToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestBody),
+      });
+      
+      console.log('[WhatsApp] Response status:', response.status);
       
       if (!response.ok) {
-        const errorData = await response.json() as WhatsAppAPIError;
-        const isRateLimited = errorData.error.code === 130429;
+        let errorMessage = `HTTP ${response.status}`;
+        let errorCode = String(response.status);
+        
+        try {
+          const errorData = await response.json() as WhatsAppAPIError;
+          errorMessage = errorData.error?.message || errorMessage;
+          errorCode = String(errorData.error?.code || response.status);
+          
+          console.error('[WhatsApp] API Error:', {
+            code: errorCode,
+            message: errorMessage,
+            type: errorData.error?.type,
+            status: response.status,
+            body: requestBody,
+          });
+        } catch (parseError) {
+          const textError = await response.text();
+          errorMessage = textError || errorMessage;
+          console.error('[WhatsApp] Error parsing response:', {
+            status: response.status,
+            text: textError.substring(0, 500),
+            body: requestBody,
+          });
+        }
+        
+        const isRateLimited = errorCode === '130429';
         
         return {
           success: false,
@@ -206,8 +233,8 @@ export class WhatsAppClient {
           channel: 'whatsapp',
           timestamp: new Date(),
           error: {
-            code: String(errorData.error.code),
-            message: errorData.error.message,
+            code: errorCode,
+            message: errorMessage,
             retryable: isRateLimited || response.status >= 500,
           },
         };
