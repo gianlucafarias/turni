@@ -60,3 +60,4 @@ CREATE POLICY "Public can view stores"
 
 
 
+

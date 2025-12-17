@@ -16,3 +16,4 @@ ALTER PUBLICATION supabase_realtime ADD TABLE appointments;
 
 SELECT 'Realtime habilitado para tabla appointments' as resultado;
 
+

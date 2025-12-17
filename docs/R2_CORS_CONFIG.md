@@ -54,3 +54,4 @@ Si solo quieres probar en local por ahora:
 - Puedes agregar múltiples orígenes en el array `AllowedOrigins`
 - Después de guardar, los cambios se aplican inmediatamente
 
+

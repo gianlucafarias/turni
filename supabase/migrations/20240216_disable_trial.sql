@@ -67,3 +67,4 @@ SELECT 'Trial desactivado. Nuevos usuarios empiezan en plan Free.' as resultado;
 
 
 
+

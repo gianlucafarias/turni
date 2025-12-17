@@ -118,3 +118,4 @@ COMMENT ON COLUMN public.user_profiles.localidad IS 'Ciudad/localidad de residen
 
 
 
+

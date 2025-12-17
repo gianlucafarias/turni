@@ -11,3 +11,4 @@ COMMENT ON COLUMN public.stores.max_appointments_per_slot IS 'Cantidad máxima d
 
 
 
+

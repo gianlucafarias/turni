@@ -7,3 +7,4 @@ ADD COLUMN IF NOT EXISTS auto_notify_users BOOLEAN DEFAULT FALSE;
 COMMENT ON COLUMN public.stores.auto_approve_appointments IS 'Si las citas se aprueban automáticamente al crearse';
 COMMENT ON COLUMN public.stores.auto_notify_users IS 'Si se notifica automáticamente a los usuarios cuando se confirma o cancela un turno';
 
+

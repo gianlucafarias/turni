@@ -19,3 +19,4 @@ CREATE POLICY "Admins can insert subscriptions" ON public.subscriptions
         EXISTS (SELECT 1 FROM public.stores WHERE user_id = auth.uid() AND is_admin = true)
     );
 
+
