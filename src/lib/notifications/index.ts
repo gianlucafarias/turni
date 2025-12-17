@@ -56,7 +56,7 @@ export class NotificationService {
     let result: SendNotificationResult;
     
     if (preferredChannel === 'whatsapp' && appointment.clientPhone && isWhatsAppConfigured()) {
-      // Pasar solo el token si el template ya tiene la URL base
+      // Pasar solo el token, el template de WhatsApp ya tiene la URL base
       // El template debe tener: https://tu-dominio.com/appointment/{{1}}
       const appointmentToken = appointment.publicToken || undefined;
       result = await this.whatsapp.sendAppointmentReminder(appointment, appointmentToken);
@@ -117,6 +117,7 @@ export class NotificationService {
     const results: SendNotificationResult[] = [];
     
     if (appointment.clientPhone && isWhatsAppConfigured()) {
+      // Pasar solo el token, el template de WhatsApp ya tiene la URL base
       const appointmentToken = appointment.publicToken || undefined;
       const waResult = await this.whatsapp.sendAppointmentConfirmed(appointment, appointmentToken);
       results.push(waResult);
@@ -175,6 +176,7 @@ export class NotificationService {
     let result: SendNotificationResult;
     
     if (appointment.clientPhone && isWhatsAppConfigured()) {
+      // Pasar solo el token, el template de WhatsApp ya tiene la URL base
       const appointmentToken = appointment.publicToken || undefined;
       result = await this.whatsapp.sendAppointmentStatusChange(appointment, newStatus, appointmentToken);
     } else if (appointment.clientEmail && isEmailConfigured()) {

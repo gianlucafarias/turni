@@ -2,13 +2,13 @@
 
 ## Cómo funciona
 
-En Meta Business Suite, cuando defines un botón de tipo URL, puedes incluir la URL base en el template y usar una variable para la parte dinámica. Por ejemplo:
+En Meta Business Suite, cuando defines un botón de tipo URL, puedes pasar la URL completa como variable. El código construye la URL completa usando el dominio configurado en `PUBLIC_SITE_URL`.
 
-- **URL en el template**: `https://tu-dominio.com/appointment/{{1}}`
-- **Token que enviamos**: `abc123xyz`
+- **URL que enviamos**: `https://tu-dominio.com/appointment/abc123xyz` (URL completa)
+- **URL en el template**: Solo `{{1}}` (sin URL base)
 - **URL final**: `https://tu-dominio.com/appointment/abc123xyz`
 
-El código solo necesita pasar el token (la parte dinámica), no la URL completa.
+El código construye la URL completa automáticamente usando `PUBLIC_SITE_URL` + `/appointment/` + `public_token`.
 
 ---
 
@@ -38,12 +38,13 @@ El código solo necesita pasar el token (la parte dinámica), no la URL completa
 4. **Botón con URL dinámica**:
    - **Tipo de botón**: `URL`
    - **Texto del botón**: `Ver turno` (máximo 25 caracteres)
-   - **URL**: `https://tu-dominio.com/appointment/{{1}}` (reemplaza `tu-dominio.com` con tu dominio real)
+   - **URL**: Solo `{{1}}` (sin URL base, solo la variable)
    
    **IMPORTANTE**: 
-   - La URL base (`https://tu-dominio.com/appointment/`) va en el template
-   - La variable `{{1}}` será reemplazada por el token del turno que enviamos desde el código
-   - Solo necesitas cambiar `tu-dominio.com` por tu dominio real
+   - El template debe tener SOLO `{{1}}` en el campo URL del botón
+   - NO incluyas la URL base en el template
+   - El código construye la URL completa automáticamente: `https://tu-dominio.com/appointment/token`
+   - La variable `{{1}}` será reemplazada por la URL completa que enviamos desde el código
 
 5. **Ejemplo para revisión**:
    - Nombre: `Juan Pérez`
@@ -51,15 +52,18 @@ El código solo necesita pasar el token (la parte dinámica), no la URL completa
    - Fecha: `martes 12 de marzo`
    - Hora: `10:00`
    - Negocio: `Mi Peluquería`
-   - Token (para el botón): `abc123xyz` (solo la parte dinámica)
+   - URL completa (para el botón): `https://tu-dominio.com/appointment/abc123xyz`
 
 ### Envío desde el código
 
 El código automáticamente:
 1. Obtiene el `public_token` del turno (ej: `abc123xyz`)
-2. Lo pasa como parámetro del botón en el componente `button` con `sub_type: 'url'`
-3. WhatsApp combina la URL base del template con el token: `https://tu-dominio.com/appointment/abc123xyz`
-4. El botón aparecerá clickeable en el mensaje de WhatsApp
+2. Construye la URL completa usando `PUBLIC_SITE_URL`: `https://tu-dominio.com/appointment/abc123xyz`
+3. Pasa la URL completa como parámetro del botón en el componente `button` con `sub_type: 'url'`
+4. WhatsApp reemplaza `{{1}}` con la URL completa
+5. El botón aparecerá clickeable en el mensaje de WhatsApp
+
+**Nota**: Asegúrate de tener configurada la variable de entorno `PUBLIC_SITE_URL` con tu dominio (ej: `https://tu-dominio.com`)
 
 ### Estructura del payload enviado
 
@@ -85,17 +89,17 @@ El código automáticamente:
           { "type": "text", "text": "Mi Peluquería" }
         ]
       },
-      {
-        "type": "button",
-        "sub_type": "url",
-        "index": 0,
-        "parameters": [
           {
-            "type": "text",
-            "text": "abc123xyz"
+            "type": "button",
+            "sub_type": "url",
+            "index": 0,
+            "parameters": [
+              {
+                "type": "text",
+                "text": "https://tu-dominio.com/appointment/abc123xyz"
+              }
+            ]
           }
-        ]
-      }
     ]
   }
 }
@@ -103,11 +107,13 @@ El código automáticamente:
 
 ### Notas importantes
 
-- El botón de URL solo funciona en templates de categoría **Utility** o **Marketing**
-- La URL debe ser HTTPS
-- La URL puede ser dinámica usando `{{1}}` en la definición del template
-- El texto del botón tiene un máximo de 25 caracteres
-- Solo puedes tener **1 botón de URL** por template (puedes combinar con quick_reply buttons)
+    - El botón de URL solo funciona en templates de categoría **Utility** o **Marketing**
+    - La URL debe ser HTTPS
+    - El template debe tener solo `{{1}}` como URL (sin URL base)
+    - El código construye la URL completa automáticamente
+    - El texto del botón tiene un máximo de 25 caracteres
+    - Solo puedes tener **1 botón de URL** por template (puedes combinar con quick_reply buttons)
+    - Asegúrate de tener `PUBLIC_SITE_URL` configurada en las variables de entorno
 
 ### Verificación
 
@@ -136,10 +142,10 @@ Una vez aprobado el template, puedes probarlo enviando un mensaje de prueba. El 
    - `{{4}}` = Hora
    - `{{5}}` = Nombre del negocio
 
-3. **Botón con URL dinámica**:
-   - **Tipo de botón**: `URL`
-   - **Texto del botón**: `Ver turno`
-   - **URL**: `https://tu-dominio.com/appointment/{{1}}`
+    3. **Botón con URL dinámica**:
+       - **Tipo de botón**: `URL`
+       - **Texto del botón**: `Ver turno`
+       - **URL**: Solo `{{1}}` (sin URL base)
 
 ---
 
@@ -163,18 +169,18 @@ Una vez aprobado el template, puedes probarlo enviando un mensaje de prueba. El 
    - `{{3}}` = Fecha
    - `{{4}}` = Estado (Confirmado/Cancelado/Pendiente)
 
-3. **Botón con URL dinámica**:
-   - **Tipo de botón**: `URL`
-   - **Texto del botón**: `Ver turno`
-   - **URL**: `https://tu-dominio.com/appointment/{{1}}`
+    3. **Botón con URL dinámica**:
+       - **Tipo de botón**: `URL`
+       - **Texto del botón**: `Ver turno`
+       - **URL**: Solo `{{1}}` (sin URL base)
 
 ---
 
-## Notas importantes
+    ## Notas importantes
 
-- **URL base en el template**: La URL base (`https://tu-dominio.com/appointment/`) debe estar en el template de Meta Business Suite
-- **Solo el token se envía**: El código solo envía el token (ej: `abc123xyz`), no la URL completa
-- **Reemplazar dominio**: Cambia `tu-dominio.com` por tu dominio real en cada template
-- **HTTPS requerido**: La URL debe ser HTTPS
-- **Máximo 1 botón URL**: Solo puedes tener 1 botón de tipo URL por template
+    - **URL completa en el código**: El código construye la URL completa automáticamente usando `PUBLIC_SITE_URL`
+    - **Template solo con variable**: El template debe tener solo `{{1}}` como URL, sin URL base
+    - **Variable de entorno**: Asegúrate de tener `PUBLIC_SITE_URL` configurada (ej: `https://tu-dominio.com`)
+    - **HTTPS requerido**: La URL debe ser HTTPS
+    - **Máximo 1 botón URL**: Solo puedes tener 1 botón de tipo URL por template
 

@@ -309,9 +309,9 @@ export class WhatsAppClient {
     ];
     
     // Agregar botón con URL si está disponible
-    // appointmentUrl puede ser:
-    // - Solo el token (si el template tiene la URL base): "abc123xyz"
-    // - URL completa (si el template solo tiene {{1}}): "https://tu-dominio.com/appointment/abc123xyz"
+    // appointmentUrl es solo el token (ej: "abc123xyz")
+    // El template de WhatsApp debe tener: https://tu-dominio.com/appointment/{{1}}
+    // WhatsApp combinará la URL base del template con el token
     if (appointmentUrl) {
       components.push({
         type: 'button',
@@ -375,9 +375,9 @@ export class WhatsAppClient {
     ];
     
     // Agregar botón con URL si está disponible
-    // appointmentUrl puede ser:
-    // - Solo el token (si el template tiene la URL base): "abc123xyz"
-    // - URL completa (si el template solo tiene {{1}}): "https://tu-dominio.com/appointment/abc123xyz"
+    // appointmentUrl es solo el token (ej: "abc123xyz")
+    // El template de WhatsApp debe tener: https://tu-dominio.com/appointment/{{1}}
+    // WhatsApp combinará la URL base del template con el token
     if (appointmentUrl) {
       components.push({
         type: 'button',
@@ -447,9 +447,9 @@ export class WhatsAppClient {
     ];
     
     // Agregar botón con URL si está disponible
-    // appointmentUrl puede ser:
-    // - Solo el token (si el template tiene la URL base): "abc123xyz"
-    // - URL completa (si el template solo tiene {{1}}): "https://tu-dominio.com/appointment/abc123xyz"
+    // appointmentUrl es solo el token (ej: "abc123xyz")
+    // El template de WhatsApp debe tener: https://tu-dominio.com/appointment/{{1}}
+    // WhatsApp combinará la URL base del template con el token
     if (appointmentUrl) {
       components.push({
         type: 'button',
