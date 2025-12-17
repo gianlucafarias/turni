@@ -17,7 +17,7 @@ export default function AppointmentDetailModal({
   onUpdate,
   onDelete
 }: AppointmentDetailModalProps) {
-  const [notifyOnConfirm, setNotifyOnConfirm] = useState(false)
+  const [notifyOnConfirm, setNotifyOnConfirm] = useState<boolean | undefined>(undefined) // undefined = usar default (true si premium)
   const [updating, setUpdating] = useState(false)
   const { isPremium } = useSubscriptionLimits()
 
@@ -59,8 +59,11 @@ export default function AppointmentDetailModal({
     try {
       await supabase.from('appointments').update({ status: newStatus }).eq('id', appointment.id)
       
-      // Si se confirma y debe notificar (y es premium), enviar notificación
-      if (newStatus === 'confirmed' && notifyOnConfirm && isPremium) {
+      // Si se confirma y es premium, enviar notificación automáticamente
+      // Por defecto se envía (notifyOnConfirm undefined o true), solo no se envía si es false explícitamente
+      const shouldNotify = notifyOnConfirm !== false
+      
+      if (newStatus === 'confirmed' && shouldNotify && isPremium) {
         try {
           const response = await fetch('/api/notifications/send', {
             method: 'POST',
@@ -73,6 +76,8 @@ export default function AppointmentDetailModal({
           })
           if (!response.ok) {
             console.error('Error enviando notificación:', await response.text())
+          } else {
+            console.log('Notificación de confirmación enviada')
           }
         } catch (error) {
           console.error('Error enviando notificación:', error)
@@ -349,12 +354,12 @@ export default function AppointmentDetailModal({
                     disabled={!isPremium}
                     className={`relative w-12 h-7 rounded-full transition-colors ${
                       !isPremium ? 'bg-gray-200 cursor-not-allowed opacity-50' : 
-                      notifyOnConfirm ? 'bg-indigo-600' : 'bg-gray-200'
+                      (notifyOnConfirm !== false) ? 'bg-indigo-600' : 'bg-gray-200'
                     }`}
                   >
                     <span
                       className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-all ${
-                        notifyOnConfirm ? 'left-6' : 'left-1'
+                        (notifyOnConfirm !== false) ? 'left-6' : 'left-1'
                       }`}
                     />
                   </button>

@@ -64,13 +64,13 @@ export default function AppointmentsList() {
     }
   }
 
-  async function updateStatus(id: string, status: string, shouldNotify: boolean = false) {
+  async function updateStatus(id: string, status: string, shouldNotify: boolean = true) {
     try {
       await supabase.from('appointments').update({ status }).eq('id', id)
       const updatedAppointments = appointments.map(a => a.id === id ? { ...a, status } : a)
       setAppointments(updatedAppointments)
       
-      // Si se confirma y debe notificar (y es premium), enviar notificación
+      // Si se confirma y debe notificar (y es premium), enviar notificación automáticamente
       if (status === 'confirmed' && shouldNotify && isPremium) {
         const appointment = updatedAppointments.find(a => a.id === id)
         if (appointment) {
@@ -87,6 +87,8 @@ export default function AppointmentsList() {
             })
             if (!response.ok) {
               console.error('Error enviando notificación:', await response.text())
+            } else {
+              console.log('Notificación de confirmación enviada')
             }
           } catch (error) {
             console.error('Error enviando notificación:', error)
@@ -110,7 +112,7 @@ export default function AppointmentsList() {
 
   function handleQuickConfirm(appointment: any, e: React.MouseEvent) {
     e.stopPropagation()
-    updateStatus(appointment.id, 'confirmed', false)
+    updateStatus(appointment.id, 'confirmed', true) // Enviar notificación automáticamente
   }
 
   function handleQuickCancel(appointment: any, e: React.MouseEvent) {

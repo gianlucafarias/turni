@@ -428,8 +428,33 @@ export default function BookingWidget({ storeId }: Props) {
         appointmentData.service_price = 0
       }
 
-      const { error: insertError } = await supabase.from('appointments').insert(appointmentData)
+      const { data: insertedAppointment, error: insertError } = await supabase
+        .from('appointments')
+        .insert(appointmentData)
+        .select()
+        .single()
+      
       if (insertError) throw insertError
+      
+      // Si se auto-confirmó, enviar notificación
+      if (shouldAutoConfirm && insertedAppointment) {
+        try {
+          const response = await fetch('/api/notifications/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              type: 'appointment_confirmed',
+              appointment_id: insertedAppointment.id,
+              store_id: storeId,
+            }),
+          })
+          if (!response.ok) {
+            console.error('Error enviando notificación:', await response.text())
+          }
+        } catch (error) {
+          console.error('Error enviando notificación:', error)
+        }
+      }
       
       // Recargar appointments después de crear
       await loadData()

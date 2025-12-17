@@ -547,6 +547,36 @@ export default function DashboardOverview() {
                             onClick={async (e) => {
                               e.stopPropagation()
                               await supabase.from('appointments').update({ status: 'confirmed' }).eq('id', apt.id)
+                              
+                              // Enviar notificación si es premium
+                              try {
+                                const { data: subscription } = await supabase
+                                  .from('subscriptions')
+                                  .select('plan_id, status')
+                                  .eq('store_id', store.id)
+                                  .single()
+                                
+                                const premiumPlans = ['premium', 'premium_annual', 'trial']
+                                const isPremium = subscription?.status === 'active' && premiumPlans.includes(subscription?.plan_id)
+                                
+                                if (isPremium) {
+                                  const response = await fetch('/api/notifications/send', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' },
+                                    body: JSON.stringify({
+                                      type: 'appointment_confirmed',
+                                      appointment_id: apt.id,
+                                      store_id: store.id,
+                                    }),
+                                  })
+                                  if (!response.ok) {
+                                    console.error('Error enviando notificación:', await response.text())
+                                  }
+                                }
+                              } catch (error) {
+                                console.error('Error verificando suscripción:', error)
+                              }
+                              
                               loadData()
                             }}
                             className="px-3 py-1.5 bg-green-600 text-white rounded-lg text-xs font-semibold hover:bg-green-700 transition-colors"

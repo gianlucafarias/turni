@@ -19,7 +19,6 @@ export default function AppointmentsSettings({
   const { isPremium } = useSubscriptionLimits()
 
   // Estados para las configuraciones
-  const [autoApprove, setAutoApprove] = useState(false)
   const [allowMultiple, setAllowMultiple] = useState(false)
   const [maxPerSlot, setMaxPerSlot] = useState(1)
   const [autoNotify, setAutoNotify] = useState(false)
@@ -28,7 +27,7 @@ export default function AppointmentsSettings({
     if (isOpen) {
       loadStore()
     }
-  }, [isOpen])
+  }, [isOpen, isPremium]) // Recargar cuando cambie el estado de premium
 
   async function loadStore() {
     try {
@@ -44,10 +43,16 @@ export default function AppointmentsSettings({
 
       if (storeData) {
         setStore(storeData)
-        setAutoApprove(storeData.auto_approve_appointments || false)
         setAllowMultiple(storeData.allow_multiple_appointments || false)
         setMaxPerSlot(storeData.max_appointments_per_slot || 1)
-        setAutoNotify(storeData.auto_notify_users || false)
+        
+        // Por defecto autoNotify está activado solo para usuarios premium
+        // Si es premium y no tiene un valor establecido (undefined/null), usar true por defecto
+        if (isPremium) {
+          setAutoNotify(storeData.auto_notify_users !== false) // true si es undefined/null, o si es explícitamente true
+        } else {
+          setAutoNotify(false) // Siempre false para usuarios no premium
+        }
       }
     } catch (error) {
       console.error('Error cargando tienda:', error)
@@ -62,10 +67,16 @@ export default function AppointmentsSettings({
     setSaving(true)
     try {
       const updates: any = {
-        auto_approve_appointments: autoApprove,
         allow_multiple_appointments: allowMultiple,
         max_appointments_per_slot: allowMultiple ? maxPerSlot : 1,
-        auto_notify_users: autoNotify && isPremium ? autoNotify : false
+      }
+
+      // Solo guardar auto_notify_users si es premium y la columna existe
+      // Si el usuario es premium, guardar el valor; si no es premium, forzar a false
+      if (isPremium) {
+        updates.auto_notify_users = autoNotify
+      } else {
+        updates.auto_notify_users = false
       }
 
       const { error } = await supabase
@@ -73,7 +84,20 @@ export default function AppointmentsSettings({
         .update(updates)
         .eq('id', store.id)
 
-      if (error) throw error
+      if (error) {
+        // Si falla porque la columna no existe, intentar sin auto_notify_users
+        if (error.message?.includes('auto_notify_users')) {
+          delete updates.auto_notify_users
+          const { error: retryError } = await supabase
+            .from('stores')
+            .update(updates)
+            .eq('id', store.id)
+          
+          if (retryError) throw retryError
+        } else {
+          throw error
+        }
+      }
 
       onUpdate()
       onClose()
@@ -114,33 +138,6 @@ export default function AppointmentsSettings({
 
         {/* Content */}
         <div className="p-6 space-y-6">
-          {/* Aprobar citas automáticamente */}
-          <div className="bg-white border-2 border-gray-100 rounded-2xl p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <label className="text-sm font-semibold text-gray-900 block mb-1">
-                  Aprobar citas automáticamente
-                </label>
-                <p className="text-xs text-gray-500">
-                  Las nuevas citas se confirmarán automáticamente sin necesidad de aprobación manual
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={() => setAutoApprove(!autoApprove)}
-                className={`relative w-12 h-7 rounded-full transition-colors flex-shrink-0 ${
-                  autoApprove ? 'bg-indigo-600' : 'bg-gray-200'
-                }`}
-              >
-                <span
-                  className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-all ${
-                    autoApprove ? 'left-6' : 'left-1'
-                  }`}
-                />
-              </button>
-            </div>
-          </div>
-
           {/* Permitir múltiples turnos simultáneos */}
           <div className="bg-white border-2 border-gray-100 rounded-2xl p-5">
             <div className="flex items-center justify-between mb-3">
@@ -235,15 +232,18 @@ export default function AppointmentsSettings({
               </button>
             </div>
             {!isPremium && (
-              <p className="text-xs text-indigo-600 mt-2">
-                Función disponible solo en planes Premium.{' '}
-                <a
-                  href="/dashboard/subscription"
-                  className="font-medium hover:underline"
-                >
-                  Actualizar →
-                </a>
-              </p>
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mt-3">
+                <p className="text-xs text-amber-700">
+                  <strong>Función Premium:</strong> Esta función solo está disponible para usuarios Premium. 
+                  Las notificaciones automáticas no se enviarán en el plan gratuito.{' '}
+                  <a
+                    href="/dashboard/subscription"
+                    className="font-medium hover:underline text-amber-800"
+                  >
+                    Actualizar a Premium →
+                  </a>
+                </p>
+              </div>
             )}
           </div>
 
