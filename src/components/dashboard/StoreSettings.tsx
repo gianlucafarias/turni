@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import ImageUpload from '../ui/ImageUpload'
 import { deleteImageFromStorage } from '../../utils/storage'
+import GoogleCalendarSync from './GoogleCalendarSync'
 
 export default function StoreSettings() {
   const [store, setStore] = useState<any>(null)
@@ -750,6 +751,9 @@ export default function StoreSettings() {
         {/* TAB: Ajustes */}
         {activeTab === 'settings' && (
           <div className="space-y-6">
+            {/* Sincronización con Google Calendar */}
+            {isAppointments && <GoogleCalendarSync />}
+
             {/* Opciones solo para turnos */}
             {isAppointments && (
               <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">

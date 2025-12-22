@@ -1,15 +1,47 @@
 ---
 import Layout from './Layout.astro';
 import MainNavbar from '../components/MainNavbar.astro';
+import StoreNavbar from '../components/public/StoreNavbar.astro';
+import { supabase } from '../lib/supabase';
 
 interface Props {
   title: string;
+  store?: {
+    name: string;
+    slug?: string | null;
+    id: string;
+    whatsapp_url?: string | null;
+    store_type?: string | null;
+    user_id?: string | null;
+  } | null;
 }
 
-const { title } = Astro.props;
+const { title, store } = Astro.props;
+
+// Verificar si hay sesión y si el usuario es dueño de la tienda
+let hasSession = false;
+let isStoreOwner = false;
+
+if (store) {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    hasSession = !!session;
+    // Verificar si el usuario es dueño de la tienda
+    if (session && store.user_id && session.user.id === store.user_id) {
+      isStoreOwner = true;
+    }
+  } catch (error) {
+    hasSession = false;
+    isStoreOwner = false;
+  }
+}
 ---
 
 <Layout title={title}>
-  <MainNavbar />
+  {store ? (
+    <StoreNavbar store={store} />
+  ) : (
+    <MainNavbar />
+  )}
   <slot />
 </Layout> 

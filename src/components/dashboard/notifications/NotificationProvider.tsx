@@ -134,7 +134,13 @@ export function NotificationProvider({ children, storeId }: NotificationProvider
             service_name?: string;
             date: string;
             time: string;
+            imported_from_google_calendar?: boolean;
           };
+
+          // Ignorar turnos importados de Google Calendar para evitar notificaciones
+          if (appointment.imported_from_google_calendar) {
+            return;
+          }
 
           // Mostrar toast de nuevo turno
           showToast({

@@ -6,3 +6,10 @@ ADD COLUMN IF NOT EXISTS client_modified_at TIMESTAMP WITH TIME ZONE;
 COMMENT ON COLUMN public.appointments.client_modified_at IS 'Fecha y hora en que el turno fue modificado por el cliente';
 
 
+
+
+
+
+
+
+

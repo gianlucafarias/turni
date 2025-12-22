@@ -127,3 +127,10 @@ docker compose exec app node -e "console.log(process.env.AWS_REGION)"
 
 
 
+
+
+
+
+
+
+

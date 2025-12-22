@@ -140,3 +140,10 @@ BREAKING CHANGE: La respuesta de /api/users ahora retorna un objeto en lugar de 
 - **Producción**: Se deploya automáticamente desde `main` vía GitHub Actions
 
 
+
+
+
+
+
+
+

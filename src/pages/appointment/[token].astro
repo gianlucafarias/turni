@@ -27,7 +27,7 @@ if (!store) {
 }
 ---
 
-<PublicLayout title={`Turno - ${store.name}`}>
+<PublicLayout title={`Turno - ${store.name}`} store={{ name: store.name, slug: store.slug, id: store.id, whatsapp_url: store.whatsapp_url, user_id: store.user_id }}>
   <AppointmentView appointment={appointment} store={store} client:load />
 </PublicLayout>
 

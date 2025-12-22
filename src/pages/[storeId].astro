@@ -57,7 +57,7 @@ const galleryImages = store.gallery_images || [];
 const hasGallery = galleryImages.length > 0;
 ---
 
-<PublicLayout title={store.name}>
+<PublicLayout title={store.name} store={{ name: store.name, slug: store.slug, id: store.id, whatsapp_url: store.whatsapp_url, store_type: store.store_type, user_id: store.user_id }}>
   <div class="min-h-screen bg-white">
     {/* CONTENIDO PRINCIPAL */}
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
@@ -73,7 +73,7 @@ const hasGallery = galleryImages.length > 0;
               {/* Card de perfil */}
               <div class="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
                 {/* Banner mini o color */}
-                <div class="h-24 bg-gradient-to-br from-stone-800 to-stone-900 relative">
+                <div class="h-24 bg-stone-800 relative">
                   {store.banner_image_url && (
                     <img src={store.banner_image_url} alt="" class="w-full h-full object-cover opacity-80" />
                   )}
@@ -89,7 +89,7 @@ const hasGallery = galleryImages.length > 0;
                         class="w-full h-full rounded-xl object-cover"
                       />
                     ) : (
-                      <div class="w-full h-full rounded-xl bg-gradient-to-br from-stone-100 to-stone-200 flex items-center justify-center">
+                      <div class="w-full h-full rounded-xl bg-stone-100 flex items-center justify-center">
                         <span class="text-3xl font-black text-stone-400">
                           {store.name.charAt(0).toUpperCase()}
                         </span>
@@ -277,7 +277,7 @@ const hasGallery = galleryImages.length > 0;
               {/* Card de perfil */}
               <div class="bg-white rounded-2xl border border-stone-200 overflow-hidden shadow-sm">
                 {/* Banner mini */}
-                <div class="h-24 bg-gradient-to-br from-indigo-600 to-purple-700 relative">
+                <div class="h-24 bg-indigo-600 relative">
                   {store.banner_image_url && (
                     <img src={store.banner_image_url} alt="" class="w-full h-full object-cover opacity-80" />
                   )}
@@ -293,7 +293,7 @@ const hasGallery = galleryImages.length > 0;
                         class="w-full h-full rounded-xl object-cover"
                       />
                     ) : (
-                      <div class="w-full h-full rounded-xl bg-gradient-to-br from-indigo-100 to-purple-100 flex items-center justify-center">
+                      <div class="w-full h-full rounded-xl bg-indigo-100 flex items-center justify-center">
                         <span class="text-3xl font-black text-indigo-400">
                           {store.name.charAt(0).toUpperCase()}
                         </span>
@@ -366,6 +366,19 @@ const hasGallery = galleryImages.length > 0;
                   <p class="text-stone-600 text-sm whitespace-pre-line">{store.business_hours_text}</p>
                 </div>
               )}
+
+              {/* Botón Reservar turno ahora - Solo mobile */}
+              <div class="lg:hidden">
+                <button
+                  id="scroll-to-booking-btn-mobile"
+                  class="w-full flex items-center justify-center gap-2 px-5 py-3.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-lg shadow-indigo-500/20 hover:shadow-xl hover:shadow-indigo-500/30"
+                >
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                  </svg>
+                  Reservar turno ahora
+                </button>
+              </div>
 
               {/* Contacto */}
               {(store.address || store.phone || store.email) && (
@@ -459,7 +472,7 @@ const hasGallery = galleryImages.length > 0;
           {/* CONTENIDO PRINCIPAL - Widget de reservas */}
           <main class="flex-1 min-w-0">
             {/* Header */}
-            <div class="mb-8">
+            <div class="mb-8" id="reservar-turno">
               <h2 class="text-3xl font-bold text-stone-900">Reservar turno</h2>
               <p class="text-stone-500 mt-2">Seleccioná un servicio y elegí el horario que más te convenga</p>
             </div>
@@ -657,5 +670,23 @@ const hasGallery = galleryImages.length > 0;
         updateIndicators();
       }, 100);
     });
+    
+    // Botón de scroll a reservar turno
+    const scrollBtn = document.getElementById('scroll-to-booking-btn-mobile');
+    if (scrollBtn) {
+      scrollBtn.addEventListener('click', function() {
+        const target = document.getElementById('reservar-turno');
+        if (target) {
+          // Calcular offset para compensar la navbar sticky
+          const navbarHeight = document.querySelector('nav')?.offsetHeight || 0;
+          const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - navbarHeight - 20;
+          
+          window.scrollTo({
+            top: targetPosition,
+            behavior: 'smooth'
+          });
+        }
+      });
+    }
   });
 </script>
