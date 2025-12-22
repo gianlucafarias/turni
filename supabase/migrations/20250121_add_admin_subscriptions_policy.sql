@@ -20,3 +20,10 @@ CREATE POLICY "Admins can insert subscriptions" ON public.subscriptions
     );
 
 
+
+
+
+
+
+
+

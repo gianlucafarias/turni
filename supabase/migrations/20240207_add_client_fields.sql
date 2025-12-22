@@ -17,3 +17,10 @@ COMMENT ON COLUMN public.stores.show_prices IS 'Si mostrar precios en la página
 
 
 
+
+
+
+
+
+
+

@@ -323,3 +323,10 @@ SELECT 'Tablas de clientes creadas correctamente!' as resultado;
 
 
 
+
+
+
+
+
+
+

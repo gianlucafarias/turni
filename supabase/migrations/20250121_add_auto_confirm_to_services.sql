@@ -6,3 +6,10 @@ ADD COLUMN IF NOT EXISTS auto_confirm BOOLEAN DEFAULT false NOT NULL;
 COMMENT ON COLUMN public.services.auto_confirm IS 'Si es true, los turnos de este servicio se confirman automáticamente al crearse (requiere plan Premium)';
 
 
+
+
+
+
+
+
+

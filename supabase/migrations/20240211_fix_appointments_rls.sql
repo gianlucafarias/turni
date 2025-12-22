@@ -23,3 +23,10 @@ CREATE POLICY "Anyone can view appointments"
 
 
 
+
+
+
+
+
+
+

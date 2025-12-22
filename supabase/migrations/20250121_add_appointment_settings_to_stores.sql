@@ -8,3 +8,10 @@ COMMENT ON COLUMN public.stores.auto_approve_appointments IS 'Si las citas se ap
 COMMENT ON COLUMN public.stores.auto_notify_users IS 'Si se notifica automáticamente a los usuarios cuando se confirma o cancela un turno';
 
 
+
+
+
+
+
+
+

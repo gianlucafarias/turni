@@ -27,3 +27,10 @@ COMMENT ON FUNCTION public.check_email_exists IS 'Verifica si un email ya existe
 
 
 
+
+
+
+
+
+
+

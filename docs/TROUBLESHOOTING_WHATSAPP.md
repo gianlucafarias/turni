@@ -157,3 +157,10 @@ Si después de verificar todo lo anterior sigue sin funcionar:
 3. Prueba con un número de teléfono que sepas que tiene WhatsApp activo
 4. Asegúrate de que el número de teléfono esté registrado en WhatsApp Business (el usuario debe haber iniciado una conversación contigo antes)
 
+
+
+
+
+
+
+

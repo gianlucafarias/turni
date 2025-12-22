@@ -99,11 +99,10 @@ export default function DashboardNavbar({ currentPath, onMenuClick }: Props) {
 
   if (loading) {
     return (
-      <nav className="bg-white border-b border-gray-200">
-        <div className="px-6 py-4">
-          <div className="flex items-center">
-            <div className="h-8 w-8 bg-gray-200 rounded animate-pulse"></div>
-            <span className="ml-3 text-lg font-semibold text-gray-400">Cargando...</span>
+      <nav className="bg-white border-b border-surface-200 top-0 z-30">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-6 py-3">
+      <div className="flex items-center">
+            <div className="h-8 w-8 bg-surface-100 rounded animate-pulse"></div>
           </div>
         </div>
       </nav>
@@ -112,16 +111,17 @@ export default function DashboardNavbar({ currentPath, onMenuClick }: Props) {
 
   const userEmail = user?.email || ''
   const userInitial = userEmail[0]?.toUpperCase() || 'U'
+  const publicUrl = store?.slug ? `/${store.slug}` : (store?.id ? `/${store.id}` : '')
 
   return (
-    <nav className="px-6">
-      <div className="px-6 py-4">
+    <nav className="bg-white border-b border-surface-200/60 sticky top-0 z-30">
+      <div className="max-w-[1600px] mx-auto px-4 md:px-6 py-3">
         <div className="flex items-center justify-between">
           {/* Izquierda: Logo y nombre */}
           <div className="flex items-center">
             <button
               onClick={handleMenuClick}
-              className="md:hidden p-2 rounded-md text-gray-400 hover:text-gray-500 hover:bg-gray-100 mr-3"
+              className="md:hidden p-2 rounded-xl text-surface-500 hover:text-surface-700 hover:bg-surface-100 mr-2 transition-colors"
               aria-label="Abrir menú"
             >
               <svg className="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -129,11 +129,16 @@ export default function DashboardNavbar({ currentPath, onMenuClick }: Props) {
               </svg>
             </button>
             
-            <a href="/dashboard" className="flex items-center">
-              <div className="h-8 w-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-bold text-sm">
-                {store?.name?.charAt(0).toUpperCase() || 'T'}
+            <a href="/dashboard" className="flex items-center group">
+              <div className="h-9 w-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-lg shadow-brand-500/20 group-hover:scale-105 transition-transform duration-200">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
               </div>
-              <span className="ml-3 text-xl font-bold text-gray-900">{store?.name || 'Mi Tienda'}</span>
+              <div className="ml-3 flex flex-col">
+                <span className="text-sm font-semibold text-surface-900 leading-tight">{store?.name || 'Mi Tienda'}</span>
+                <span className="text-[10px] font-medium text-brand-600 uppercase tracking-wider">Dashboard</span>
+              </div>
             </a>
           </div>
 
@@ -146,67 +151,89 @@ export default function DashboardNavbar({ currentPath, onMenuClick }: Props) {
             )}
 
             {/* Ver tienda */}
-            <a
-              href={`/${store?.id}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hidden sm:flex items-center gap-2 px-3 py-2 text-sm font-medium text-gray-700 hover:text-blue-600 hover:bg-gray-50 rounded-lg transition-colors"
-            >
-              <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-              </svg>
-              Ver tienda
-            </a>
+            {publicUrl && (
+              <a
+                href={publicUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="hidden sm:flex items-center gap-2 px-3.5 py-2 text-sm font-semibold text-surface-700 hover:text-brand-600 hover:bg-brand-50 rounded-xl transition-all border border-transparent hover:border-brand-100"
+              >
+                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                </svg>
+                <span>Ver tienda</span>
+              </a>
+            )}
+
+            {/* Divisor vertical */}
+            <div className="h-8 w-px bg-surface-200 mx-1 hidden sm:block"></div>
 
             {/* Usuario */}
             <div className="relative" ref={menuRef}>
               <button
                 ref={buttonRef}
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-2 p-1.5 rounded-lg hover:bg-gray-50 transition-colors"
+                className="flex items-center gap-2 p-1 rounded-xl hover:bg-surface-50 transition-all border border-transparent "
               >
-                <div className="h-8 w-8 rounded-full bg-blue-600 flex items-center justify-center text-white text-sm font-semibold">
+                <div className="h-8 w-8 rounded-lg bg-surface-900 flex items-center justify-center text-white text-xs font-bold">
                   {userInitial}
+                </div>
+                <div className="hidden lg:flex flex-col items-start pr-1">
+                  <svg className={`h-3 w-3 text-surface-400 transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                  </svg>
                 </div>
               </button>
 
               {userMenuOpen && (
-                <div className="absolute right-0 mt-2 w-56 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50">
-                  <div className="py-1">
-                    <div className="px-4 py-3 border-b border-gray-200">
-                      <p className="text-sm font-medium text-gray-900">{userEmail}</p>
-                      <p className="text-xs text-gray-500 mt-1">{store?.name}</p>
+                <div className="absolute right-0 mt-3 w-64 rounded-2xl shadow-xl bg-white border border-surface-200 overflow-hidden z-50 origin-top-right">
+                  <div className="p-2">
+                    <div className="px-4 py-3 bg-surface-50 rounded-xl mb-1">
+                      <p className="text-xs font-medium text-surface-500 uppercase tracking-wider mb-1">Sesión iniciada como</p>
+                      <p className="text-sm font-bold text-surface-900 truncate">{userEmail}</p>
                     </div>
+                    
                     <a
                       href="/dashboard/profile"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                      className="flex items-center px-4 py-2.5 text-sm text-surface-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-colors group"
                       onClick={() => setUserMenuOpen(false)}
                     >
-                      <svg className="mr-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                      </svg>
+                      <div className="p-1.5 bg-surface-100 rounded-lg mr-3 group-hover:bg-brand-100 transition-colors">
+                        <svg className="h-4 w-4 text-surface-500 group-hover:text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                      </div>
                       Mi Perfil
                     </a>
-                    <a
-                      href={`/${store?.id}`}
-                      target="_blank"
-                      className="flex items-center px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 sm:hidden"
-                      onClick={() => setUserMenuOpen(false)}
-                    >
-                      <svg className="mr-3 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
-                      </svg>
-                      Ver tienda
-                    </a>
-                    <div className="border-t border-gray-200"></div>
+                    
+                    {publicUrl && (
+                      <a
+                        href={publicUrl}
+                        target="_blank"
+                        className="flex items-center px-4 py-2.5 text-sm text-surface-700 hover:bg-brand-50 hover:text-brand-700 rounded-xl transition-colors group sm:hidden"
+                        onClick={() => setUserMenuOpen(false)}
+                      >
+                        <div className="p-1.5 bg-surface-100 rounded-lg mr-3 group-hover:bg-brand-100 transition-colors">
+                          <svg className="h-4 w-4 text-surface-500 group-hover:text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                          </svg>
+                        </div>
+                        Ver tienda
+                      </a>
+                    )}
+
+                    <div className="h-px bg-surface-100 my-1 mx-2"></div>
+                    
                     <button
                       onClick={handleLogout}
                       disabled={logoutLoading}
-                      className="w-full flex items-center px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                      className="w-full flex items-center px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-xl transition-colors group"
                     >
-                      <svg className="mr-3 h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                      </svg>
+                      <div className="p-1.5 bg-red-50 rounded-lg mr-3 group-hover:bg-red-100 transition-colors">
+                        <svg className="h-4 w-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                        </svg>
+                      </div>
                       {logoutLoading ? 'Cerrando...' : 'Cerrar sesión'}
                     </button>
                   </div>
