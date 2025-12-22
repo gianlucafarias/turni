@@ -1,11 +1,25 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
+import { useSubscriptionLimits } from '../../hooks/useSubscriptionLimits'
+import ClientAutocomplete from './ClientAutocomplete'
+
+interface Client {
+  id: string
+  first_name: string
+  last_name: string | null
+  email: string | null
+  phone: string | null
+}
 
 export default function NewAppointmentForm() {
   const [store, setStore] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [clientName, setClientName] = useState('')
+  const [clientEmail, setClientEmail] = useState('')
+  const [clientPhone, setClientPhone] = useState('')
+  const { isPremium } = useSubscriptionLimits()
 
   useEffect(() => {
     async function loadStore() {
@@ -39,6 +53,12 @@ export default function NewAppointmentForm() {
     loadStore()
   }, [])
 
+  const handleClientSelect = (client: Client) => {
+    setClientName(`${client.first_name}${client.last_name ? ' ' + client.last_name : ''}`)
+    setClientEmail(client.email || '')
+    setClientPhone(client.phone || '')
+  }
+
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
     setSaving(true)
@@ -58,9 +78,9 @@ export default function NewAppointmentForm() {
 
       const data = {
         store_id: store.id,
-        client_name: formData.get('client_name'),
-        client_email: formData.get('client_email') || '',
-        client_phone: formData.get('client_phone') || '',
+        client_name: clientName || formData.get('client_name'),
+        client_email: clientEmail || formData.get('client_email') || '',
+        client_phone: clientPhone || formData.get('client_phone') || '',
         date: startDate,
         time: startTime,
         duration: durationMinutes > 0 ? durationMinutes : 30,
@@ -72,11 +92,33 @@ export default function NewAppointmentForm() {
         status: 'pending'
       }
 
-      const { error: insertError } = await supabase
+      const { data: insertedAppointment, error: insertError } = await supabase
         .from('appointments')
         .insert(data)
+        .select()
+        .single()
 
       if (insertError) throw insertError
+
+      // Sincronizar con Google Calendar si está conectado
+      if (insertedAppointment) {
+        try {
+          const response = await fetch('/api/google-calendar/create-event', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              appointmentId: insertedAppointment.id,
+              storeId: insertedAppointment.store_id,
+            }),
+          })
+          if (!response.ok) {
+            console.error('Error sincronizando con Google Calendar')
+          }
+        } catch (error) {
+          console.error('Error sincronizando con Google Calendar:', error)
+          // No fallar la creación del turno si falla la sincronización
+        }
+      }
 
       window.location.href = '/dashboard/appointments'
     } catch (error: any) {
@@ -113,14 +155,29 @@ export default function NewAppointmentForm() {
           <label htmlFor="client_name" className="block text-sm font-medium text-gray-700 mb-2">
             Nombre del cliente *
           </label>
-          <input
-            type="text"
-            name="client_name"
-            id="client_name"
-            required
-            className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 focus:border-indigo-500 focus:ring-0 transition-colors"
-            placeholder="Nombre completo"
-          />
+          {store && isPremium ? (
+            <>
+              <ClientAutocomplete
+                storeId={store.id}
+                value={clientName}
+                onChange={setClientName}
+                onClientSelect={handleClientSelect}
+                className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 focus:border-indigo-500 focus:ring-0 transition-colors"
+                placeholder="Nombre completo"
+                required
+              />
+              <input type="hidden" name="client_name" value={clientName} />
+            </>
+          ) : (
+            <input
+              type="text"
+              name="client_name"
+              id="client_name"
+              required
+              className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 focus:border-indigo-500 focus:ring-0 transition-colors"
+              placeholder="Nombre completo"
+            />
+          )}
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -132,6 +189,8 @@ export default function NewAppointmentForm() {
               type="email"
               name="client_email"
               id="client_email"
+              value={clientEmail}
+              onChange={(e) => setClientEmail(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 focus:border-indigo-500 focus:ring-0 transition-colors"
               placeholder="email@ejemplo.com"
             />
@@ -145,6 +204,8 @@ export default function NewAppointmentForm() {
               type="tel"
               name="client_phone"
               id="client_phone"
+              value={clientPhone}
+              onChange={(e) => setClientPhone(e.target.value)}
               className="w-full px-4 py-3 rounded-xl border-2 border-gray-100 focus:border-indigo-500 focus:ring-0 transition-colors"
               placeholder="+54 9 11 1234-5678"
             />

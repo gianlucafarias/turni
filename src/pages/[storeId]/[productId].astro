@@ -68,7 +68,7 @@ if (product.category_id) {
 const storeUrl = store.slug || store.id;
 ---
 
-<PublicLayout title={`${product.name} | ${store.name}`}>
+<PublicLayout title={`${product.name} | ${store.name}`} store={{ name: store.name, slug: store.slug, id: store.id, whatsapp_url: store.whatsapp_url, user_id: store.user_id }}>
   <div class="min-h-screen bg-stone-50">
     
     {/* Breadcrumb */}

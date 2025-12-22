@@ -62,6 +62,7 @@ export default function ClientsList() {
   const [showMassActions, setShowMassActions] = useState(false)
   const [showTagModal, setShowTagModal] = useState(false)
   const [showReminderModal, setShowReminderModal] = useState(false)
+  const [filtersOpen, setFiltersOpen] = useState(false)
 
   // Gestión de etiquetas
   const [newTagName, setNewTagName] = useState('')
@@ -369,13 +370,42 @@ export default function ClientsList() {
     )
   }
 
-  // Bloquear acceso para usuarios Free
-  if (!canAccessClients) {
-    return <PremiumFeatureBlock feature="clients" />
-  }
+  // Si no tiene acceso premium, mostrar preview con overlay
+  const isPreviewMode = !canAccessClients
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {/* Overlay premium para usuarios free */}
+      {isPreviewMode && (
+        <div className="absolute inset-0 z-50 flex items-center justify-center pointer-events-none">
+          <div className="absolute inset-0 bg-gradient-to-b from-white/98 via-white/95 to-white/98 backdrop-blur-[2px] pointer-events-auto" />
+          <div className="relative z-10 max-w-md mx-auto p-8 text-center bg-white rounded-3xl shadow-2xl border-2 border-indigo-100 pointer-events-auto">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-gradient-to-br from-indigo-100 to-purple-100 rounded-full mb-6">
+              <span className="text-4xl">👥</span>
+            </div>
+            
+            <h2 className="text-2xl font-bold text-gray-900 mb-3">
+              Función Premium
+            </h2>
+            <p className="text-gray-600 mb-6">
+              La gestión de clientes es una función Premium. Actualizá tu plan para acceder a gestión completa de clientes y mucho más.
+            </p>
+
+            <a
+              href="/dashboard/subscription"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-200"
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z" />
+              </svg>
+              Ver planes Premium
+            </a>
+          </div>
+        </div>
+      )}
+
+      {/* Contenido de la página (siempre visible, pero bloqueado si no es premium) */}
+      <div className={isPreviewMode ? 'pointer-events-none opacity-60' : ''}>
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
@@ -388,7 +418,8 @@ export default function ClientsList() {
 
       {/* Barra de búsqueda y filtros */}
       <div className="bg-white rounded-2xl border border-gray-200 p-4 space-y-4">
-        <div className="flex flex-col sm:flex-row gap-4">
+        {/* Búsqueda y botón de filtros (mobile) */}
+        <div className="flex gap-2 sm:gap-4">
           {/* Búsqueda */}
           <div className="flex-1 relative">
             <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -403,114 +434,136 @@ export default function ClientsList() {
             />
           </div>
 
-          {/* Filtro rápido */}
-          <select
-            value={filterType}
-            onChange={(e) => setFilterType(e.target.value as FilterType)}
-            className="px-4 py-2.5 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white"
+          {/* Botón de filtros (solo mobile) */}
+          <button
+            onClick={() => setFiltersOpen(!filtersOpen)}
+            className="sm:hidden flex items-center justify-center w-12 h-11 border border-gray-200 rounded-xl hover:bg-gray-50 transition-colors relative"
           >
-            <option value="all">Todos los clientes</option>
-            <option value="recent">Últimos 30 días</option>
-            <option value="inactive">Inactivos (+90 días)</option>
-            <option value="vip">VIP (5+ turnos)</option>
-            <option value="new">Nuevos (1 turno)</option>
-          </select>
-
-          {/* Ordenar */}
-          <select
-            value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as SortType)}
-            className="px-4 py-2.5 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white"
-          >
-            <option value="recent">Más recientes</option>
-            <option value="name">Por nombre</option>
-            <option value="appointments">Por turnos</option>
-            <option value="spent">Por facturación</option>
-          </select>
-
-          {/* Filtrar por servicio */}
-          {services.length > 0 && (
-            <select
-              value={selectedService || ''}
-              onChange={(e) => setSelectedService(e.target.value || null)}
-              className="px-4 py-2.5 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white"
-            >
-              <option value="">Todos los servicios</option>
-              {services.map(service => (
-                <option key={service.id} value={service.id}>{service.name}</option>
-              ))}
-            </select>
-          )}
+            <svg className="w-5 h-5 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            {(filterType !== 'all' || selectedTag || selectedService || dateFrom || dateTo) && (
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-indigo-600 rounded-full border-2 border-white"></span>
+            )}
+          </button>
         </div>
 
-        {/* Filtros adicionales */}
-        <div className="flex flex-wrap items-center gap-3">
-          {/* Etiquetas */}
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-gray-500">Etiqueta:</span>
-            <div className="flex flex-wrap gap-1">
-              <button
-                onClick={() => setSelectedTag(null)}
-                className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
-                  !selectedTag ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                }`}
+        {/* Filtros principales (desktop siempre visible, mobile solo si está abierto) */}
+        <div className={`${filtersOpen ? 'block' : 'hidden'} sm:block space-y-4`}>
+          <div className="flex flex-col sm:flex-row gap-4">
+            {/* Filtro rápido */}
+            <select
+              value={filterType}
+              onChange={(e) => setFilterType(e.target.value as FilterType)}
+              className="px-4 py-2.5 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white"
+            >
+              <option value="all">Todos los clientes</option>
+              <option value="recent">Últimos 30 días</option>
+              <option value="inactive">Inactivos (+90 días)</option>
+              <option value="vip">VIP (5+ turnos)</option>
+              <option value="new">Nuevos (1 turno)</option>
+            </select>
+
+            {/* Ordenar */}
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortType)}
+              className="px-4 py-2.5 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white"
+            >
+              <option value="recent">Más recientes</option>
+              <option value="name">Por nombre</option>
+              <option value="appointments">Por turnos</option>
+              <option value="spent">Por facturación</option>
+            </select>
+
+            {/* Filtrar por servicio */}
+            {services.length > 0 && (
+              <select
+                value={selectedService || ''}
+                onChange={(e) => setSelectedService(e.target.value || null)}
+                className="px-4 py-2.5 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white"
               >
-                Todas
-              </button>
-              {tags.map(tag => (
-                <button
-                  key={tag.id}
-                  onClick={() => setSelectedTag(selectedTag === tag.id ? null : tag.id)}
-                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1 ${
-                    selectedTag === tag.id 
-                      ? 'ring-2 ring-offset-1' 
-                      : 'hover:opacity-80'
-                  }`}
-                  style={{ 
-                    backgroundColor: `${tag.color}20`,
-                    color: tag.color,
-                    ...(selectedTag === tag.id ? { ringColor: tag.color } : {})
-                  }}
-                >
-                  <span className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} />
-                  {tag.name}
-                </button>
-              ))}
-              <button
-                onClick={() => setShowTagModal(true)}
-                className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
-              >
-                + Nueva
-              </button>
-            </div>
+                <option value="">Todos los servicios</option>
+                {services.map(service => (
+                  <option key={service.id} value={service.id}>{service.name}</option>
+                ))}
+              </select>
+            )}
           </div>
 
-          {/* Rango de fechas */}
-          <div className="flex items-center gap-2 ml-auto">
-            <span className="text-sm text-gray-500">Desde:</span>
-            <input
-              type="date"
-              value={dateFrom}
-              onChange={(e) => setDateFrom(e.target.value)}
-              className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:border-indigo-500"
-            />
-            <span className="text-sm text-gray-500">Hasta:</span>
-            <input
-              type="date"
-              value={dateTo}
-              onChange={(e) => setDateTo(e.target.value)}
-              className="px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:border-indigo-500"
-            />
-            {(dateFrom || dateTo) && (
-              <button
-                onClick={() => { setDateFrom(''); setDateTo('') }}
-                className="text-gray-400 hover:text-gray-600"
-              >
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            )}
+          {/* Filtros adicionales */}
+          <div className="flex flex-col sm:flex-row sm:flex-wrap sm:items-center gap-3">
+            {/* Etiquetas */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <span className="text-sm text-gray-500">Etiqueta:</span>
+              <div className="flex flex-wrap gap-1">
+                <button
+                  onClick={() => setSelectedTag(null)}
+                  className={`px-3 py-1 rounded-full text-xs font-medium transition-colors ${
+                    !selectedTag ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  Todas
+                </button>
+                {tags.map(tag => (
+                  <button
+                    key={tag.id}
+                    onClick={() => setSelectedTag(selectedTag === tag.id ? null : tag.id)}
+                    className={`px-3 py-1 rounded-full text-xs font-medium transition-colors flex items-center gap-1 ${
+                      selectedTag === tag.id 
+                        ? 'ring-2 ring-offset-1' 
+                        : 'hover:opacity-80'
+                    }`}
+                    style={{ 
+                      backgroundColor: `${tag.color}20`,
+                      color: tag.color,
+                      ...(selectedTag === tag.id ? { ringColor: tag.color } : {})
+                    }}
+                  >
+                    <span className="w-2 h-2 rounded-full" style={{ backgroundColor: tag.color }} />
+                    {tag.name}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setShowTagModal(true)}
+                  className="px-3 py-1 rounded-full text-xs font-medium bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors"
+                >
+                  + Nueva
+                </button>
+              </div>
+            </div>
+
+            {/* Rango de fechas */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:ml-auto">
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm text-gray-500 whitespace-nowrap">Desde:</span>
+                <input
+                  type="date"
+                  value={dateFrom}
+                  onChange={(e) => setDateFrom(e.target.value)}
+                  className="flex-1 sm:flex-none min-w-0 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:border-indigo-500 max-w-full"
+                />
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span className="text-sm text-gray-500 whitespace-nowrap">Hasta:</span>
+                <input
+                  type="date"
+                  value={dateTo}
+                  onChange={(e) => setDateTo(e.target.value)}
+                  className="flex-1 sm:flex-none min-w-0 px-3 py-1.5 text-sm border border-gray-200 rounded-lg focus:border-indigo-500 max-w-full"
+                />
+                {(dateFrom || dateTo) && (
+                  <button
+                    onClick={() => { setDateFrom(''); setDateTo('') }}
+                    className="text-gray-400 hover:text-gray-600 flex-shrink-0"
+                  >
+                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -648,7 +701,29 @@ export default function ClientsList() {
                       )}
                     </div>
 
-                   
+                    {/* Última visita */}
+                    <div className="col-span-2 flex flex-col justify-center text-sm">
+                      {client.last_appointment_date ? (
+                        <>
+                          <span className="text-gray-900 font-medium">
+                            {formatDate(client.last_appointment_date)}
+                          </span>
+                          {daysSince !== null && (
+                            <span className={`text-xs mt-0.5 ${
+                              isRecent ? 'text-green-600' : 
+                              isInactive ? 'text-red-600' : 
+                              'text-gray-500'
+                            }`}>
+                              {daysSince === 0 ? 'Hoy' : 
+                               daysSince === 1 ? 'Ayer' : 
+                               `${daysSince} días`}
+                            </span>
+                          )}
+                        </>
+                      ) : (
+                        <span className="text-gray-400 italic">Sin visitas</span>
+                      )}
+                    </div>
 
                     {/* Estadísticas */}
                     <div className="col-span-2 flex items-center gap-4">
@@ -830,6 +905,7 @@ export default function ClientsList() {
           </div>
         </div>
       )}
+      </div>
     </div>
   )
 }

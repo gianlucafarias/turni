@@ -80,10 +80,29 @@ export default function BookingWidget({ storeId }: Props) {
   
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
+  const [isPremium, setIsPremium] = useState(false)
+  const [createdAppointment, setCreatedAppointment] = useState<any>(null)
 
   useEffect(() => {
     loadData()
+    checkPremiumStatus()
   }, [storeId])
+
+  async function checkPremiumStatus() {
+    try {
+      const { data: subscription } = await supabase
+        .from('subscriptions')
+        .select('plan_id, status')
+        .eq('store_id', storeId)
+        .single()
+      
+      const premiumPlans = ['premium', 'premium_annual', 'trial']
+      const premium = subscription?.status === 'active' && premiumPlans.includes(subscription?.plan_id)
+      setIsPremium(premium || false)
+    } catch (error) {
+      setIsPremium(false)
+    }
+  }
 
   async function loadData() {
     try {
@@ -347,11 +366,11 @@ export default function BookingWidget({ storeId }: Props) {
 
   function selectTime(time: string) {
     setSelectedTime(time)
-    setStep(3)
+    setStep(3) // Paso 3: Datos personales
   }
 
-  async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault()
+  async function handleSubmit(e?: React.FormEvent) {
+    if (e) e.preventDefault()
     if (!selectedDate || !selectedTime) return
     
     // Verificar si está cerrado temporalmente
@@ -436,6 +455,26 @@ export default function BookingWidget({ storeId }: Props) {
       
       if (insertError) throw insertError
       
+      // Sincronizar con Google Calendar si está conectado
+      if (insertedAppointment) {
+        try {
+          const response = await fetch('/api/google-calendar/create-event', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              appointmentId: insertedAppointment.id,
+              storeId: insertedAppointment.store_id,
+            }),
+          })
+          if (!response.ok) {
+            console.error('Error sincronizando con Google Calendar')
+          }
+        } catch (error) {
+          console.error('Error sincronizando con Google Calendar:', error)
+          // No fallar la creación del turno si falla la sincronización
+        }
+      }
+      
       // Si se auto-confirmó, enviar notificación
       if (shouldAutoConfirm && insertedAppointment) {
         try {
@@ -456,10 +495,13 @@ export default function BookingWidget({ storeId }: Props) {
         }
       }
       
+      // Guardar el turno creado para mostrar el link de Google Calendar
+      setCreatedAppointment(insertedAppointment)
+      
       // Recargar appointments después de crear
       await loadData()
       
-      setStep(4)
+      setStep(5) // Paso 5: Confirmación final
     } catch (error: any) {
       setError(error.message || 'Error al reservar')
       // Recargar datos en caso de error
@@ -470,6 +512,38 @@ export default function BookingWidget({ storeId }: Props) {
     } finally {
       setSubmitting(false)
     }
+  }
+
+  function generateGoogleCalendarLink(appointment: any): string {
+    if (!appointment || !selectedDate || !selectedTime) return ''
+    
+    const startDate = new Date(`${appointment.date}T${selectedTime}`)
+    const endDate = new Date(startDate.getTime() + (appointment.duration * 60 * 1000))
+    
+    // Formatear fechas para Google Calendar (formato: YYYYMMDDTHHmmss)
+    const formatDate = (date: Date) => {
+      const year = date.getFullYear()
+      const month = String(date.getMonth() + 1).padStart(2, '0')
+      const day = String(date.getDate()).padStart(2, '0')
+      const hours = String(date.getHours()).padStart(2, '0')
+      const minutes = String(date.getMinutes()).padStart(2, '0')
+      const seconds = String(date.getSeconds()).padStart(2, '0')
+      return `${year}${month}${day}T${hours}${minutes}${seconds}`
+    }
+    
+    const start = formatDate(startDate)
+    const end = formatDate(endDate)
+    
+    const title = encodeURIComponent(`${appointment.service_name || 'Turno'} - ${store?.name || ''}`)
+    const details = encodeURIComponent(
+      `Turno reservado en ${store?.name || ''}\n\n` +
+      `Cliente: ${appointment.client_name}\n` +
+      (appointment.notes ? `Notas: ${appointment.notes}\n` : '') +
+      (store?.location ? `Ubicación: ${store.location}` : '')
+    )
+    const location = encodeURIComponent(store?.location || '')
+    
+    return `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${title}&dates=${start}/${end}&details=${details}&location=${location}`
   }
 
   function reset() {
@@ -490,6 +564,7 @@ export default function BookingWidget({ storeId }: Props) {
     setClientEmail('')
     setClientPhone('')
     setClientLocation('')
+    setCreatedAppointment(null)
   }
 
   function generateCalendarDays() {
@@ -573,8 +648,12 @@ export default function BookingWidget({ storeId }: Props) {
   const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
   // Calcular número de pasos según si hay servicios o no
-  const totalSteps = hasNoServices ? 2 : 3
-  const currentStepAdjusted = hasNoServices ? step - 1 : step
+  // Con servicios: 1=Servicio, 2=Fecha/Hora, 3=Datos, 4=Resumen, 5=Confirmación (4 pasos visibles)
+  // Sin servicios: 2=Fecha/Hora, 3=Datos, 4=Resumen, 5=Confirmación (3 pasos visibles)
+  const totalSteps = hasNoServices ? 3 : 4
+  const currentStepAdjusted = hasNoServices 
+    ? (step === 2 ? 1 : step === 3 ? 2 : step === 4 ? 3 : step === 5 ? 4 : step) 
+    : (step === 1 ? 1 : step === 2 ? 2 : step === 3 ? 3 : step === 4 ? 4 : step === 5 ? 4 : step)
 
   return (
     <div>
@@ -819,7 +898,7 @@ export default function BookingWidget({ storeId }: Props) {
       {/* Paso 3: Datos personales */}
       {step === 3 && selectedDate && (
         <div>
-          <div className="bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl p-5 mb-6 text-white">
+          <div className="bg-indigo-600 rounded-2xl p-5 mb-6 text-white">
             {!hasNoServices && selectedService && (
               <p className="font-bold text-lg">{selectedService.name}</p>
             )}
@@ -834,9 +913,6 @@ export default function BookingWidget({ storeId }: Props) {
                 <span className="text-2xl font-bold">${selectedService.price.toLocaleString()}</span>
               </div>
             )}
-            <button onClick={() => setStep(2)} className="text-sm text-indigo-200 hover:text-white mt-3 font-medium">
-              ← Cambiar horario
-            </button>
           </div>
 
           {error && (
@@ -906,10 +982,115 @@ export default function BookingWidget({ storeId }: Props) {
               />
             </div>
 
+            <div className="flex gap-3 mt-6">
+              <button
+                type="button"
+                onClick={() => setStep(2)}
+                className="flex-1 py-4 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all"
+              >
+                Volver
+              </button>
+              <button
+                type="button"
+                onClick={() => setStep(4)}
+                disabled={!clientName || !clientLastName || !clientEmail || !clientPhone}
+                className="flex-1 py-4 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300"
+              >
+                Continuar
+              </button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {/* Paso 4: Resumen antes de confirmar */}
+      {step === 4 && selectedDate && (
+        <div>
+          <div className="bg-indigo-600 rounded-2xl p-6 mb-6 text-white">
+            <h3 className="text-xl font-bold mb-4">Resumen de tu reserva</h3>
+            
+            <div className="space-y-3">
+              {!hasNoServices && selectedService && (
+                <div className="flex items-center justify-between py-2 border-b border-white/20">
+                  <span className="text-indigo-100">Servicio</span>
+                  <span className="font-semibold">{selectedService.name}</span>
+                </div>
+              )}
+              <div className="flex items-center justify-between py-2 border-b border-white/20">
+                <span className="text-indigo-100">Fecha</span>
+                <span className="font-semibold capitalize">{formatSelectedDate()}</span>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-white/20">
+                <span className="text-indigo-100">Hora</span>
+                <span className="font-semibold">{selectedTime} hs</span>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-white/20">
+                <span className="text-indigo-100">Duración</span>
+                <span className="font-semibold">{selectedService?.duration || 30} minutos</span>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-white/20">
+                <span className="text-indigo-100">Cliente</span>
+                <span className="font-semibold">{clientName} {clientLastName}</span>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-white/20">
+                <span className="text-indigo-100">Email</span>
+                <span className="font-semibold text-sm">{clientEmail}</span>
+              </div>
+              <div className="flex items-center justify-between py-2 border-b border-white/20">
+                <span className="text-indigo-100">Teléfono</span>
+                <span className="font-semibold">{clientPhone}</span>
+              </div>
+              {clientLocation && (
+                <div className="flex items-center justify-between py-2 border-b border-white/20">
+                  <span className="text-indigo-100">Localidad</span>
+                  <span className="font-semibold">{clientLocation}</span>
+                </div>
+              )}
+              {!hasNoServices && showPrices && selectedService && selectedService.price > 0 && (
+                <div className="flex items-center justify-between pt-3 mt-3 border-t border-white/30">
+                  <span className="text-lg text-indigo-100">Total a pagar</span>
+                  <span className="text-2xl font-bold">${selectedService.price.toLocaleString()}</span>
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Mensaje de notificación WhatsApp para usuarios premium */}
+          {isPremium && (
+            <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-4 mb-4 flex items-start gap-3">
+              <div className="flex-shrink-0 mt-0.5">
+                <svg className="w-5 h-5 text-emerald-600" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-emerald-900 mb-1">
+                  Te notificaremos por WhatsApp
+                </p>
+                <p className="text-xs text-emerald-700">
+                  Cuando se confirme tu turno, recibirás una notificación por WhatsApp con todos los detalles.
+                </p>
+              </div>
+            </div>
+          )}
+
+          {error && (
+            <div className="bg-red-50 text-red-600 p-4 rounded-xl mb-4 text-sm">{error}</div>
+          )}
+
+          <div className="flex gap-3">
             <button
-              type="submit"
-              disabled={submitting || !clientName || !clientLastName || !clientEmail || !clientPhone}
-              className="w-full py-4 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300 mt-6"
+              type="button"
+              onClick={() => setStep(3)}
+              className="flex-1 py-4 bg-gray-100 text-gray-700 rounded-xl font-semibold hover:bg-gray-200 transition-all"
+            >
+              Volver
+            </button>
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={submitting}
+              className="flex-1 py-4 bg-indigo-600 text-white rounded-xl font-semibold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-lg shadow-indigo-200 hover:shadow-xl hover:shadow-indigo-300"
             >
               {submitting ? (
                 <span className="flex items-center justify-center gap-2">
@@ -923,12 +1104,12 @@ export default function BookingWidget({ storeId }: Props) {
                 'Confirmar Reserva'
               )}
             </button>
-          </form>
+          </div>
         </div>
       )}
 
-      {/* Paso 4: Confirmación */}
-      {step === 4 && (
+      {/* Paso 5: Confirmación */}
+      {step === 5 && (
         <div className="text-center py-8">
           <div className="w-20 h-20 mx-auto mb-6 bg-green-100 rounded-full flex items-center justify-center">
             <svg className="w-10 h-10 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -953,6 +1134,26 @@ export default function BookingWidget({ storeId }: Props) {
               )}
             </div>
           </div>
+
+          {/* Botón para agregar a Google Calendar (solo si es premium y tiene email) */}
+          {isPremium && clientEmail && createdAppointment && (
+            <div className="mb-6">
+              <a
+                href={generateGoogleCalendarLink(createdAppointment)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-6 py-3 bg-white border-2 border-gray-200 rounded-xl font-medium text-gray-700 hover:border-indigo-300 hover:bg-indigo-50 transition-all"
+              >
+                <svg className="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19 4h-1V2h-2v2H8V2H6v2H5c-1.11 0-1.99.9-1.99 2L3 20c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm0 16H5V10h14v10zm0-12H5V6h14v2z"/>
+                </svg>
+                <span>Agregar a Google Calendar</span>
+              </a>
+              <p className="text-xs text-gray-500 mt-2">
+                Agrega este turno a tu calendario personal
+              </p>
+            </div>
+          )}
 
           <button onClick={reset} className="text-indigo-600 font-medium hover:text-indigo-800 transition-colors">
             Hacer otra reserva
