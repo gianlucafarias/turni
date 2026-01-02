@@ -134,13 +134,7 @@ export function NotificationProvider({ children, storeId }: NotificationProvider
             service_name?: string;
             date: string;
             time: string;
-            imported_from_google_calendar?: boolean;
           };
-
-          // Ignorar turnos importados de Google Calendar para evitar notificaciones
-          if (appointment.imported_from_google_calendar) {
-            return;
-          }
 
           // Mostrar toast de nuevo turno
           showToast({
@@ -466,8 +460,93 @@ async function checkScheduledNotifications(
       }
     }
 
+    // Notificaciones basadas en eventos de suscripción (subscription_events)
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const { data: subEvents } = await supabase
+      .from('subscription_events')
+      .select('id, event_type, event_data, created_at')
+      .eq('store_id', storeId)
+      .gte('created_at', oneDayAgo)
+      .order('created_at', { ascending: true });
+
+    if (subEvents && subEvents.length > 0) {
+      for (const event of subEvents as any[]) {
+        const localKey = `sub_event_${event.id}`;
+        if (localStorage.getItem(localKey)) continue; // ya mostrado
+
+        switch (event.event_type) {
+          case 'subscription_activated': {
+            showToast({
+              type: 'subscription_payment_succeeded',
+              title: 'Suscripción activada',
+              message: 'Tu plan Premium se activó correctamente.',
+              priority: 'high',
+              data: {
+                linkTo: '/dashboard/subscription',
+              },
+            });
+            break;
+          }
+          case 'payment_failed': {
+            const graceEnds = event.event_data?.grace_period_ends;
+            const graceText = graceEnds
+              ? new Date(graceEnds).toLocaleDateString('es-AR', {
+                  day: '2-digit',
+                  month: 'long',
+                  year: 'numeric',
+                })
+              : null;
+
+            showToast({
+              type: 'subscription_payment_failed',
+              title: 'Problema con tu pago',
+              message: graceText
+                ? `No pudimos cobrar tu suscripción. Tu período de gracia termina el ${graceText}.`
+                : 'No pudimos cobrar tu suscripción. Revisá tu tarjeta o fondos en Mercado Pago.',
+              priority: 'urgent',
+              data: {
+                linkTo: '/dashboard/subscription',
+              },
+            });
+            break;
+          }
+          case 'downgraded': {
+            showToast({
+              type: 'subscription_downgraded',
+              title: 'Pasaste al plan Gratis',
+              message: 'Tu suscripción Premium terminó y tu cuenta volvió al plan Gratis.',
+              priority: 'high',
+              data: {
+                linkTo: '/dashboard/subscription',
+              },
+            });
+            break;
+          }
+          case 'cancelled': {
+            const cancelledBy = event.event_data?.cancelled_by === 'user'
+              ? 'Cancelaste tu suscripción.'
+              : 'Tu suscripción fue cancelada.';
+
+            showToast({
+              type: 'subscription_cancelled',
+              title: 'Suscripción cancelada',
+              message: `${cancelledBy} Seguirás teniendo acceso hasta el fin del período actual.`,
+              priority: 'medium',
+              data: {
+                linkTo: '/dashboard/subscription',
+              },
+            });
+            break;
+          }
+          default:
+            break;
+        }
+
+        localStorage.setItem(localKey, 'shown');
+      }
+    }
+
   } catch (error) {
     console.error('Error checking scheduled notifications:', error);
   }
 }
-

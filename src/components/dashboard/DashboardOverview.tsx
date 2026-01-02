@@ -1,7 +1,20 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
 import AppointmentDetailModal from './AppointmentDetailModal'
 import NewAppointmentModal from './NewAppointmentModal'
+import UpcomingAppointmentsEnhanced from './UpcomingAppointmentsEnhanced'
+
+// Tipos para toast de confirmación
+interface ConfirmToast {
+  id: string
+  type: 'success' | 'error' | 'warning' | 'upgrade'
+  title: string
+  message?: string
+  action?: {
+    label: string
+    href: string
+  }
+}
 
 interface Stats {
   // Turnos
@@ -47,6 +60,22 @@ export default function DashboardOverview() {
   const [selectedAppointment, setSelectedAppointment] = useState<any | null>(null)
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isNewAppointmentModalOpen, setIsNewAppointmentModalOpen] = useState(false)
+  const [confirmToasts, setConfirmToasts] = useState<ConfirmToast[]>([])
+
+  // Función para mostrar toast de confirmación
+  const showConfirmToast = useCallback((toast: Omit<ConfirmToast, 'id'>) => {
+    const id = `toast_${Date.now()}`
+    setConfirmToasts(prev => [...prev, { ...toast, id }])
+    
+    // Auto-remover después de 6 segundos
+    setTimeout(() => {
+      setConfirmToasts(prev => prev.filter(t => t.id !== id))
+    }, 6000)
+  }, [])
+
+  const removeConfirmToast = useCallback((id: string) => {
+    setConfirmToasts(prev => prev.filter(t => t.id !== id))
+  }, [])
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [appointmentsByDay, setAppointmentsByDay] = useState<{ day: string; count: number }[]>([])
@@ -584,20 +613,38 @@ export default function DashboardOverview() {
                           <button
                             onClick={async (e) => {
                               e.stopPropagation()
-                              await supabase.from('appointments').update({ status: 'confirmed' }).eq('id', apt.id)
                               
-                              // Enviar notificación si es premium
+                              // Confirmar el turno
+                              const { error: updateError } = await supabase
+                                .from('appointments')
+                                .update({ status: 'confirmed' })
+                                .eq('id', apt.id)
+                              
+                              if (updateError) {
+                                showConfirmToast({
+                                  type: 'error',
+                                  title: 'Error al confirmar',
+                                  message: updateError.message
+                                })
+                                return
+                              }
+                              
+                              // Verificar suscripción y enviar notificación
                               try {
                                 const { data: subscription } = await supabase
                                   .from('subscriptions')
-                                  .select('plan_id, status')
+                                  .select('plan_id, status, trial_ends_at')
                                   .eq('store_id', store.id)
                                   .single()
                                 
-                                const premiumPlans = ['premium', 'premium_annual', 'trial']
-                                const isPremium = subscription?.status === 'active' && premiumPlans.includes(subscription?.plan_id)
+                                const premiumPlans = ['premium', 'premium_annual']
+                                const isTrialActive = subscription?.status === 'trial' && 
+                                  subscription?.trial_ends_at && 
+                                  new Date(subscription.trial_ends_at) > new Date()
+                                const isPremium = (subscription?.status === 'active' && premiumPlans.includes(subscription?.plan_id)) || isTrialActive
                                 
                                 if (isPremium) {
+                                  // Usuario premium - enviar notificación por WhatsApp
                                   const response = await fetch('/api/notifications/send', {
                                     method: 'POST',
                                     headers: { 'Content-Type': 'application/json' },
@@ -607,12 +654,41 @@ export default function DashboardOverview() {
                                       store_id: store.id,
                                     }),
                                   })
-                                  if (!response.ok) {
-                                    console.error('Error enviando notificación:', await response.text())
+                                  
+                                  if (response.ok) {
+                                    const result = await response.json()
+                                    showConfirmToast({
+                                      type: 'success',
+                                      title: '✅ Turno confirmado',
+                                      message: `${apt.client_name} fue notificado por WhatsApp`
+                                    })
+                                  } else {
+                                    const errorData = await response.json().catch(() => ({}))
+                                    showConfirmToast({
+                                      type: 'warning',
+                                      title: 'Turno confirmado',
+                                      message: `⚠️ No se pudo notificar por WhatsApp: ${errorData.error || 'Error desconocido'}`
+                                    })
                                   }
+                                } else {
+                                  // Usuario free - mostrar opción de upgrade
+                                  showConfirmToast({
+                                    type: 'upgrade',
+                                    title: '✅ Turno confirmado',
+                                    message: 'Notificá a tu cliente por WhatsApp automáticamente',
+                                    action: {
+                                      label: 'Activar notificaciones',
+                                      href: '/dashboard/subscription'
+                                    }
+                                  })
                                 }
                               } catch (error) {
                                 console.error('Error verificando suscripción:', error)
+                                showConfirmToast({
+                                  type: 'success',
+                                  title: '✅ Turno confirmado',
+                                  message: `Se confirmó el turno de ${apt.client_name}`
+                                })
                               }
                               
                               loadData()
@@ -838,6 +914,7 @@ export default function DashboardOverview() {
             setSelectedAppointment(null)
             loadData()
           }}
+          store={store}
         />
       )}
 
@@ -939,6 +1016,99 @@ export default function DashboardOverview() {
           `}</style>
         </div>
       )}
+
+      {/* Toast de confirmación de turno */}
+      <div className="fixed bottom-4 right-4 z-[100] flex flex-col gap-2 max-w-sm">
+        {confirmToasts.map((toast) => (
+          <div
+            key={toast.id}
+            className={`
+              transform transition-all duration-300 ease-out animate-slideIn
+              ${toast.type === 'success' ? 'bg-emerald-50 border-emerald-200' : ''}
+              ${toast.type === 'error' ? 'bg-red-50 border-red-200' : ''}
+              ${toast.type === 'warning' ? 'bg-amber-50 border-amber-200' : ''}
+              ${toast.type === 'upgrade' ? 'bg-gradient-to-r from-brand-50 to-purple-50 border-brand-200' : ''}
+              border rounded-2xl shadow-xl overflow-hidden
+            `}
+          >
+            {/* Barra de progreso */}
+            <div className="h-1 bg-black/5 overflow-hidden">
+              <div
+                className={`h-full ${
+                  toast.type === 'error' ? 'bg-red-500' : 
+                  toast.type === 'warning' ? 'bg-amber-500' : 
+                  toast.type === 'upgrade' ? 'bg-brand-500' : 
+                  'bg-emerald-500'
+                }`}
+                style={{ animation: 'shrinkToast 6s linear forwards' }}
+              />
+            </div>
+
+            <div className="p-4">
+              <div className="flex items-start gap-3">
+                {/* Icono */}
+                <span className="text-xl flex-shrink-0">
+                  {toast.type === 'success' && '✅'}
+                  {toast.type === 'error' && '❌'}
+                  {toast.type === 'warning' && '⚠️'}
+                  {toast.type === 'upgrade' && '💬'}
+                </span>
+
+                {/* Contenido */}
+                <div className="flex-1 min-w-0">
+                  <p className={`font-semibold ${
+                    toast.type === 'success' ? 'text-emerald-800' : 
+                    toast.type === 'error' ? 'text-red-800' : 
+                    toast.type === 'warning' ? 'text-amber-800' : 
+                    'text-brand-800'
+                  }`}>
+                    {toast.title}
+                  </p>
+                  {toast.message && (
+                    <p className="text-sm text-gray-600 mt-0.5">{toast.message}</p>
+                  )}
+
+                  {/* Botón de acción (para upgrade) */}
+                  {toast.action && (
+                    <a
+                      href={toast.action.href}
+                      className="inline-flex items-center gap-1 mt-2 px-3 py-1.5 text-sm font-semibold text-white bg-brand-600 rounded-lg hover:bg-brand-700 transition-colors"
+                    >
+                      {toast.action.label}
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                      </svg>
+                    </a>
+                  )}
+                </div>
+
+                {/* Botón cerrar */}
+                <button
+                  onClick={() => removeConfirmToast(toast.id)}
+                  className="flex-shrink-0 p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Estilos para animaciones de toast */}
+      <style>{`
+        @keyframes shrinkToast {
+          from { width: 100%; }
+          to { width: 0%; }
+        }
+        @keyframes slideIn {
+          from { opacity: 0; transform: translateX(100%); }
+          to { opacity: 1; transform: translateX(0); }
+        }
+        .animate-slideIn { animation: slideIn 0.3s ease-out; }
+      `}</style>
     </div>
   )
 }

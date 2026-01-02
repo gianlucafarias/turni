@@ -29,7 +29,8 @@ export type PremiumFeature =
   | 'advanced_stats'         // Estadísticas avanzadas
   | 'priority_support'       // Soporte prioritario
   | 'custom_branding'        // Personalización avanzada
-  | 'export_data';           // Exportar datos
+  | 'export_data'            // Exportar datos
+  | 'google_calendar';       // Sincronización con Google Calendar
 
 /**
  * Límites por plan
@@ -38,6 +39,7 @@ export interface PlanLimits {
   maxProducts: number;          // -1 = ilimitado
   maxServices: number;          // -1 = ilimitado
   maxAppointmentsPerMonth: number; // -1 = ilimitado
+  maxAppointmentsPerDay: number;   // -1 = ilimitado (nuevo: límite diario)
   maxClients: number;           // -1 = ilimitado
   features: PremiumFeature[];   // Features habilitadas
 }

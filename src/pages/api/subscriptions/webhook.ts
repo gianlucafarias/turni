@@ -7,6 +7,7 @@ import type { APIRoute } from 'astro';
 import { supabase } from '../../../lib/supabase';
 import { processWebhook, getSubscription, mapMPStatusToLocal, calculatePeriodEnd } from '../../../services/subscriptions';
 import type { WebhookEvent } from '../../../services/subscriptions';
+import { markAsPastDue } from '../../../lib/subscription';
 
 export const POST: APIRoute = async ({ request }) => {
   try {
@@ -116,46 +117,49 @@ export const POST: APIRoute = async ({ request }) => {
           const storeId = storeIdMatch[1];
           
           // Obtener la suscripción local
-          const { data: subscription } = await supabase
+            const { data: subscription } = await supabase
             .from('subscriptions')
-            .select('id, metadata')
-            .eq('store_id', storeId)
-            .single();
+              .select('id, metadata')
+              .eq('store_id', storeId)
+              .single();
 
-          if (subscription) {
-            // Registrar el pago
-            await supabase.from('subscription_payments').insert({
-              subscription_id: subscription.id,
-              store_id: storeId,
-              amount: mpSubscription.auto_recurring?.transaction_amount || 0,
-              currency: 'ARS',
-              status: result.paymentStatus === 'approved' ? 'approved' : 'pending',
-              mp_payment_id: result.paymentId,
-              mp_status: result.paymentStatus,
-              paid_at: result.paymentStatus === 'approved' 
-                ? new Date().toISOString() 
-                : null,
-            });
+            if (subscription) {
+              // Registrar el pago
+              await supabase.from('subscription_payments').insert({
+                subscription_id: subscription.id,
+                store_id: storeId,
+                amount: mpSubscription.auto_recurring?.transaction_amount || 0,
+                currency: 'ARS',
+                status: result.paymentStatus === 'approved' ? 'approved' : 'pending',
+                mp_payment_id: result.paymentId,
+                mp_status: result.paymentStatus,
+                paid_at: result.paymentStatus === 'approved' 
+                  ? new Date().toISOString() 
+                  : null,
+              });
 
-            // Si el pago fue aprobado, actualizar período y plan (usar el pendiente si existe)
-            if (result.paymentStatus === 'approved') {
-              const pendingPlanId = (subscription.metadata as any)?.pending_plan_id as string | undefined;
-              const isAnnual = pendingPlanId === 'premium_annual';
-              const periodStart = new Date();
-              const periodEnd = calculatePeriodEnd(periodStart, isAnnual);
+              // Si el pago fue aprobado, actualizar período y plan (usar el pendiente si existe)
+              if (result.paymentStatus === 'approved') {
+                const pendingPlanId = (subscription.metadata as any)?.pending_plan_id as string | undefined;
+                const isAnnual = pendingPlanId === 'premium_annual';
+                const periodStart = new Date();
+                const periodEnd = calculatePeriodEnd(periodStart, isAnnual);
 
-              await supabase
-                .from('subscriptions')
-                .update({
-                  status: 'active',
-                  plan_id: pendingPlanId || 'premium',
-                  current_period_start: periodStart.toISOString(),
-                  current_period_end: periodEnd.toISOString(),
-                  updated_at: new Date().toISOString(),
-                })
-                .eq('id', subscription.id);
+                await supabase
+                  .from('subscriptions')
+                  .update({
+                    status: 'active',
+                    plan_id: pendingPlanId || 'premium',
+                    current_period_start: periodStart.toISOString(),
+                    current_period_end: periodEnd.toISOString(),
+                    updated_at: new Date().toISOString(),
+                  })
+                  .eq('id', subscription.id);
+              } else {
+                // Si el pago no fue aprobado, marcar la suscripción como past_due
+                await markAsPastDue(subscription.id);
+              }
             }
-          }
         }
       }
     }

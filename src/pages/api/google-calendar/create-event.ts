@@ -12,7 +12,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const bearerToken = authHeader?.toLowerCase().startsWith('bearer ')
       ? authHeader.slice(7)
       : null;
-    const accessToken = bearerToken || cookies.get('sb-access-token')?.value;
+    const supabaseAccessToken = bearerToken || cookies.get('sb-access-token')?.value;
 
     // Parsear body
     const body = await request.json();

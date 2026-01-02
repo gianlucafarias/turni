@@ -15,8 +15,11 @@ export const PRICING = {
   // Plan Premium anual (2 meses gratis = 16% descuento)
   PREMIUM_ANNUAL: 49900,      // ~50000 ARS/año (vs 59880 mensual)
   
-  // Días de trial (0 = desactivado, usuarios empiezan en Free)
-  TRIAL_DAYS: 0,
+  // Días de trial (7 días de prueba con todas las funciones premium)
+  TRIAL_DAYS: 7,
+  
+  // Límite de turnos por día en plan free
+  FREE_DAILY_APPOINTMENTS: 5,
   
   // Grace period después de fallo de pago (días)
   GRACE_PERIOD_DAYS: 3,
@@ -28,7 +31,8 @@ export const PRICING = {
 export const FREE_LIMITS: PlanLimits = {
   maxProducts: 5,
   maxServices: 1,
-  maxAppointmentsPerMonth: 30,
+  maxAppointmentsPerMonth: -1, // Ilimitado por mes
+  maxAppointmentsPerDay: PRICING.FREE_DAILY_APPOINTMENTS, // 5 turnos por día
   maxClients: 0, // Sin acceso a clientes
   features: [], // Sin features premium
 };
@@ -40,6 +44,7 @@ export const TRIAL_LIMITS: PlanLimits = {
   maxProducts: -1, // Ilimitado
   maxServices: -1,
   maxAppointmentsPerMonth: -1,
+  maxAppointmentsPerDay: -1, // Ilimitado
   maxClients: -1,
   features: [
     'clients_management',
@@ -50,6 +55,7 @@ export const TRIAL_LIMITS: PlanLimits = {
     'priority_support',
     'custom_branding',
     'export_data',
+    'google_calendar',
   ],
 };
 
@@ -60,6 +66,7 @@ export const PREMIUM_LIMITS: PlanLimits = {
   maxProducts: -1,
   maxServices: -1,
   maxAppointmentsPerMonth: -1,
+  maxAppointmentsPerDay: -1, // Ilimitado
   maxClients: -1,
   features: [
     'clients_management',
@@ -70,6 +77,7 @@ export const PREMIUM_LIMITS: PlanLimits = {
     'priority_support',
     'custom_branding',
     'export_data',
+    'google_calendar',
   ],
 };
 
@@ -92,7 +100,7 @@ export const PLANS: Record<PlanId, Plan> = {
     priceMonthly: 0,
     trialDays: PRICING.TRIAL_DAYS,
     limits: TRIAL_LIMITS,
-    badge: '14 días gratis',
+    badge: '7 días gratis',
   },
   
   premium: {
@@ -188,6 +196,10 @@ export const FEATURE_DESCRIPTIONS: Record<PremiumFeature, { name: string; descri
     name: 'Exportar Datos',
     description: 'Descargá tus datos en Excel o CSV',
   },
+  google_calendar: {
+    name: 'Google Calendar',
+    description: 'Sincronizá tus turnos automáticamente con Google Calendar',
+  },
 };
 
 /**
@@ -206,9 +218,10 @@ export const PLAN_COMPARISON = [
     category: 'Turnos',
     features: [
       { name: 'Cantidad de servicios', free: '1', premium: 'Ilimitados' },
-      { name: 'Turnos por mes', free: '30', premium: 'Ilimitados' },
+      { name: 'Turnos por día', free: '5', premium: 'Ilimitados' },
       { name: 'Gestión de clientes', free: '✗', premium: '✓' },
-      { name: 'Notificaciones automáticas', free: '✗', premium: '✓' },
+      { name: 'Notificaciones WhatsApp', free: '✗', premium: '✓' },
+      { name: 'Sincronización Google Calendar', free: '✗', premium: '✓' },
     ],
   },
   {

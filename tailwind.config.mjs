@@ -2,6 +2,14 @@
 export default {
 	content: ['./src/**/*.{astro,html,js,jsx,md,mdx,svelte,ts,tsx,vue}'],
 	theme: {
+		screens: {
+			'xs': '475px',
+			'sm': '640px',
+			'md': '768px',
+			'lg': '1024px',
+			'xl': '1280px',
+			'2xl': '1536px',
+		},
 		extend: {
 			colors: {
 				// Brand colors - turni.pro
@@ -34,9 +42,9 @@ export default {
 				}
 			},
 			fontFamily: {
-				sans: ['SF Pro Display', '-apple-system', 'BlinkMacSystemFont', 'Inter', 'system-ui', 'sans-serif'],
-				display: ['SF Pro Display', '-apple-system', 'BlinkMacSystemFont', 'Inter', 'system-ui', 'sans-serif'],
-				mono: ['JetBrains Mono', 'monospace'],
+				sans: ['Geist', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+				display: ['Geist', '-apple-system', 'BlinkMacSystemFont', 'system-ui', 'sans-serif'],
+				mono: ['Geist Mono', 'JetBrains Mono', 'monospace'],
 			},
 			animation: {
 				'fade-in': 'fadeIn 0.5s ease-out forwards',

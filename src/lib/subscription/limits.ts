@@ -240,11 +240,65 @@ export function checkAppointmentsLimit(
 }
 
 /**
+ * Verifica el límite de turnos por día
+ */
+export function checkDailyAppointmentsLimit(
+  subscription: Subscription | null,
+  currentDayCount: number
+): LimitCheckResult {
+  const effectivePlan = getEffectivePlanId(subscription);
+  const limits = getPlanLimits(effectivePlan);
+  const limit = limits.maxAppointmentsPerDay;
+  
+  if (limit === -1) {
+    return {
+      allowed: true,
+      current: currentDayCount,
+      limit: -1,
+      upgradeRequired: false,
+    };
+  }
+  
+  const allowed = currentDayCount < limit;
+  
+  return {
+    allowed,
+    current: currentDayCount,
+    limit,
+    upgradeRequired: !allowed,
+    message: allowed 
+      ? undefined 
+      : `Se alcanzó el límite de ${limit} turnos para este día. Pasate a Premium para turnos ilimitados.`,
+  };
+}
+
+/**
+ * Calcula cuántos turnos quedan disponibles para un día específico
+ */
+export function getRemainingDailySlots(
+  subscription: Subscription | null,
+  currentDayCount: number
+): { remaining: number; isUnlimited: boolean } {
+  const effectivePlan = getEffectivePlanId(subscription);
+  const limits = getPlanLimits(effectivePlan);
+  const limit = limits.maxAppointmentsPerDay;
+  
+  if (limit === -1) {
+    return { remaining: -1, isUnlimited: true };
+  }
+  
+  return { 
+    remaining: Math.max(0, limit - currentDayCount), 
+    isUnlimited: false 
+  };
+}
+
+/**
  * Helper genérico para verificar cualquier límite
  */
 export function checkLimit(
   subscription: Subscription | null,
-  type: 'products' | 'services' | 'clients' | 'appointments',
+  type: 'products' | 'services' | 'clients' | 'appointments' | 'daily_appointments',
   currentCount: number
 ): LimitCheckResult {
   switch (type) {
@@ -256,6 +310,8 @@ export function checkLimit(
       return checkClientsLimit(subscription, currentCount);
     case 'appointments':
       return checkAppointmentsLimit(subscription, currentCount);
+    case 'daily_appointments':
+      return checkDailyAppointmentsLimit(subscription, currentCount);
     default:
       return {
         allowed: true,
@@ -330,6 +386,11 @@ export const PAYWALL_MESSAGES = {
     title: 'Exportar Datos',
     description: 'Descargá tus datos de clientes, turnos y ventas en Excel o CSV.',
     cta: 'Exportar Datos',
+  },
+  google_calendar: {
+    title: 'Google Calendar',
+    description: 'Sincronizá automáticamente tus turnos con Google Calendar. Nunca más te pierdas una cita.',
+    cta: 'Activar Google Calendar',
   },
 } as const;
 

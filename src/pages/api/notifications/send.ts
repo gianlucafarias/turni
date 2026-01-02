@@ -18,7 +18,7 @@ export const POST: APIRoute = async ({ request }) => {
     const notificationService = getNotificationService();
     
     // Notificación de turno
-    if (type === 'appointment_reminder' || type === 'appointment_confirmed') {
+    if (type === 'appointment_reminder' || type === 'appointment_confirmed' || type === 'appointment_modified') {
       if (!appointment_id) {
         return new Response(JSON.stringify({ error: 'appointment_id required' }), {
           status: 400,
@@ -75,12 +75,19 @@ export const POST: APIRoute = async ({ request }) => {
       let result;
       if (type === 'appointment_reminder') {
         result = await notificationService.sendAppointmentReminder(appointmentData);
-      } else {
+      } else if (type === 'appointment_confirmed') {
         result = await notificationService.sendAppointmentConfirmed(appointmentData);
+      } else if (type === 'appointment_modified') {
+        // Para modificaciones, enviamos notificación de confirmación con los nuevos datos
+        // El appointmentData ya tiene la nueva fecha/hora actualizada
+        result = await notificationService.sendAppointmentStatusChange(
+          appointmentData,
+          'modified'
+        );
       }
       
       return new Response(JSON.stringify(result), {
-        status: result.success ? 200 : 400,
+        status: result?.success ? 200 : 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
