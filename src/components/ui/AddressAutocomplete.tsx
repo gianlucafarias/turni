@@ -13,7 +13,7 @@ interface AddressAutocompleteProps {
 declare global {
   interface Window {
     google: any
-    initGoogleMaps: () => void
+    initGoogleMaps?: () => void
   }
 }
 
@@ -40,7 +40,7 @@ export default function AddressAutocomplete({
     }
 
     // Verificar si ya se está cargando
-    if (window.initGoogleMaps) {
+    if (typeof window.initGoogleMaps === 'function') {
       return
     }
 
@@ -86,8 +86,8 @@ export default function AddressAutocomplete({
 
     return () => {
       // Limpiar callback global si es necesario
-      if (window.initGoogleMaps) {
-        delete window.initGoogleMaps
+      if (typeof window.initGoogleMaps === 'function') {
+        window.initGoogleMaps = undefined
       }
     }
   }, [])

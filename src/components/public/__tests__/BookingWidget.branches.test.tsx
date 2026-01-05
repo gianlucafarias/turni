@@ -39,7 +39,7 @@ describe('BookingWidget - Funcionalidad de Sucursales', () => {
 
   describe('Filtrado de servicios por sucursal', () => {
     it('debe mostrar todos los servicios si no hay sucursal seleccionada', () => {
-      const services = [
+      const services: Array<{ id: string; name: string; branches_available?: string[] | null }> = [
         { id: 'svc-1', name: 'Servicio 1', branches_available: [] },
         { id: 'svc-2', name: 'Servicio 2', branches_available: ['branch-1'] },
         { id: 'svc-3', name: 'Servicio 3', branches_available: null },
@@ -57,7 +57,7 @@ describe('BookingWidget - Funcionalidad de Sucursales', () => {
     });
 
     it('debe filtrar servicios por sucursal seleccionada', () => {
-      const services = [
+      const services: Array<{ id: string; name: string; branches_available?: string[] }> = [
         { id: 'svc-1', name: 'Servicio 1', branches_available: [] }, // Disponible en todas
         { id: 'svc-2', name: 'Servicio 2', branches_available: ['branch-1'] }, // Solo branch-1
         { id: 'svc-3', name: 'Servicio 3', branches_available: ['branch-2'] }, // Solo branch-2
@@ -77,7 +77,7 @@ describe('BookingWidget - Funcionalidad de Sucursales', () => {
     });
 
     it('debe manejar servicios sin branches_available definido', () => {
-      const services = [
+      const services: Array<{ id: string; name: string; branches_available?: string[] | null | undefined }> = [
         { id: 'svc-1', name: 'Servicio 1' }, // Sin branches_available
         { id: 'svc-2', name: 'Servicio 2', branches_available: undefined },
         { id: 'svc-3', name: 'Servicio 3', branches_available: null },
@@ -107,7 +107,7 @@ describe('BookingWidget - Funcionalidad de Sucursales', () => {
     });
 
     it('debe filtrar sucursales por servicio si tiene branches_available definido', () => {
-      const service = {
+      const service: { id: string; branches_available: string[] } = {
         id: 'svc-1',
         branches_available: ['branch-1'], // Solo disponible en branch-1
       };
@@ -121,7 +121,7 @@ describe('BookingWidget - Funcionalidad de Sucursales', () => {
     });
 
     it('debe mostrar todas las sucursales si el servicio no tiene restricciones', () => {
-      const service = {
+      const service: { id: string; branches_available: string[] } = {
         id: 'svc-1',
         branches_available: [], // Disponible en todas
       };

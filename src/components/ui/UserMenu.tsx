@@ -62,7 +62,7 @@ export default function UserMenu({ store }: Props) {
         // Recargar la tienda si hay sesión
         supabase
           .from('stores')
-          .select('id, name')
+          .select('id, name, profile_image_url')
           .eq('user_id', session.user.id)
           .single()
           .then(({ data }) => {

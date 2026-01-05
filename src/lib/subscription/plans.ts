@@ -202,6 +202,10 @@ export const FEATURE_DESCRIPTIONS: Record<PremiumFeature, { name: string; descri
     name: 'Google Calendar',
     description: 'Sincronizá tus turnos automáticamente con Google Calendar',
   },
+  multiple_branches: {
+    name: 'Múltiples Sucursales',
+    description: 'Gestioná múltiples ubicaciones para tu negocio',
+  },
 };
 
 /**
