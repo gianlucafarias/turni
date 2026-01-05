@@ -62,13 +62,6 @@ jobs:
           PUBLIC_SUPABASE_URL: ${{ secrets.PUBLIC_SUPABASE_URL }}
           PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.PUBLIC_SUPABASE_ANON_KEY }}
 
-      - name: Save build artifacts
-        uses: actions/upload-artifact@v4
-        with:
-          name: dist
-          path: dist/
-          retention-days: 1
-
   deploy:
     name: Deploy to VPS
     runs-on: ubuntu-latest
@@ -78,12 +71,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Download build artifacts
-        uses: actions/download-artifact@v4
-        with:
-          name: dist
-          path: dist/
-
       - name: Setup SSH
         uses: webfactory/ssh-agent@v0.9.0
         with:
@@ -91,7 +78,7 @@ jobs:
 
       - name: Add VPS to known hosts
         run: |
-          ssh-keyscan -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
+          ssh-keyscan -p ${{ secrets.VPS_SSH_PORT || '22' }} -H ${{ secrets.VPS_HOST }} >> ~/.ssh/known_hosts
 
       - name: Create .env.production file
         run: |
@@ -116,16 +103,25 @@ jobs:
           MERCADOPAGO_PUBLIC_KEY=${{ secrets.MERCADOPAGO_PUBLIC_KEY }}
           PUBLIC_SITE_URL=${{ secrets.PUBLIC_SITE_URL }}
           CRON_SECRET_TOKEN=${{ secrets.CRON_SECRET_TOKEN }}
+          PUBLIC_GOOGLE_MAPS_API_KEY=${{ secrets.PUBLIC_GOOGLE_MAPS_API_KEY }}
+          GOOGLE_CLIENT_ID=${{ secrets.GOOGLE_CLIENT_ID }}
+          GOOGLE_CLIENT_SECRET=${{ secrets.GOOGLE_CLIENT_SECRET }}
+          GOOGLE_REDIRECT_URI=${{ secrets.GOOGLE_REDIRECT_URI }}
+          CLOUDFLARE_ACCOUNT_ID=${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          CLOUDFLARE_R2_ACCESS_KEY_ID=${{ secrets.CLOUDFLARE_R2_ACCESS_KEY_ID }}
+          CLOUDFLARE_R2_SECRET_ACCESS_KEY=${{ secrets.CLOUDFLARE_R2_SECRET_ACCESS_KEY }}
+          CLOUDFLARE_R2_BUCKET_NAME=${{ secrets.CLOUDFLARE_R2_BUCKET_NAME }}
+          CLOUDFLARE_R2_PUBLIC_URL=${{ secrets.CLOUDFLARE_R2_PUBLIC_URL }}
           EOF
 
       - name: Deploy to VPS
         run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
+          ssh -p ${{ secrets.VPS_SSH_PORT || '22' }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
             set -e
-            cd /opt/tiendita || mkdir -p /opt/tiendita && cd /opt/tiendita
+            cd /opt/turni 2>/dev/null || cd /opt/tiendita 2>/dev/null || (mkdir -p /opt/tiendita && cd /opt/tiendita)
             
-            # Crear directorio si no existe
-            mkdir -p app nginx/conf.d nginx/ssl nginx/logs logs
+            # Crear directorios necesarios
+            mkdir -p nginx/conf.d nginx/ssl nginx/logs logs
             
             # Detener contenedores si están corriendo
             docker compose down || true
@@ -136,16 +132,20 @@ jobs:
 
       - name: Copy files to VPS
         run: |
-          scp -r docker-compose.yml Dockerfile nginx/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/tiendita/
-          scp -r dist/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/tiendita/app/
-          scp package*.json ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/tiendita/app/
-          scp .env.production ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:/opt/tiendita/.env.production
+          SSH_PORT="${{ secrets.VPS_SSH_PORT || '22' }}"
+          # Detectar el directorio de deployment
+          DEPLOY_PATH=$(ssh -p $SSH_PORT ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "if [ -d /opt/turni ]; then echo /opt/turni; else echo /opt/tiendita; fi")
+          echo "Deploying to: $DEPLOY_PATH"
+          ssh -p $SSH_PORT ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} "mkdir -p $DEPLOY_PATH/nginx/conf.d $DEPLOY_PATH/nginx/ssl $DEPLOY_PATH/nginx/logs $DEPLOY_PATH/logs"
+          scp -P $SSH_PORT -r docker-compose.yml Dockerfile nginx/ ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:$DEPLOY_PATH/
+          scp -P $SSH_PORT -r src/ public/ package*.json tsconfig.json astro.config.mjs tailwind.config.mjs ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:$DEPLOY_PATH/
+          scp -P $SSH_PORT .env.production ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:$DEPLOY_PATH/.env.production
 
       - name: Build and start containers
         run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
+          ssh -p ${{ secrets.VPS_SSH_PORT || '22' }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
             set -e
-            cd /opt/tiendita
+            cd /opt/turni 2>/dev/null || cd /opt/tiendita
             
             # Construir y levantar contenedores
             docker compose build --no-cache
@@ -161,18 +161,36 @@ jobs:
       - name: Setup SSL certificate
         if: github.event_name == 'workflow_dispatch'
         run: |
-          ssh ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
+          ssh -p ${{ secrets.VPS_SSH_PORT || '22' }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << ENDSSH
             set -e
-            cd /opt/tiendita
+            cd /opt/turni 2>/dev/null || cd /opt/tiendita
             
-            # Ejecutar certbot para obtener certificado SSL
-            docker compose --profile certbot run --rm certbot certonly \
-              --webroot \
-              --webroot-path=/var/www/certbot \
-              --email ${{ secrets.ADMIN_EMAIL }} \
-              --agree-tos \
-              --no-eff-email \
-              -d ${{ secrets.DOMAIN_NAME }} || true
+            # Verificar si los certificados ya existen
+            if [ ! -f "nginx/ssl/live/${{ secrets.DOMAIN_NAME }}/fullchain.pem" ]; then
+              echo "Obteniendo certificado SSL..."
+              # Ejecutar certbot para obtener certificado SSL
+              docker compose --profile certbot run --rm certbot certonly \
+                --webroot \
+                --webroot-path=/var/www/certbot \
+                --email ${{ secrets.ADMIN_EMAIL }} \
+                --agree-tos \
+                --no-eff-email \
+                -d ${{ secrets.DOMAIN_NAME }} || true
+              
+              # Copiar certificados si se obtuvieron
+              if [ -f "/etc/letsencrypt/live/${{ secrets.DOMAIN_NAME }}/fullchain.pem" ]; then
+                mkdir -p nginx/ssl/live/${{ secrets.DOMAIN_NAME }}
+                cp /etc/letsencrypt/live/${{ secrets.DOMAIN_NAME }}/fullchain.pem nginx/ssl/live/${{ secrets.DOMAIN_NAME }}/
+                cp /etc/letsencrypt/live/${{ secrets.DOMAIN_NAME }}/privkey.pem nginx/ssl/live/${{ secrets.DOMAIN_NAME }}/
+              fi
+              
+              # Reiniciar nginx si se copiaron certificados
+              if [ -f "nginx/ssl/live/${{ secrets.DOMAIN_NAME }}/fullchain.pem" ]; then
+                docker compose restart nginx || true
+              fi
+            else
+              echo "Certificados SSL ya existen, omitiendo..."
+            fi
           ENDSSH
 
 
