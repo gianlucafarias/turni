@@ -3,6 +3,9 @@ import PublicLayout from '../layouts/PublicLayout.astro';
 import BookingWidget from '../components/public/BookingWidget';
 import ProductStore from '../components/public/ProductStore';
 import { supabase } from '../lib/supabase';
+import { getGoogleMapsUrl } from '../utils/maps';
+import { formatScheduleHTML } from '../utils/scheduleFormatter';
+import { getBusinessCategoryName } from '../utils/businessCategories';
 
 const { storeId } = Astro.params;
 
@@ -55,9 +58,43 @@ if (store.store_type === 'products') {
 const isAppointments = store.store_type === 'appointments';
 const galleryImages = store.gallery_images || [];
 const hasGallery = galleryImages.length > 0;
+
+// Cargar sucursales activas
+let branches: any[] = [];
+try {
+  const { data: branchesData } = await supabase
+    .from('branches')
+    .select('*')
+    .eq('store_id', store.id)
+    .eq('is_active', true)
+    .order('display_order', { ascending: true })
+    .order('created_at', { ascending: true });
+  
+  branches = branchesData || [];
+} catch (error) {
+  console.error('Error cargando sucursales:', error);
+  branches = [];
+}
+
+// Cargar horarios configurados
+let schedules: any[] = [];
+try {
+  const { data: schedulesData } = await supabase
+    .from('schedules')
+    .select('*')
+    .eq('store_id', store.id)
+    .eq('enabled', true)
+    .order('day', { ascending: true });
+  
+  schedules = schedulesData || [];
+} catch (error) {
+  console.error('Error cargando horarios:', error);
+  schedules = [];
+}
+
 ---
 
-<PublicLayout title={store.name} store={{ name: store.name, slug: store.slug, id: store.id, whatsapp_url: store.whatsapp_url, store_type: store.store_type, user_id: store.user_id }}>
+<PublicLayout title={store.name} store={{ name: store.name, slug: store.slug, id: store.id, whatsapp_url: store.whatsapp_url, store_type: store.store_type, user_id: store.user_id, profile_image_url: store.profile_image_url }}>
   <div class="min-h-screen bg-white">
     {/* CONTENIDO PRINCIPAL */}
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
@@ -101,6 +138,12 @@ const hasGallery = galleryImages.length > 0;
                 {/* Info */}
                 <div class="p-5 pt-3">
                   <h1 class="text-xl font-bold text-stone-900">{store.name}</h1>
+                  
+                  {store.business_category && (
+                    <p class="text-indigo-600 mt-1 text-sm font-medium">
+                      {getBusinessCategoryName(store.business_category)}
+                    </p>
+                  )}
                   
                   {store.short_bio && (
                     <p class="text-stone-600 mt-1 text-sm">{store.short_bio}</p>
@@ -151,7 +194,7 @@ const hasGallery = galleryImages.length > 0;
               )}
 
               {/* Horarios */}
-              {store.business_hours_text && (
+              {(schedules.length > 0 || store.business_hours_text) && (
                 <div class="bg-white rounded-2xl border border-stone-200 p-5">
                   <h3 class="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3 flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -159,22 +202,127 @@ const hasGallery = galleryImages.length > 0;
                     </svg>
                     Horarios
                   </h3>
-                  <p class="text-stone-600 text-sm whitespace-pre-line">{store.business_hours_text}</p>
+                  {schedules.length > 0 ? (
+                    <div class="space-y-2 text-sm">
+                      {formatScheduleHTML(schedules).map((item) => (
+                        <div class="flex justify-between items-start gap-3 text-stone-600">
+                          <span class="font-medium text-stone-700 min-w-[80px]">{item.day}</span>
+                          <span class="text-right">{item.hours}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    store.business_hours_text && (
+                      <p class="text-stone-600 text-sm whitespace-pre-line">{store.business_hours_text}</p>
+                    )
+                  )}
                 </div>
               )}
 
               {/* Contacto */}
-              {(store.address || store.phone || store.email) && (
+              {(store.address || store.phone || store.email || branches.length > 0) && (
                 <div class="bg-white rounded-2xl border border-stone-200 p-5">
                   <h3 class="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3">Contacto</h3>
                   <div class="space-y-3 text-sm">
-                    {store.address && (
-                      <div class="flex items-start gap-3 text-stone-600">
-                        <svg class="w-4 h-4 mt-0.5 text-stone-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        </svg>
-                        <span>{store.address}</span>
+                    {/* Si hay sucursales, mostrar todas las sucursales */}
+                    {branches.length > 0 ? (
+                      <div class="space-y-4">
+                        {/* Ubicación principal */}
+                        {(store.address || store.location) && (
+                          <div class="pb-3 border-b border-stone-100">
+                            <div class="flex items-start gap-3 text-stone-600">
+                              <svg class="w-4 h-4 mt-0.5 text-stone-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              </svg>
+                              <div class="flex-1">
+                                <p class="font-medium text-stone-900 mb-0.5">Ubicación Principal</p>
+                                <p class="text-stone-600">{store.address || store.location}</p>
+                                {(store.city || store.province) && (
+                                  <p class="text-xs text-stone-400 mt-0.5">
+                                    {[store.city, store.province].filter(Boolean).join(', ')}
+                                  </p>
+                                )}
+                                {(store.address || store.location) && (
+                                  <a 
+                                    href={getGoogleMapsUrl(store.address || store.location || '', store.city, store.province)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 mt-1.5 transition-colors"
+                                  >
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                    Ver en Mapa
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Sucursales */}
+                        {branches.map((branch) => (
+                          <div class="pb-3 border-b border-stone-100 last:border-b-0 last:pb-0">
+                            <div class="flex items-start gap-3 text-stone-600">
+                              <svg class="w-4 h-4 mt-0.5 text-stone-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              </svg>
+                              <div class="flex-1">
+                                <p class="font-medium text-stone-900 mb-0.5">{branch.name}</p>
+                                {branch.address && (
+                                  <p class="text-stone-600">{branch.address}</p>
+                                )}
+                                {(branch.city || branch.province) && (
+                                  <p class="text-xs text-stone-400 mt-0.5">
+                                    {[branch.city, branch.province].filter(Boolean).join(', ')}
+                                  </p>
+                                )}
+                                {branch.address && (
+                                  <a 
+                                    href={getGoogleMapsUrl(branch.address, branch.city, branch.province)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 mt-1.5 transition-colors"
+                                  >
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                    Ver en Mapa
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
+                    ) : (
+                      /* Si no hay sucursales, mostrar solo la dirección principal */
+                      store.address && (
+                        <div class="flex items-start gap-3 text-stone-600">
+                          <svg class="w-4 h-4 mt-0.5 text-stone-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          </svg>
+                          <div class="flex-1">
+                            <span>{store.address}</span>
+                            {(store.city || store.province) && (
+                              <p class="text-xs text-stone-400 mt-0.5">
+                                {[store.city, store.province].filter(Boolean).join(', ')}
+                              </p>
+                            )}
+                            <a 
+                              href={getGoogleMapsUrl(store.address, store.city, store.province)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              class="inline-flex items-center gap-1 text-xs text-emerald-600 hover:text-emerald-700 mt-1.5 transition-colors"
+                            >
+                              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                              Ver en Mapa
+                            </a>
+                          </div>
+                        </div>
+                      )
                     )}
                     {store.phone && (
                       <a href={`tel:${store.phone}`} class="flex items-center gap-3 text-stone-600 hover:text-emerald-600 transition-colors">
@@ -306,6 +454,12 @@ const hasGallery = galleryImages.length > 0;
                 <div class="p-5 pt-3">
                   <h1 class="text-xl font-bold text-stone-900">{store.name}</h1>
                   
+                  {store.business_category && (
+                    <p class="text-indigo-600 mt-1 text-sm font-medium">
+                      {getBusinessCategoryName(store.business_category)}
+                    </p>
+                  )}
+                  
                   {store.short_bio && (
                     <p class="text-stone-600 mt-1 text-sm">{store.short_bio}</p>
                   )}
@@ -346,31 +500,12 @@ const hasGallery = galleryImages.length > 0;
                 </a>
               )}
 
-              {/* Descripción */}
-              {store.description && (
-                <div class="bg-white rounded-2xl border border-stone-200 p-5">
-                  <h3 class="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3">Sobre nosotros</h3>
-                  <p class="text-stone-600 text-sm leading-relaxed whitespace-pre-line">{store.description}</p>
-                </div>
-              )}
-
-              {/* Horarios */}
-              {store.business_hours_text && (
-                <div class="bg-white rounded-2xl border border-stone-200 p-5">
-                  <h3 class="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3 flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    Horarios de atención
-                  </h3>
-                  <p class="text-stone-600 text-sm whitespace-pre-line">{store.business_hours_text}</p>
-                </div>
-              )}
-
               {/* Botón Reservar turno ahora - Solo mobile */}
               <div class="lg:hidden">
                 <button
                   id="scroll-to-booking-btn-mobile"
+                  type="button"
+                  onclick="document.getElementById('reservar-turno')?.scrollIntoView({ behavior: 'smooth', block: 'start' })"
                   class="w-full flex items-center justify-center gap-2 px-5 py-3.5 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 rounded-xl transition-all shadow-lg shadow-indigo-500/20 hover:shadow-xl hover:shadow-indigo-500/30"
                 >
                   <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -380,18 +515,145 @@ const hasGallery = galleryImages.length > 0;
                 </button>
               </div>
 
+              {/* Descripción */}
+              {store.description && (
+                <div class="bg-white rounded-2xl border border-stone-200 p-5">
+                  <h3 class="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3">Sobre nosotros</h3>
+                  <p class="text-stone-600 text-sm leading-relaxed whitespace-pre-line">{store.description}</p>
+                </div>
+              )}
+
+              {/* Horarios */}
+              {(schedules.length > 0 || store.business_hours_text) && (
+                <div class="bg-white rounded-2xl border border-stone-200 p-5">
+                  <h3 class="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3 flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    Horarios de atención
+                  </h3>
+                  {schedules.length > 0 ? (
+                    <div class="space-y-2 text-sm">
+                      {formatScheduleHTML(schedules).map((item) => (
+                        <div class="flex justify-between items-start gap-3 text-stone-600">
+                          <span class="font-medium text-stone-700 min-w-[80px]">{item.day}</span>
+                          <span class="text-right">{item.hours}</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    store.business_hours_text && (
+                      <p class="text-stone-600 text-sm whitespace-pre-line">{store.business_hours_text}</p>
+                    )
+                  )}
+                </div>
+              )}
+
+
               {/* Contacto */}
-              {(store.address || store.phone || store.email) && (
+              {(store.address || store.phone || store.email || branches.length > 0) && (
                 <div class="bg-white rounded-2xl border border-stone-200 p-5">
                   <h3 class="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3">Contacto</h3>
                   <div class="space-y-3 text-sm">
-                    {store.address && (
-                      <div class="flex items-start gap-3 text-stone-600">
-                        <svg class="w-4 h-4 mt-0.5 text-stone-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                        </svg>
-                        <span>{store.address}</span>
+                    {/* Si hay sucursales, mostrar todas las sucursales */}
+                    {branches.length > 0 ? (
+                      <div class="space-y-4">
+                        {/* Ubicación principal */}
+                        {(store.address || store.location) && (
+                          <div class="pb-3 border-b border-stone-100">
+                            <div class="flex items-start gap-3 text-stone-600">
+                              <svg class="w-4 h-4 mt-0.5 text-stone-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              </svg>
+                              <div class="flex-1">
+                                <p class="font-medium text-stone-900 mb-0.5">Ubicación Principal</p>
+                                <p class="text-stone-600">{store.address || store.location}</p>
+                                {(store.city || store.province) && (
+                                  <p class="text-xs text-stone-400 mt-0.5">
+                                    {[store.city, store.province].filter(Boolean).join(', ')}
+                                  </p>
+                                )}
+                                {(store.address || store.location) && (
+                                  <a 
+                                    href={getGoogleMapsUrl(store.address || store.location || '', store.city, store.province)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 mt-1.5 transition-colors"
+                                  >
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                    Ver en Mapa
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
+                        {/* Sucursales */}
+                        {branches.map((branch) => (
+                          <div class="pb-3 border-b border-stone-100 last:border-b-0 last:pb-0">
+                            <div class="flex items-start gap-3 text-stone-600">
+                              <svg class="w-4 h-4 mt-0.5 text-stone-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                              </svg>
+                              <div class="flex-1">
+                                <p class="font-medium text-stone-900 mb-0.5">{branch.name}</p>
+                                {branch.address && (
+                                  <p class="text-stone-600">{branch.address}</p>
+                                )}
+                                {(branch.city || branch.province) && (
+                                  <p class="text-xs text-stone-400 mt-0.5">
+                                    {[branch.city, branch.province].filter(Boolean).join(', ')}
+                                  </p>
+                                )}
+                                {branch.address && (
+                                  <a 
+                                    href={getGoogleMapsUrl(branch.address, branch.city, branch.province)}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    class="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 mt-1.5 transition-colors"
+                                  >
+                                    <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                    </svg>
+                                    Ver en Mapa
+                                  </a>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        ))}
                       </div>
+                    ) : (
+                      /* Si no hay sucursales, mostrar solo la dirección principal */
+                      store.address && (
+                        <div class="flex items-start gap-3 text-stone-600">
+                          <svg class="w-4 h-4 mt-0.5 text-stone-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                          </svg>
+                          <div class="flex-1">
+                            <span>{store.address}</span>
+                            {(store.city || store.province) && (
+                              <p class="text-xs text-stone-400 mt-0.5">
+                                {[store.city, store.province].filter(Boolean).join(', ')}
+                              </p>
+                            )}
+                            <a 
+                              href={getGoogleMapsUrl(store.address, store.city, store.province)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              class="inline-flex items-center gap-1 text-xs text-indigo-600 hover:text-indigo-700 mt-1.5 transition-colors"
+                            >
+                              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                              </svg>
+                              Ver en Mapa
+                            </a>
+                          </div>
+                        </div>
+                      )
                     )}
                     {store.phone && (
                       <a href={`tel:${store.phone}`} class="flex items-center gap-3 text-stone-600 hover:text-indigo-600 transition-colors">
@@ -668,25 +930,53 @@ const hasGallery = galleryImages.length > 0;
         updateIndicators();
       }, 100);
     });
-    
-    // Botón de scroll a reservar turno
+  });
+  
+  // Botón de scroll a reservar turno - Ejecutar siempre, fuera del bloque del carousel
+  // Usar múltiples formas de asegurar que se ejecute
+  function initScrollButton() {
     const scrollBtn = document.getElementById('scroll-to-booking-btn-mobile');
-    if (scrollBtn) {
-      scrollBtn.addEventListener('click', function() {
-        const target = document.getElementById('reservar-turno');
-        if (target) {
-          // Calcular offset para compensar la navbar sticky
-          const navbarHeight = document.querySelector('nav')?.offsetHeight || 0;
-          const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - navbarHeight - 20;
-          
-          window.scrollTo({
-            top: targetPosition,
-            behavior: 'smooth'
-          });
-        }
+    const target = document.getElementById('reservar-turno');
+    
+    if (scrollBtn && target) {
+      // Remover listener anterior si existe
+      scrollBtn.removeEventListener('click', handleScrollClick);
+      // Agregar nuevo listener
+      scrollBtn.addEventListener('click', handleScrollClick);
+    }
+  }
+  
+  function handleScrollClick(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    const target = document.getElementById('reservar-turno');
+    if (target) {
+      // Calcular posición considerando navbar sticky
+      const navbar = document.querySelector('nav');
+      const navbarHeight = navbar ? navbar.offsetHeight : 0;
+      const targetPosition = target.getBoundingClientRect().top + window.pageYOffset - navbarHeight - 20;
+      
+      window.scrollTo({
+        top: targetPosition,
+        behavior: 'smooth'
       });
     }
-  });
+  }
+  
+  // Intentar inicializar inmediatamente
+  initScrollButton();
+  
+  // También intentar cuando el DOM esté listo
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initScrollButton);
+  } else {
+    // DOM ya está listo
+    initScrollButton();
+  }
+  
+  // También intentar después de un pequeño delay por si acaso
+  setTimeout(initScrollButton, 100);
+  setTimeout(initScrollButton, 500);
 </script>
 
 

@@ -56,6 +56,7 @@ export const TRIAL_LIMITS: PlanLimits = {
     'custom_branding',
     'export_data',
     'google_calendar',
+    'multiple_branches',
   ],
 };
 
@@ -78,6 +79,7 @@ export const PREMIUM_LIMITS: PlanLimits = {
     'custom_branding',
     'export_data',
     'google_calendar',
+    'multiple_branches',
   ],
 };
 

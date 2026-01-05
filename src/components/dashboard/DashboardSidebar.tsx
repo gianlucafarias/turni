@@ -41,7 +41,7 @@ export default function DashboardSidebar({ currentPath, isOpen, onClose }: Props
 
         const { data: storeData } = await supabase
           .from('stores')
-          .select('*')
+          .select('*, profile_image_url')
           .eq('user_id', session.user.id)
           .single()
 
@@ -359,6 +359,26 @@ export default function DashboardSidebar({ currentPath, isOpen, onClose }: Props
         <div className="bg-white rounded-2xl border border-surface-200/60 p-4 h-full flex flex-col justify-between shadow-sm">
           {store ? (
             <div className="flex flex-col h-full overflow-y-auto custom-scrollbar pr-1">
+              {/* Avatar y nombre de tienda en la parte superior */}
+              <div className="mb-6 pb-6 border-b border-surface-200">
+                <div className="flex items-center gap-3">
+                  {store.profile_image_url ? (
+                    <img 
+                      src={store.profile_image_url} 
+                      alt={store.name} 
+                      className="w-12 h-12 rounded-xl object-cover border-2 border-surface-200 shadow-sm"
+                    />
+                  ) : (
+                    <div className="w-12 h-12 rounded-xl bg-brand-600 flex items-center justify-center text-white font-bold text-lg shadow-sm">
+                      {store.name.charAt(0).toUpperCase()}
+                    </div>
+                  )}
+                  <div className="flex-1 min-w-0">
+                    <p className="font-semibold text-surface-900 truncate">{store.name}</p>
+                    <p className="text-xs text-surface-500 truncate">Mi tienda</p>
+                  </div>
+                </div>
+              </div>
               {mainLinks}
               <div className="mt-auto">
                 {bottomLinks}
@@ -382,12 +402,22 @@ export default function DashboardSidebar({ currentPath, isOpen, onClose }: Props
       >
         <div className="flex flex-col h-full">
           <div className="flex items-center justify-between px-6 py-5 border-b border-surface-200">
-            <div className="flex items-center">
-              <div className="h-8 w-8 rounded-lg bg-brand-600 flex items-center justify-center text-white mr-3">
-                <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                </svg>
-              </div>
+            <div className="flex items-center gap-3 flex-1 min-w-0">
+              {store?.profile_image_url ? (
+                <img 
+                  src={store.profile_image_url} 
+                  alt={store.name} 
+                  className="w-10 h-10 rounded-xl object-cover border-2 border-surface-200 flex-shrink-0"
+                />
+              ) : (
+                <div className="h-10 w-10 rounded-xl bg-brand-600 flex items-center justify-center text-white font-bold flex-shrink-0">
+                  {store?.name ? store.name.charAt(0).toUpperCase() : (
+                    <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                    </svg>
+                  )}
+                </div>
+              )}
               <h2 className="text-lg font-bold text-surface-900 truncate">{store?.name || 'Menú'}</h2>
             </div>
             <button

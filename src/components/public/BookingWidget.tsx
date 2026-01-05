@@ -16,6 +16,7 @@ interface Service {
   start_date: string | null
   end_date: string | null
   auto_confirm?: boolean
+  branches_available?: string[]
 }
 
 interface Schedule {
@@ -41,6 +42,17 @@ interface Store {
   // Datos generales de la tienda (para títulos y ubicación)
   name?: string
   location?: string
+  address?: string
+  city?: string
+  province?: string
+}
+
+interface Branch {
+  id: string
+  name: string
+  address: string
+  city: string
+  province: string
 }
 
 interface DayOff {
@@ -63,6 +75,7 @@ const GENERAL_SERVICE: Service = {
 export default function BookingWidget({ storeId }: Props) {
   const [store, setStore] = useState<Store | null>(null)
   const [services, setServices] = useState<Service[]>([])
+  const [branches, setBranches] = useState<Branch[]>([])
   const [schedules, setSchedules] = useState<Schedule[]>([])
   const [daysOff, setDaysOff] = useState<DayOff[]>([])
   const [appointments, setAppointments] = useState<any[]>([])
@@ -71,6 +84,7 @@ export default function BookingWidget({ storeId }: Props) {
   
   const [step, setStep] = useState(1)
   const [selectedService, setSelectedService] = useState<Service | null>(null)
+  const [selectedBranch, setSelectedBranch] = useState<string | null>(null) // null = ubicación principal
   const [selectedDate, setSelectedDate] = useState<Date | null>(null)
   const [selectedTime, setSelectedTime] = useState('')
   const [availableSlots, setAvailableSlots] = useState<string[]>([])
@@ -146,15 +160,39 @@ export default function BookingWidget({ storeId }: Props) {
       // Cargar store con manejo de errores (las columnas nuevas pueden no existir)
       let storeData: any = null
       try {
-        const storeRes = await supabase.from('stores').select('show_prices, allow_multiple_appointments, max_appointments_per_slot, temporarily_closed').eq('id', storeId).single()
+        const storeRes = await supabase.from('stores').select('show_prices, allow_multiple_appointments, max_appointments_per_slot, temporarily_closed, address, city, province, location').eq('id', storeId).single()
         if (storeRes.error) throw storeRes.error
         storeData = storeRes.data
       } catch (error: any) {
         // Si falla, intentar sin las columnas nuevas
-        const { data: fallbackStore } = await supabase.from('stores').select('show_prices, temporarily_closed').eq('id', storeId).single()
+        const { data: fallbackStore } = await supabase.from('stores').select('show_prices, temporarily_closed, address, city, province, location').eq('id', storeId).single()
         storeData = fallbackStore ? { ...fallbackStore, allow_multiple_appointments: false, max_appointments_per_slot: 1, temporarily_closed: fallbackStore.temporarily_closed || false } : null
       }
       
+      // Cargar sucursales - intentar siempre, no solo si es premium
+      // (el widget es público, así que necesitamos cargar las sucursales activas)
+      let branchesData: Branch[] = []
+      try {
+        console.log('Cargando sucursales para storeId:', storeId)
+        const { data: branchesRes, error: branchesError } = await supabase
+          .from('branches')
+          .select('id, name, address, city, province')
+          .eq('store_id', storeId)
+          .eq('is_active', true)
+          .order('display_order', { ascending: true })
+        
+        if (branchesError) {
+          console.error('Error cargando sucursales en widget:', branchesError)
+        } else {
+          console.log('Sucursales cargadas en widget:', branchesRes?.length || 0, branchesRes)
+          branchesData = branchesRes || []
+        }
+      } catch (error) {
+        console.error('Error al cargar sucursales en widget:', error)
+      }
+      setBranches(branchesData)
+      console.log('Branches state actualizado:', branchesData.length, 'sucursales')
+
       const [servicesRes, schedulesRes, daysOffRes] = await Promise.all([
         supabase.from('services').select('*').eq('store_id', storeId).eq('active', true).order('price'),
         supabase.from('schedules').select('*').eq('store_id', storeId),
@@ -210,7 +248,13 @@ export default function BookingWidget({ storeId }: Props) {
     setSelectedDate(null)
     setSelectedTime('')
     setSlotAvailability([])
-    setStep(2)
+    setSelectedBranch(null) // Reset sucursal al cambiar servicio
+    setStep(2) // Ir directo a seleccionar fecha
+  }
+
+  function selectBranch(branchId: string | null) {
+    setSelectedBranch(branchId)
+    // No cambiar de paso, solo actualizar la sucursal seleccionada
   }
 
   function isDayOff(date: Date): boolean {
@@ -469,9 +513,14 @@ export default function BookingWidget({ storeId }: Props) {
         duration: selectedService?.duration || 30,
         client_name: `${clientName} ${clientLastName}`.trim(),
         client_email: clientEmail,
-        client_phone: clientPhone,
+        client_phone: `+549${clientPhone}`,
         client_location: clientLocation,
         status: shouldAutoConfirm ? 'confirmed' : 'pending'
+      }
+
+      // Agregar branch_id si se seleccionó una sucursal
+      if (selectedBranch) {
+        appointmentData.branch_id = selectedBranch
       }
 
       // Solo agregar datos del servicio si no es el general
@@ -592,6 +641,7 @@ export default function BookingWidget({ storeId }: Props) {
     } else {
       setStep(1)
       setSelectedService(null)
+      setSelectedBranch(null)
       setSelectedDate(null)
       setSelectedTime('')
     }
@@ -749,7 +799,7 @@ export default function BookingWidget({ storeId }: Props) {
   const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre']
 
   // Calcular número de pasos según si hay servicios o no
-  // Con servicios: 1=Servicio, 2=Fecha/Hora, 3=Datos, 4=Resumen, 5=Confirmación (4 pasos visibles)
+  // Con servicios: 1=Servicio, 2=Fecha/Hora, 3=Datos, 4=Resumen, 5=Confirmación
   // Sin servicios: 2=Fecha/Hora, 3=Datos, 4=Resumen, 5=Confirmación (3 pasos visibles)
   const totalSteps = hasNoServices ? 3 : 4
   const currentStepAdjusted = hasNoServices 
@@ -783,6 +833,8 @@ export default function BookingWidget({ storeId }: Props) {
       {step === 1 && !hasNoServices && (
         <div className="space-y-3">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">¿Qué servicio necesitas?</h3>
+          
+
           {services.map(service => {
             const availabilityText = getServiceAvailabilityText(service)
             
@@ -832,6 +884,7 @@ export default function BookingWidget({ storeId }: Props) {
         </div>
       )}
 
+
       {/* Paso 2: Elegir fecha y hora */}
       {step === 2 && (
         <div>
@@ -842,9 +895,20 @@ export default function BookingWidget({ storeId }: Props) {
                 <div>
                   <p className="font-semibold text-brand-900">{selectedService.name}</p>
                   <p className="text-sm text-brand-600">{selectedService.duration} minutos</p>
+                  {/* Mostrar sucursal seleccionada si hay */}
+                  {selectedBranch && branches.length > 0 && (
+                    <p className="text-xs text-brand-500 mt-1">
+                      📍 {branches.find(b => b.id === selectedBranch)?.name || 'Sucursal seleccionada'}
+                    </p>
+                  )}
+                  {!selectedBranch && branches.length > 0 && (
+                    <p className="text-xs text-brand-500 mt-1">
+                      📍 Ubicación Principal
+                    </p>
+                  )}
                 </div>
                 <button onClick={() => setStep(1)} className="text-sm text-brand-600 hover:text-brand-800 font-medium">
-                  Cambiar
+                  Cambiar servicio
                 </button>
               </div>
             </div>
@@ -1127,6 +1191,21 @@ export default function BookingWidget({ storeId }: Props) {
             )}
             <p className="text-brand-100 mt-1 capitalize">{formatSelectedDate()}</p>
             <p className="text-brand-100">Hora: {selectedTime} hs</p>
+            {/* Mostrar sucursal seleccionada */}
+            {(() => {
+              console.log('Paso 3 - Renderizando sucursal:', { branchesCount: branches.length, selectedBranch, isPremium })
+              return branches.length > 0 && (
+                <div className="mt-3 pt-3 border-t border-white/20">
+                  <p className="text-brand-100 text-sm">📍 Sucursal:</p>
+                  <p className="font-semibold">
+                    {selectedBranch 
+                      ? branches.find(b => b.id === selectedBranch)?.name || 'Sucursal seleccionada'
+                      : 'Ubicación Principal'
+                    }
+                  </p>
+                </div>
+              )
+            })()}
             {!hasNoServices && showPrices && selectedService && selectedService.price > 0 && (
               <div className="flex items-center justify-between mt-4 pt-4 border-t border-white/20">
                 <span className="text-brand-100">Total a pagar</span>
@@ -1179,15 +1258,17 @@ export default function BookingWidget({ storeId }: Props) {
               />
             </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Teléfono / WhatsApp *</label>
-              <input
+            <div className="flex">
+                  <span className="inline-flex items-center px-4 rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 text-gray-500 text-sm">
+                    +54
+                  </span>
+                  <input
                 type="tel"
                 required
                 value={clientPhone}
                 onChange={(e) => setClientPhone(e.target.value)}
-                placeholder="+54 9 11 1234-5678"
-                className="w-full px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-brand-500 focus:ring-0 transition-colors"
+                placeholder="1112345678"
+                className="w-full px-4 py-3 border-2 border-gray-100 rounded-r-xl focus:border-brand-500 focus:ring-0 transition-colors"
               />
             </div>
 
@@ -1201,6 +1282,83 @@ export default function BookingWidget({ storeId }: Props) {
                 className="w-full px-4 py-3 border-2 border-gray-100 rounded-xl focus:border-brand-500 focus:ring-0 transition-colors"
               />
             </div>
+
+            {/* Selección de sucursal (si hay sucursales disponibles) */}
+            {(() => {
+              console.log('Paso 3 - Verificando sucursales:', {
+                branchesCount: branches.length,
+                branches: branches,
+                isPremium: isPremium,
+                storeId: storeId,
+                selectedService: selectedService?.name
+              })
+              return branches.length > 0 && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    ¿En qué sucursal querés ser atendido?
+                  </label>
+                <div className="space-y-2">
+                  {/* Opción: Ubicación principal */}
+                  <button
+                    type="button"
+                    onClick={() => selectBranch(null)}
+                    className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
+                      selectedBranch === null
+                        ? 'border-brand-500 bg-brand-50'
+                        : 'border-gray-200 bg-white hover:border-brand-200'
+                    }`}
+                  >
+                    <div className="flex-1">
+                      <span className="font-medium text-gray-900">Ubicación Principal</span>
+                      {(store?.address || store?.location) && (
+                        <p className="text-xs text-gray-500 mt-0.5">{store.address || store.location}</p>
+                      )}
+                      {(store?.city || store?.province) && (
+                        <p className="text-xs text-gray-400 mt-0.5">
+                          {[store.city, store.province].filter(Boolean).join(', ')}
+                        </p>
+                      )}
+                      {!store?.address && !store?.location && !store?.city && !store?.province && (
+                        <p className="text-xs text-gray-400 mt-0.5 italic">Dirección principal de la tienda</p>
+                      )}
+                    </div>
+                  </button>
+                  
+                  {/* Sucursales disponibles */}
+                  {(() => {
+                    // Si el servicio tiene sucursales específicas, mostrar solo esas
+                    // Si no tiene (o está vacío), mostrar todas las sucursales
+                    const availableBranches = selectedService && selectedService.branches_available && selectedService.branches_available.length > 0
+                      ? branches.filter(b => selectedService.branches_available!.includes(b.id))
+                      : branches
+
+                    return availableBranches.map((branch) => (
+                      <button
+                        key={branch.id}
+                        type="button"
+                        onClick={() => selectBranch(branch.id)}
+                        className={`w-full text-left p-3 rounded-xl border-2 transition-all ${
+                          selectedBranch === branch.id
+                            ? 'border-brand-500 bg-brand-50'
+                            : 'border-gray-200 bg-white hover:border-brand-200'
+                        }`}
+                      >
+                        <span className="font-medium text-gray-900">{branch.name}</span>
+                        {branch.address && (
+                          <p className="text-xs text-gray-500 mt-0.5">{branch.address}</p>
+                        )}
+                        {(branch.city || branch.province) && (
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {[branch.city, branch.province].filter(Boolean).join(', ')}
+                          </p>
+                        )}
+                      </button>
+                    ))
+                  })()}
+                </div>
+              </div>
+              )
+            })()}
 
             <div className="flex gap-3 mt-6">
               <button
@@ -1248,6 +1406,17 @@ export default function BookingWidget({ storeId }: Props) {
                 <span className="text-brand-100">Duración</span>
                 <span className="font-semibold">{selectedService?.duration || 30} minutos</span>
               </div>
+              {branches.length > 0 && (
+                <div className="flex items-center justify-between py-2 border-b border-white/20">
+                  <span className="text-brand-100">📍 Sucursal</span>
+                  <span className="font-semibold">
+                    {selectedBranch 
+                      ? branches.find(b => b.id === selectedBranch)?.name || 'Sucursal'
+                      : 'Ubicación Principal'
+                    }
+                  </span>
+                </div>
+              )}
               <div className="flex items-center justify-between py-2 border-b border-white/20">
                 <span className="text-brand-100">Cliente</span>
                 <span className="font-semibold">{clientName} {clientLastName}</span>

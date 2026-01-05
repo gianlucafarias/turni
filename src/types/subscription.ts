@@ -21,7 +21,7 @@ export type SubscriptionStatus =
 /**
  * Características premium que pueden estar bloqueadas
  */
-export type PremiumFeature = 
+export type PremiumFeature =
   | 'clients_management'     // Gestión de clientes en turnos
   | 'notifications'          // Notificaciones automáticas (WhatsApp/email)
   | 'multiple_services'      // Más de 1 servicio
@@ -30,7 +30,8 @@ export type PremiumFeature =
   | 'priority_support'       // Soporte prioritario
   | 'custom_branding'        // Personalización avanzada
   | 'export_data'            // Exportar datos
-  | 'google_calendar';       // Sincronización con Google Calendar
+  | 'google_calendar'        // Sincronización con Google Calendar
+  | 'multiple_branches';     // Múltiples sucursales
 
 /**
  * Límites por plan

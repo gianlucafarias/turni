@@ -112,6 +112,7 @@ export default function DashboardNavbar({ currentPath, onMenuClick }: Props) {
   const userEmail = user?.email || ''
   const userInitial = userEmail[0]?.toUpperCase() || 'U'
   const publicUrl = store?.slug ? `/${store.slug}` : (store?.id ? `/${store.id}` : '')
+  const profileImageUrl = store?.profile_image_url
 
   return (
     <nav className="bg-white border-b border-surface-200/60 sticky top-0 z-30">
@@ -130,14 +131,13 @@ export default function DashboardNavbar({ currentPath, onMenuClick }: Props) {
             </button>
             
             <a href="/dashboard" className="flex items-center group">
-              <div className="h-9 w-9 rounded-xl bg-brand-600 flex items-center justify-center text-white shadow-lg shadow-brand-500/20 group-hover:scale-105 transition-transform duration-200">
+              <div className="h-9 w-9 rounded-xl bg-brand-600 flex items-center justify-center text-white">
                 <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                 </svg>
               </div>
-              <div className="ml-3 flex flex-col">
-                <span className="text-sm font-semibold text-surface-900 leading-tight">{store?.name || 'Mi Tienda'}</span>
-                <span className="text-[10px] font-medium text-brand-600 uppercase tracking-wider">Dashboard</span>
+              <div className="ml-3">
+                <span className="text-lg font-bold text-surface-900 leading-tight">Turni.pro</span>
               </div>
             </a>
           </div>
@@ -145,10 +145,7 @@ export default function DashboardNavbar({ currentPath, onMenuClick }: Props) {
           {/* Derecha: notificaciones y usuario */}
           <div className="flex items-center gap-2 sm:gap-4">
             
-            {/* Centro de Notificaciones */}
-            {store?.id && (
-              <NotificationBell storeId={store.id} />
-            )}
+           
 
             {/* Ver tienda */}
             {publicUrl && (
@@ -168,6 +165,11 @@ export default function DashboardNavbar({ currentPath, onMenuClick }: Props) {
             {/* Divisor vertical */}
             <div className="h-8 w-px bg-surface-200 mx-1 hidden sm:block"></div>
 
+ {/* Centro de Notificaciones */}
+ {store?.id && (
+              <NotificationBell storeId={store.id} />
+            )}
+
             {/* Usuario */}
             <div className="relative" ref={menuRef}>
               <button
@@ -175,9 +177,17 @@ export default function DashboardNavbar({ currentPath, onMenuClick }: Props) {
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
                 className="flex items-center gap-2 p-1 rounded-xl hover:bg-surface-50 transition-all border border-transparent "
               >
-                <div className="h-8 w-8 rounded-lg bg-surface-900 flex items-center justify-center text-white text-xs font-bold">
-                  {userInitial}
-                </div>
+                {profileImageUrl ? (
+                  <img 
+                    src={profileImageUrl} 
+                    alt={store?.name || 'Usuario'} 
+                    className="h-8 w-8 rounded-lg object-cover border border-surface-200"
+                  />
+                ) : (
+                  <div className="h-8 w-8 rounded-lg bg-surface-900 flex items-center justify-center text-white text-xs font-bold">
+                    {userInitial}
+                  </div>
+                )}
                 <div className="hidden lg:flex flex-col items-start pr-1">
                   <svg className={`h-3 w-3 text-surface-400 transition-transform duration-200 ${userMenuOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />

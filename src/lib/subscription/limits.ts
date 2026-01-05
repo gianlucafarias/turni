@@ -392,6 +392,11 @@ export const PAYWALL_MESSAGES = {
     description: 'Sincronizá automáticamente tus turnos con Google Calendar. Nunca más te pierdas una cita.',
     cta: 'Activar Google Calendar',
   },
+  multiple_branches: {
+    title: 'Múltiples Sucursales',
+    description: 'Gestioná múltiples ubicaciones y permití que tus clientes elijan en qué sucursal quieren ser atendidos.',
+    cta: 'Activar Sucursales',
+  },
 } as const;
 
 

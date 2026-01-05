@@ -1,16 +1,25 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
 import ImageUpload from '../ui/ImageUpload'
 import { deleteImageFromStorage } from '../../utils/storage'
 import GoogleCalendarSync from './GoogleCalendarSync'
+import AddressAutocomplete from '../ui/AddressAutocomplete'
+import { ARGENTINA_PROVINCES } from '../../utils/argentinaProvinces'
+import BranchesManager from './BranchesManager'
+import { useSubscriptionLimits } from '../../hooks/useSubscriptionLimits'
+import { BUSINESS_CATEGORIES } from '../../utils/businessCategories'
 
 export default function StoreSettings() {
+  const { isPremium } = useSubscriptionLimits()
   const [store, setStore] = useState<any>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [success, setSuccess] = useState(false)
   const [activeTab, setActiveTab] = useState<'profile' | 'images' | 'contact' | 'settings'>('profile')
+  const [showUnsavedModal, setShowUnsavedModal] = useState(false)
+  const [pendingNavigation, setPendingNavigation] = useState<string | null>(null)
+  const formRef = useRef<HTMLFormElement>(null)
   
   // Estados para campos
   const [showPrices, setShowPrices] = useState(true)
@@ -21,10 +30,175 @@ export default function StoreSettings() {
   const [galleryImages, setGalleryImages] = useState<string[]>([])
   const [profileImageUrl, setProfileImageUrl] = useState('')
   const [bannerImageUrl, setBannerImageUrl] = useState('')
+  const [city, setCity] = useState('')
+  const [province, setProvince] = useState('')
+  const [address, setAddress] = useState('')
+  const [businessCategory, setBusinessCategory] = useState('')
+
+  // Valores iniciales para comparar
+  const initialValuesRef = useRef<any>(null)
 
   useEffect(() => {
     loadStore()
   }, [])
+
+  // Función para verificar si hay cambios sin guardar
+  const hasUnsavedChanges = useCallback(() => {
+    if (!store || !initialValuesRef.current || !formRef.current) return false
+
+    // Leer valores directamente del formulario
+    const form = formRef.current
+    const formData = new FormData(form)
+
+    const current = {
+      name: formData.get('name')?.toString().trim() || store.name || '',
+      description: formData.get('description')?.toString() || store.description || '',
+      short_bio: formData.get('short_bio')?.toString() || store.short_bio || '',
+      location: city || store.location || '',
+      city: city || store.city || '',
+      province: province || store.province || '',
+      address: address || store.address || '',
+      whatsapp_url: formData.get('whatsapp_url')?.toString() || store.whatsapp_url || '',
+      phone: formData.get('phone')?.toString() || store.phone || '',
+      email: formData.get('email')?.toString() || store.email || '',
+      instagram_url: formData.get('instagram_url')?.toString() || store.instagram_url || '',
+      facebook_url: formData.get('facebook_url')?.toString() || store.facebook_url || '',
+      tiktok_url: formData.get('tiktok_url')?.toString() || store.tiktok_url || '',
+      website_url: formData.get('website_url')?.toString() || store.website_url || '',
+        business_hours_text: formData.get('business_hours_text')?.toString() || store.business_hours_text || '',
+        business_category: businessCategory || formData.get('business_category')?.toString() || store.business_category || '',
+        show_prices: showPrices,
+        allow_multiple_appointments: allowMultiple,
+        max_appointments_per_slot: maxPerSlot,
+        slug: slug || '',
+        gallery_images: JSON.stringify([...galleryImages].sort()),
+        profile_image_url: profileImageUrl,
+        banner_image_url: bannerImageUrl,
+      }
+
+      const initial = {
+        ...initialValuesRef.current,
+        gallery_images: JSON.stringify([...(initialValuesRef.current.gallery_images || [])].sort()),
+      }
+
+    return JSON.stringify(current) !== JSON.stringify(initial)
+  }, [store, showPrices, allowMultiple, maxPerSlot, slug, galleryImages, profileImageUrl, bannerImageUrl, city, province, address, businessCategory])
+
+  // Interceptar navegación cuando hay cambios sin guardar
+  const handleNavigation = (url: string) => {
+    if (hasUnsavedChanges()) {
+      setPendingNavigation(url)
+      setShowUnsavedModal(true)
+    } else {
+      window.location.href = url
+    }
+  }
+
+  // Confirmar navegación (descartar cambios)
+  const confirmNavigation = () => {
+    if (pendingNavigation) {
+      setShowUnsavedModal(false)
+      window.location.href = pendingNavigation
+    }
+  }
+
+  // Cancelar navegación (quedarse en la página)
+  const cancelNavigation = () => {
+    setShowUnsavedModal(false)
+    setPendingNavigation(null)
+  }
+
+  // Interceptar clics en enlaces cuando hay cambios sin guardar
+  useEffect(() => {
+    if (!store || !initialValuesRef.current) return
+
+    const handleLinkClick = (e: MouseEvent) => {
+      const target = e.target as HTMLElement
+      const link = target.closest('a')
+      
+      if (!link) return
+      
+      // Ignorar enlaces externos, con target="_blank", o que sean botones
+      if (link.target === '_blank' || link.href.startsWith('mailto:') || link.href.startsWith('tel:')) {
+        return
+      }
+
+      // Ignorar si es el mismo dominio pero diferente ruta
+      const currentPath = window.location.pathname
+      const linkPath = new URL(link.href).pathname
+      
+      if (linkPath === currentPath) return
+
+      // Verificar cambios
+      if (hasUnsavedChanges()) {
+        e.preventDefault()
+        e.stopPropagation()
+        setPendingNavigation(link.href)
+        setShowUnsavedModal(true)
+      }
+    }
+
+    document.addEventListener('click', handleLinkClick, true)
+    return () => {
+      document.removeEventListener('click', handleLinkClick, true)
+    }
+  }, [hasUnsavedChanges])
+
+  // Event listener para beforeunload (cerrar pestaña/navegador)
+  useEffect(() => {
+    if (!store || !initialValuesRef.current || !formRef.current) return
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Leer valores directamente del formulario
+      const form = formRef.current
+      if (!form) return
+
+      const formData = new FormData(form)
+      const current = {
+        name: formData.get('name')?.toString().trim() || store.name || '',
+        description: formData.get('description')?.toString() || store.description || '',
+        short_bio: formData.get('short_bio')?.toString() || store.short_bio || '',
+        location: city || store.location || '',
+        city: city || store.city || '',
+        province: province || store.province || '',
+        address: address || store.address || '',
+        whatsapp_url: formData.get('whatsapp_url')?.toString() || store.whatsapp_url || '',
+        phone: formData.get('phone')?.toString() || store.phone || '',
+        email: formData.get('email')?.toString() || store.email || '',
+        instagram_url: formData.get('instagram_url')?.toString() || store.instagram_url || '',
+        facebook_url: formData.get('facebook_url')?.toString() || store.facebook_url || '',
+        tiktok_url: formData.get('tiktok_url')?.toString() || store.tiktok_url || '',
+        website_url: formData.get('website_url')?.toString() || store.website_url || '',
+        business_hours_text: formData.get('business_hours_text')?.toString() || store.business_hours_text || '',
+        business_category: businessCategory || formData.get('business_category')?.toString() || store.business_category || '',
+        show_prices: showPrices,
+        allow_multiple_appointments: allowMultiple,
+        max_appointments_per_slot: maxPerSlot,
+        slug: slug || '',
+        gallery_images: JSON.stringify([...galleryImages].sort()),
+        profile_image_url: profileImageUrl,
+        banner_image_url: bannerImageUrl,
+      }
+
+      const initial = {
+        ...initialValuesRef.current,
+        gallery_images: JSON.stringify([...(initialValuesRef.current.gallery_images || [])].sort()),
+      }
+
+      const hasChanges = JSON.stringify(current) !== JSON.stringify(initial)
+
+      if (hasChanges) {
+        e.preventDefault()
+        e.returnValue = '' // Chrome requiere returnValue
+        return '' // Algunos navegadores requieren return
+      }
+    }
+
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [store, showPrices, allowMultiple, maxPerSlot, slug, galleryImages, profileImageUrl, bannerImageUrl, city, province, address])
 
   async function loadStore() {
     try {
@@ -54,6 +228,37 @@ export default function StoreSettings() {
       setGalleryImages(storeData.gallery_images || [])
       setProfileImageUrl(storeData.profile_image_url || '')
       setBannerImageUrl(storeData.banner_image_url || '')
+      setCity(storeData.location || storeData.city || '')
+      setProvince(storeData.province || '')
+      setAddress(storeData.address || '')
+      setBusinessCategory(storeData.business_category || '')
+
+      // Guardar valores iniciales para comparar
+      initialValuesRef.current = {
+        name: storeData.name || '',
+        description: storeData.description || '',
+        short_bio: storeData.short_bio || '',
+        location: storeData.location || '',
+        city: storeData.city || '',
+        province: storeData.province || '',
+        address: storeData.address || '',
+        whatsapp_url: storeData.whatsapp_url || '',
+        phone: storeData.phone || '',
+        email: storeData.email || '',
+        instagram_url: storeData.instagram_url || '',
+        facebook_url: storeData.facebook_url || '',
+        tiktok_url: storeData.tiktok_url || '',
+        website_url: storeData.website_url || '',
+        business_hours_text: storeData.business_hours_text || '',
+        business_category: storeData.business_category || '',
+        show_prices: storeData.show_prices !== false,
+        allow_multiple_appointments: storeData.allow_multiple_appointments || false,
+        max_appointments_per_slot: storeData.max_appointments_per_slot || 1,
+        slug: storeData.slug || '',
+        gallery_images: storeData.gallery_images || [],
+        profile_image_url: storeData.profile_image_url || '',
+        banner_image_url: storeData.banner_image_url || '',
+      }
     } catch (error) {
       console.error('Error cargando tienda:', error)
       setError('Error al cargar la información de la tienda')
@@ -174,7 +379,7 @@ export default function StoreSettings() {
       const basicData: any = {
         name: nameValue,
         description: formData.get('description')?.toString() ?? store.description ?? '',
-        location: formData.get('location')?.toString() ?? store.location ?? '',
+        location: city || (formData.get('city')?.toString() ?? store.location ?? store.city ?? ''),
         whatsapp_url: formData.get('whatsapp_url')?.toString() ?? store.whatsapp_url ?? '',
         banner_image_url: bannerImageUrl,
         profile_image_url: profileImageUrl,
@@ -187,7 +392,9 @@ export default function StoreSettings() {
       const fullData: any = {
         ...basicData,
         short_bio: formData.get('short_bio')?.toString() ?? store.short_bio ?? '',
-        address: formData.get('address')?.toString() ?? store.address ?? '',
+        city: city || (formData.get('city')?.toString() ?? store.city ?? ''),
+        province: province || (formData.get('province')?.toString() ?? store.province ?? ''),
+        address: address || (formData.get('address')?.toString() ?? store.address ?? ''),
         phone: formData.get('phone')?.toString() ?? store.phone ?? '',
         email: formData.get('email')?.toString() ?? store.email ?? '',
         instagram_url: formData.get('instagram_url')?.toString() ?? store.instagram_url ?? '',
@@ -195,6 +402,7 @@ export default function StoreSettings() {
         tiktok_url: formData.get('tiktok_url')?.toString() ?? store.tiktok_url ?? '',
         website_url: formData.get('website_url')?.toString() ?? store.website_url ?? '',
         business_hours_text: formData.get('business_hours_text')?.toString() ?? store.business_hours_text ?? '',
+        business_category: businessCategory || (formData.get('business_category')?.toString() ?? store.business_category ?? ''),
         gallery_images: galleryImages,
       }
 
@@ -233,6 +441,34 @@ export default function StoreSettings() {
 
       // Actualizar store local
       setStore({ ...store, ...fullData })
+      
+      // Actualizar valores iniciales después de guardar
+      initialValuesRef.current = {
+        name: fullData.name || '',
+        description: fullData.description || '',
+        short_bio: fullData.short_bio || '',
+        location: fullData.location || '',
+        city: fullData.city || '',
+        province: fullData.province || '',
+        address: fullData.address || '',
+        whatsapp_url: fullData.whatsapp_url || '',
+        phone: fullData.phone || '',
+        email: fullData.email || '',
+        instagram_url: fullData.instagram_url || '',
+        facebook_url: fullData.facebook_url || '',
+        tiktok_url: fullData.tiktok_url || '',
+        website_url: fullData.website_url || '',
+        business_hours_text: fullData.business_hours_text || '',
+        business_category: fullData.business_category || '',
+        show_prices: fullData.show_prices !== false,
+        allow_multiple_appointments: fullData.allow_multiple_appointments || false,
+        max_appointments_per_slot: fullData.max_appointments_per_slot || 1,
+        slug: fullData.slug || '',
+        gallery_images: fullData.gallery_images || [],
+        profile_image_url: fullData.profile_image_url || '',
+        banner_image_url: fullData.banner_image_url || '',
+      }
+      
       setSuccess(true)
       setTimeout(() => setSuccess(false), 3000)
     } catch (error: any) {
@@ -293,12 +529,15 @@ export default function StoreSettings() {
       )}
 
       {/* URL pública - siempre visible */}
-      <div className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl p-6 mb-8 text-white">
+      <div className="bg-surface-900 rounded-[2rem] p-8 text-white relative overflow-hidden shadow-2xl shadow-surface-200 mb-8">
+        <div className="absolute top-0 right-0 w-80 h-80 bg-brand-500/10 rounded-full -translate-y-1/2 translate-x-1/2 blur-3xl" />
+        <div className="absolute bottom-0 left-0 w-64 h-64 bg-brand-600/5 rounded-full translate-y-1/2 -translate-x-1/2 blur-3xl" />
+        
         <div className="flex items-center gap-3 mb-3">
           <div className="w-10 h-10 bg-white/20 rounded-xl flex items-center justify-center">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" />
-            </svg>
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
           </div>
           <div>
             <h3 className="font-semibold">Tu página pública</h3>
@@ -348,13 +587,12 @@ export default function StoreSettings() {
                 : 'text-gray-500 hover:text-gray-700'
             }`}
           >
-            <span>{tab.icon}</span>
             <span>{tab.label}</span>
           </button>
         ))}
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-6">
         
         {/* TAB: Perfil */}
         {activeTab === 'profile' && (
@@ -363,9 +601,9 @@ export default function StoreSettings() {
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
               <div className="flex items-center gap-3 mb-4">
                 <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
-                  <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101" />
-                  </svg>
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8.684 13.342C8.886 12.938 9 12.482 9 12c0-.482-.114-.938-.316-1.342m0 2.684a3 3 0 110-2.684m0 2.684l6.632 3.316m-6.632-6l6.632-3.316m0 0a3 3 0 105.367-2.684 3 3 0 00-5.367 2.684zm0 9.316a3 3 0 105.368 2.684 3 3 0 00-5.368-2.684z" />
+              </svg>
                 </div>
                 <div>
                   <h2 className="font-semibold text-gray-900">URL personalizada</h2>
@@ -440,46 +678,110 @@ export default function StoreSettings() {
                 />
               </div>
 
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Rubro del negocio
+                </label>
+                <select
+                  name="business_category"
+                  value={businessCategory}
+                  onChange={(e) => setBusinessCategory(e.target.value)}
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white"
+                >
+                  <option value="">Selecciona un rubro</option>
+                  {BUSINESS_CATEGORIES.map((category) => (
+                    <option key={category.id} value={category.id}>
+                      {category.name}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-2 text-sm text-gray-400">
+                  Ayuda a los clientes a encontrar tu negocio más fácilmente
+                </p>
+              </div>
+
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Ciudad / Zona
+                    Ciudad
                   </label>
                   <input
                     type="text"
-                    name="location"
-                    defaultValue={store.location || ''}
+                    name="city"
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-                    placeholder="Buenos Aires, Argentina"
+                    placeholder="Buenos Aires"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Dirección completa
+                    Provincia
                   </label>
-                  <input
-                    type="text"
-                    name="address"
-                    defaultValue={store.address || ''}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-                    placeholder="Av. Corrientes 1234, Piso 2"
-                  />
+                  <select
+                    name="province"
+                    value={province}
+                    onChange={(e) => setProvince(e.target.value)}
+                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 bg-white"
+                  >
+                    {ARGENTINA_PROVINCES.map((prov) => (
+                      <option key={prov.value} value={prov.value}>
+                        {prov.label}
+                      </option>
+                    ))}
+                  </select>
                 </div>
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Horario de atención (texto)
+                  Dirección completa
                 </label>
-                <textarea
-                  name="business_hours_text"
-                  rows={2}
-                  defaultValue={store.business_hours_text || ''}
-                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 resize-none"
-                  placeholder="Lunes a Viernes 9:00 - 18:00&#10;Sábados 10:00 - 14:00"
+                <AddressAutocomplete
+                  value={address}
+                  onChange={(newAddress, placeDetails) => {
+                    setAddress(newAddress)
+                    
+                    // Si tenemos detalles del lugar, intentar extraer ciudad y provincia si no están definidas
+                    if (placeDetails?.address_components && (!city || !province)) {
+                      let extractedCity = city
+                      let extractedProvince = province
+                      
+                      placeDetails.address_components.forEach((component: any) => {
+                        const types = component.types || []
+                        
+                        // Buscar ciudad/localidad
+                        if (!extractedCity && (types.includes('locality') || types.includes('administrative_area_level_2'))) {
+                          extractedCity = component.long_name
+                        }
+                        
+                        // Buscar provincia
+                        if (!extractedProvince && types.includes('administrative_area_level_1')) {
+                          extractedProvince = component.long_name
+                        }
+                      })
+                      
+                      if (extractedCity && !city) setCity(extractedCity)
+                      if (extractedProvince && !province) setProvince(extractedProvince)
+                    }
+                  }}
+                  city={city}
+                  province={province}
+                  placeholder="Av. Corrientes 1234, CABA"
+                  className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
                 />
-                <p className="mt-1 text-sm text-gray-400">Este texto se muestra en tu perfil público</p>
+                <p className="mt-2 text-sm text-gray-400">
+                  Escribe para buscar direcciones.
+                </p>
               </div>
+
+              {/* Sucursales PRO */}
+              {isPremium && store && (
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <BranchesManager storeId={store.id} />
+                </div>
+              )}
+             
             </div>
           </div>
         )}
@@ -489,23 +791,44 @@ export default function StoreSettings() {
           <div className="space-y-6">
             {/* Logo */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6">
-              <h2 className="font-semibold text-gray-900 mb-4 flex items-center gap-2">
-                <span className="text-xl">👤</span> Logo o foto de perfil
-              </h2>
-              <div className="flex items-start gap-4">
-                <ImageUpload
-                  currentImageUrl={profileImageUrl}
-                  onImageUploaded={setProfileImageUrl}
-                  storeId={store.id}
-                  type="logo"
-                  aspectRatio="square"
-                  label=""
-                  description="Imagen cuadrada recomendada (400x400 px)"
-                />
-                <div className="flex-1">
-                  <p className="text-sm text-gray-500 mt-2">
-                    Tu logo aparecerá en tu perfil público. Imagen cuadrada recomendada (400x400 px).
-                  </p>
+              <div className="flex items-center gap-3 mb-6">
+                <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
+                  <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                  </svg>
+                </div>
+                <div>
+                  <h2 className="font-semibold text-gray-900">Logo o foto de perfil</h2>
+                  <p className="text-sm text-gray-500">Aparecerá en tu perfil público y en el dashboard</p>
+                </div>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row items-start gap-6">
+                <div className="flex-shrink-0">
+                  <ImageUpload
+                    currentImageUrl={profileImageUrl}
+                    onImageUploaded={setProfileImageUrl}
+                    storeId={store.id}
+                    type="logo"
+                    aspectRatio="square"
+                    label=""
+                    description=""
+                    maxWidth="w-32"
+                  />
+                </div>
+                <div className="flex-1 space-y-3">
+                  
+                  <div className="space-y-2">
+                    <p className="text-sm text-gray-600">
+                      <strong>Recomendaciones:</strong>
+                    </p>
+                    <ul className="text-sm text-gray-500 space-y-1 list-disc list-inside">
+                      <li>Imagen cuadrada (400x400 px o más)</li>
+                      <li>Formato PNG, JPG o WEBP</li>
+                      <li>Máximo 5MB</li>
+                      <li>Fondo transparente o sólido</li>
+                    </ul>
+                  </div>
                 </div>
               </div>
             </div>
@@ -618,7 +941,7 @@ export default function StoreSettings() {
             {/* Contacto directo */}
             <div className="bg-white rounded-2xl border border-gray-200 p-6 space-y-5">
               <h2 className="font-semibold text-gray-900 flex items-center gap-2">
-                <span className="text-xl">📱</span> Contacto directo
+               Contacto
               </h2>
 
               <div>
@@ -627,34 +950,23 @@ export default function StoreSettings() {
                 </label>
                 <div className="flex">
                   <span className="inline-flex items-center px-4 rounded-l-xl border border-r-0 border-gray-200 bg-gray-50 text-gray-500 text-sm">
-                    +
+                    +54
                   </span>
                   <input
                     type="text"
                     name="whatsapp_url"
                     defaultValue={store.whatsapp_url || ''}
                     className="flex-1 px-4 py-3 border border-gray-200 rounded-r-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-                    placeholder="549111234567"
+                    placeholder="111234567"
                   />
                 </div>
                 <p className="mt-2 text-sm text-gray-400">
-                  Número con código de país, sin espacios ni símbolos
+                  Número con código de país, sin espacios y sin 15.
                 </p>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Teléfono
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    defaultValue={store.phone || ''}
-                    className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-                    placeholder="(011) 1234-5678"
-                  />
-                </div>
+              <div >
+                
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Email
@@ -664,7 +976,7 @@ export default function StoreSettings() {
                     name="email"
                     defaultValue={store.email || ''}
                     className="w-full px-4 py-3 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
-                    placeholder="contacto@ejemplo.com"
+                    placeholder="contacto@tunegocio.com"
                   />
                 </div>
               </div>
@@ -893,7 +1205,7 @@ export default function StoreSettings() {
         <div className="sticky bottom-4 flex justify-end gap-4 pt-4 bg-gradient-to-t from-stone-50 to-transparent pb-4">
           <button
             type="button"
-            onClick={() => window.location.href = '/dashboard'}
+            onClick={() => handleNavigation('/dashboard')}
             className="px-6 py-3 text-gray-700 bg-white border border-gray-200 rounded-xl font-medium hover:bg-gray-50 transition-colors shadow-sm"
           >
             Cancelar
@@ -915,6 +1227,48 @@ export default function StoreSettings() {
           </button>
         </div>
       </form>
+
+      {/* Modal de advertencia de cambios sin guardar */}
+      {showUnsavedModal && (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 animate-fadeIn">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full animate-scaleIn">
+            <div className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="w-12 h-12 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+                  <svg className="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-900">¿Descartar cambios?</h3>
+                  <p className="text-sm text-gray-500 mt-1">Tienes cambios sin guardar que se perderán</p>
+                </div>
+              </div>
+              
+              <p className="text-sm text-gray-600 mb-6">
+                Si sales ahora, perderás todos los cambios que no hayas guardado. ¿Estás seguro de que quieres continuar?
+              </p>
+
+              <div className="flex gap-3">
+                <button
+                  type="button"
+                  onClick={cancelNavigation}
+                  className="flex-1 px-4 py-2.5 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors"
+                >
+                  Cancelar
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmNavigation}
+                  className="flex-1 px-4 py-2.5 bg-amber-600 text-white rounded-xl font-medium hover:bg-amber-700 transition-colors"
+                >
+                  Descartar cambios
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

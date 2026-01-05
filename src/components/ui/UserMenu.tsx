@@ -12,6 +12,7 @@ export default function UserMenu({ store }: Props) {
   const [loading, setLoading] = useState(false);
   const [session, setSession] = useState<any>(null);
   const [userStore, setUserStore] = useState<any>(store || null);
+  const [profileImageUrl, setProfileImageUrl] = useState<string | null>(null);
   const menuRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
 
@@ -26,12 +27,24 @@ export default function UserMenu({ store }: Props) {
         if (currentSession && !userStore) {
           const { data: storeData } = await supabase
             .from('stores')
-            .select('id, name')
+            .select('id, name, profile_image_url')
             .eq('user_id', currentSession.user.id)
             .single();
           
           if (storeData) {
             setUserStore(storeData);
+            setProfileImageUrl(storeData.profile_image_url || null);
+          }
+        } else if (currentSession && userStore && !profileImageUrl) {
+          // Cargar profile_image_url si no está
+          const { data: storeData } = await supabase
+            .from('stores')
+            .select('profile_image_url')
+            .eq('id', userStore.id)
+            .single();
+          
+          if (storeData?.profile_image_url) {
+            setProfileImageUrl(storeData.profile_image_url);
           }
         }
       } catch (error) {
@@ -55,6 +68,7 @@ export default function UserMenu({ store }: Props) {
           .then(({ data }) => {
             if (data) {
               setUserStore(data);
+              setProfileImageUrl(data.profile_image_url || null);
             }
           });
       } else {
@@ -159,9 +173,17 @@ export default function UserMenu({ store }: Props) {
               <p className="text-xs text-gray-500">{userStore.name}</p>
             )}
           </div>
-          <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center shadow-sm">
-            <span className="text-sm font-semibold text-white">{userInitial}</span>
-          </div>
+          {profileImageUrl ? (
+            <img 
+              src={profileImageUrl} 
+              alt={userStore?.name || userName} 
+              className="h-9 w-9 rounded-full object-cover border-2 border-white shadow-sm"
+            />
+          ) : (
+            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center shadow-sm">
+              <span className="text-sm font-semibold text-white">{userInitial}</span>
+            </div>
+          )}
           <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
           </svg>

@@ -37,13 +37,28 @@ export default function AppointmentDetailModal({
   const [editTime, setEditTime] = useState('')
   const [editNotes, setEditNotes] = useState('')
   const [subscription, setSubscription] = useState<any>(null)
+  const [branches, setBranches] = useState<any[]>([])
 
-  // Cargar datos de suscripción
+  // Cargar datos de suscripción y sucursales
   useEffect(() => {
     if (store?.id && isOpen) {
       loadSubscription()
+      loadBranches()
     }
   }, [store?.id, isOpen])
+
+  async function loadBranches() {
+    try {
+      const { data } = await supabase
+        .from('branches')
+        .select('id, name, address, city, province')
+        .eq('store_id', store.id)
+        .eq('is_active', true)
+      setBranches(data || [])
+    } catch (error) {
+      console.error('Error cargando sucursales:', error)
+    }
+  }
 
   // Resetear edición cuando cambia el appointment
   useEffect(() => {
@@ -307,7 +322,7 @@ export default function AppointmentDetailModal({
                   <span className={`text-lg ${statusConfig.text}`}>{statusConfig.icon}</span>
                 </div>
                 <div>
-                  <h2 className="text-lg font-bold text-white">Detalles del turno</h2>
+                  <h2 className="text-lg font-medium text-white">Detalles del turno</h2>
                   <span className={`inline-block px-2 py-0.5 text-xs font-semibold rounded-lg ${statusConfig.bg} ${statusConfig.text}`}>
                     {statusConfig.label}
                   </span>
@@ -429,7 +444,7 @@ export default function AppointmentDetailModal({
             {/* Información del cliente */}
             <div className="space-y-3">
               <h3 className="text-xs font-bold text-surface-400 uppercase tracking-wider">Cliente</h3>
-              <div className="bg-surface-50 rounded-2xl p-4 border border-surface-100">
+              <div className="bg-surface-50 rounded-2xl p-4 border border-surface-100 cursor-pointer">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-brand-100 flex items-center justify-center">
                     <span className="text-xl font-bold text-brand-600">
@@ -467,6 +482,7 @@ export default function AppointmentDetailModal({
                   </div>
                 </div>
               </div>
+             
             </div>
 
             {/* Servicio */}
@@ -477,6 +493,12 @@ export default function AppointmentDetailModal({
                   <p className="font-bold text-surface-900">{appointment.service_name}</p>
                   {appointment.service_price > 0 && (
                     <p className="text-lg font-black text-brand-600 mt-1">${appointment.service_price.toLocaleString()}</p>
+                  )}
+                  {appointment.branch_id && (
+                    <p className="text-sm text-surface-600 mt-2 flex items-center gap-1">
+                      <span>📍</span>
+                      Sucursal: {branches.find(b => b.id === appointment.branch_id)?.name || 'Sucursal'}
+                    </p>
                   )}
                 </div>
               </div>

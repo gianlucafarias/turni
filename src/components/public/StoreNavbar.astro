@@ -9,6 +9,7 @@ interface Props {
     whatsapp_url?: string | null;
     store_type?: string | null;
     user_id?: string | null;
+    profile_image_url?: string | null;
   };
 }
 
@@ -17,20 +18,28 @@ const storeUrl = store.slug ? `/${store.slug}` : `/${store.id}`;
 const isAppointments = store.store_type === 'appointments';
 ---
 
-<nav class="bg-white/90 backdrop-blur-md border-b border-surface-100 sticky top-0 z-50">
-  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+<nav class="bg-white/95 backdrop-blur-sm border-b border-surface-200/50 shadow-sm sticky top-0 z-50">
+  <div class="container mx-auto px-4">
     <div class="flex justify-between items-center h-16">
       <!-- Logo/Nombre -->
       <a href={storeUrl} class="flex items-center gap-3 group">
-        <div class={`h-9 w-9 rounded-xl flex items-center justify-center shadow-sm transition-all group-hover:scale-105 ${
-          isAppointments 
-            ? 'bg-gradient-to-br from-brand-500 to-brand-600' 
-            : 'bg-gradient-to-br from-surface-600 to-surface-700'
-        }`}>
-          <span class="text-white font-bold text-sm">
-            {store.name.charAt(0).toUpperCase()}
-          </span>
-        </div>
+        {store.profile_image_url ? (
+          <img 
+            src={store.profile_image_url} 
+            alt={store.name}
+            class="h-9 w-9 rounded-xl object-cover border-2 border-surface-200 shadow-sm transition-all group-hover:scale-105"
+          />
+        ) : (
+          <div class={`h-9 w-9 rounded-xl flex items-center justify-center shadow-sm transition-all group-hover:scale-105 ${
+            isAppointments 
+              ? 'bg-gradient-to-br from-brand-500 to-brand-600' 
+              : 'bg-gradient-to-br from-surface-600 to-surface-700'
+          }`}>
+            <span class="text-white font-bold text-sm">
+              {store.name.charAt(0).toUpperCase()}
+            </span>
+          </div>
+        )}
         <span class="text-lg font-bold text-surface-900 group-hover:text-brand-600 transition-colors hidden sm:block">
           {store.name}
         </span>
@@ -41,7 +50,8 @@ const isAppointments = store.store_type === 'appointments';
         <!-- Botón Reservar (solo para turnos) -->
         {isAppointments && (
           <a
-            href="#reservar"
+            href="#reservar-turno"
+            onclick="event.preventDefault(); document.getElementById('reservar-turno')?.scrollIntoView({ behavior: 'smooth', block: 'start' }); return false;"
             class="hidden sm:inline-flex items-center gap-2 px-4 py-2 text-sm font-semibold text-white bg-brand-600 hover:bg-brand-700 rounded-lg transition-colors shadow-sm"
           >
             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -67,7 +77,7 @@ const isAppointments = store.store_type === 'appointments';
         )}
         
         <!-- Avatar del dueño -->
-        <StoreOwnerAvatar client:load storeUserId={store.user_id} storeName={store.name} storeSlug={store.slug} storeId={store.id} />
+        <StoreOwnerAvatar client:load storeUserId={store.user_id} storeName={store.name} storeSlug={store.slug} storeId={store.id} profileImageUrl={store.profile_image_url} />
       </div>
     </div>
   </div>
