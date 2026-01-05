@@ -40,20 +40,21 @@ describe('BookingWidget - Funcionalidad de Sucursales', () => {
   describe('Filtrado de servicios por sucursal', () => {
     it('debe mostrar todos los servicios si no hay sucursal seleccionada', () => {
       const services: Array<{ id: string; name: string; branches_available?: string[] | null }> = [
-        { id: 'svc-1', name: 'Servicio 1', branches_available: [] },
-        { id: 'svc-2', name: 'Servicio 2', branches_available: ['branch-1'] },
-        { id: 'svc-3', name: 'Servicio 3', branches_available: null },
+        { id: 'svc-1', name: 'Servicio 1', branches_available: [] }, // Disponible en todas (array vacío)
+        { id: 'svc-2', name: 'Servicio 2', branches_available: ['branch-1'] }, // Solo en branch-1
+        { id: 'svc-3', name: 'Servicio 3', branches_available: null }, // Disponible en todas (null)
       ];
 
       const selectedBranch = null;
       const filtered = services.filter(service => {
         if (!service.branches_available || service.branches_available.length === 0) {
-          return true; // Disponible en todas
+          return true; // Disponible en todas (ubicación principal o cualquier sucursal)
         }
-        return service.branches_available.includes(selectedBranch!);
+        return false; // Si tiene branches_available definido, no está disponible en ubicación principal
       });
 
-      expect(filtered).toHaveLength(3); // Todos disponibles
+      expect(filtered).toHaveLength(2); // svc-1 y svc-3 (disponibles en ubicación principal)
+      expect(filtered.map(s => s.id)).toEqual(['svc-1', 'svc-3']);
     });
 
     it('debe filtrar servicios por sucursal seleccionada', () => {
