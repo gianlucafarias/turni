@@ -94,7 +94,6 @@ export async function deleteImageFromStorage(
  */
 export function generateImagePath(storeId: string, type: string, filename: string): string {
   const timestamp = Date.now()
-  const extension = filename.split('.').pop()
   const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_')
   return `stores/${storeId}/${type}_${timestamp}_${sanitizedFilename}`
 }

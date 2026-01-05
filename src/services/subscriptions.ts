@@ -3,7 +3,7 @@
 // Gestiona la creación, cancelación y estado de suscripciones recurrentes
 // =============================================================================
 
-import { PRICING, PLANS, getPlan, type PlanId } from '../lib/subscription';
+import { PRICING, getPlan, type PlanId } from '../lib/subscription';
 
 // Configuración de la API de Mercado Pago
 const MP_API_URL = 'https://api.mercadopago.com';
@@ -142,7 +142,7 @@ export async function createMPPlan(planId: PlanId): Promise<MPPreapprovalPlan> {
       frequency_type: 'months' as const,
       transaction_amount: isAnnual ? plan.priceAnnual : plan.priceMonthly,
       currency_id: 'ARS',
-      // Trial de 14 días para plan mensual
+      // Trial de 7 días para plan mensual
       ...(planId === 'premium' && {
         free_trial: {
           frequency: PRICING.TRIAL_DAYS,
@@ -227,7 +227,7 @@ export async function createSubscription(
   // Payload para checkout redirect - SIN preapproval_plan_id
   // Esto hace que MP nos devuelva init_point para redirect al checkout
   const payload = {
-    reason: `Suscripción ${plan.name} - Tiendita`,
+    reason: `Plan Premium ${plan.name} - Turni.pro`,
     external_reference: externalReference || `store_${storeId}_${Date.now()}`,
     payer_email: payerEmail,
     auto_recurring: {

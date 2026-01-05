@@ -87,6 +87,39 @@ if (preapprovalId) {
         } else {
           console.log('✅ Subscription updated to', pendingPlanId);
         }
+
+        // Asegurar que exista al menos un registro de pago en el historial
+        if (currentSub) {
+          // Verificar si ya hay pagos registrados para esta suscripción
+          const { data: existingPayments, error: paymentsError } = await supabaseAdmin
+            .from('subscription_payments')
+            .select('id')
+            .eq('subscription_id', currentSub.id)
+            .limit(1);
+
+          if (paymentsError) {
+            console.error('❌ Error checking existing payments:', paymentsError);
+          } else if (!existingPayments || existingPayments.length === 0) {
+            // Crear un pago inicial "aprobado" basado en el monto de auto_recurring
+            const amount = mpSubscription.auto_recurring?.transaction_amount || 0;
+
+            try {
+              await supabaseAdmin.from('subscription_payments').insert({
+                subscription_id: currentSub.id,
+                store_id: storeId,
+                amount,
+                currency: mpSubscription.auto_recurring?.currency_id || 'ARS',
+                status: 'approved',
+                mp_payment_id: null,
+                mp_status: 'approved',
+                paid_at: now.toISOString(),
+              });
+              console.log('✅ Initial subscription payment recorded from callback');
+            } catch (err) {
+              console.error('❌ Error inserting initial subscription payment:', err);
+            }
+          }
+        }
         
         // Registrar evento
         if (currentSub) {

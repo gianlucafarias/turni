@@ -6,26 +6,28 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { ClientSegmentationService } from '../segmentation';
 
 // Mock de supabase
-vi.mock('../../supabase', () => ({
-  supabase: {
-    from: vi.fn(() => ({
-      select: vi.fn(() => ({
-        eq: vi.fn(() => ({
-          not: vi.fn(() => ({
-            lt: vi.fn(() => ({
-              limit: vi.fn(() => Promise.resolve({ data: [], error: null })),
-            })),
-            limit: vi.fn(() => Promise.resolve({ data: [], error: null })),
-          })),
-          limit: vi.fn(() => Promise.resolve({ data: [], error: null })),
-        })),
-        in: vi.fn(() => Promise.resolve({ data: [], error: null })),
-        limit: vi.fn(() => Promise.resolve({ data: [], error: null })),
-      })),
-    })),
-    rpc: vi.fn(() => Promise.resolve({ data: [], error: null })),
-  },
-}));
+vi.mock('../../supabase', () => {
+  // Construimos un objeto de "query" que soporte chaining básico y que al final
+  // devuelva una promesa similar a la de supabase.
+  const buildQuery = () => {
+    const query: any = {
+      select: vi.fn(() => query),
+      eq: vi.fn(() => query),
+      not: vi.fn(() => query),
+      lt: vi.fn(() => query),
+      in: vi.fn(() => Promise.resolve({ data: [], error: null })),
+      limit: vi.fn(() => Promise.resolve({ data: [], error: null })),
+    };
+    return query;
+  };
+
+  return {
+    supabase: {
+      from: vi.fn(() => buildQuery()),
+      rpc: vi.fn(() => Promise.resolve({ data: [], error: null })),
+    },
+  };
+});
 
 describe('ClientSegmentationService', () => {
   let service: ClientSegmentationService;

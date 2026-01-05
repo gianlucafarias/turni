@@ -49,21 +49,15 @@ desktop.ini
 .settings/
 
 # Docker
-.dockerignore
-
-# Temporary files
+.dockerignore# Temporary files
 *.tmp
 *.temp
 .cache/
 tmp/
-temp/
-
-# Coverage
+temp/# Coverage
 coverage/
 *.lcov
-.nyc_output/
-
-# Misc
+.nyc_output/# Misc
 *.pid
 *.seed
 *.pid.lock

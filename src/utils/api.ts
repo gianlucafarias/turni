@@ -1,5 +1,4 @@
 import type { ApiResponse } from '../types/index';
-import { handleApiError } from './errors';
 
 export async function apiRequest<T>(
   endpoint: string,

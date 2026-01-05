@@ -5,6 +5,7 @@ export default function AppointmentsList() {
   const [appointments, setAppointments] = useState<any[]>([])
   const [loading, setLoading] = useState(true)
   const [store, setStore] = useState<any>(null)
+  const [branches, setBranches] = useState<any[]>([])
   const [filter, setFilter] = useState<'all' | 'pending' | 'confirmed' | 'cancelled'>('all')
   const [expandedId, setExpandedId] = useState<string | null>(null)
 
@@ -38,6 +39,14 @@ export default function AppointmentsList() {
       }
 
       setStore(storeData)
+
+      // Cargar sucursales
+      const { data: branchesData } = await supabase
+        .from('branches')
+        .select('id, name')
+        .eq('store_id', storeData.id)
+        .eq('is_active', true)
+      setBranches(branchesData || [])
 
       const { data: appointmentsData } = await supabase
         .from('appointments')
@@ -210,6 +219,12 @@ export default function AppointmentsList() {
                         <span className="font-medium">{appointment.time} hs</span>
                         {appointment.service_name && ` · ${appointment.service_name}`}
                         {appointment.service_price > 0 && ` · $${appointment.service_price.toLocaleString()}`}
+                        {appointment.branch_id && (
+                          <span className="text-indigo-600">
+                            {' · '}
+                            📍 {branches.find(b => b.id === appointment.branch_id)?.name || 'Sucursal'}
+                          </span>
+                        )}
                       </p>
                     </div>
 
@@ -260,6 +275,15 @@ export default function AppointmentsList() {
                         <div>
                           <p className="text-xs text-gray-400 mb-1">Duración</p>
                           <p className="text-sm text-gray-900">{appointment.duration} minutos</p>
+                        </div>
+                      )}
+                      {appointment.branch_id && (
+                        <div>
+                          <p className="text-xs text-gray-400 mb-1">Sucursal</p>
+                          <p className="text-sm text-gray-900 flex items-center gap-1">
+                            <span>📍</span>
+                            {branches.find(b => b.id === appointment.branch_id)?.name || 'Sucursal'}
+                          </p>
                         </div>
                       )}
                     </div>

@@ -14,6 +14,15 @@ interface Service {
   start_date: string | null
   end_date: string | null
   auto_confirm?: boolean
+  branches_available?: string[]
+}
+
+interface Branch {
+  id: string
+  name: string
+  address: string
+  city: string
+  province: string
 }
 
 const DAYS = [
@@ -29,6 +38,7 @@ const DAYS = [
 export default function ServicesManager() {
   const [services, setServices] = useState<Service[]>([])
   const [store, setStore] = useState<any>(null)
+  const [branches, setBranches] = useState<Branch[]>([])
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingService, setEditingService] = useState<Service | null>(null)
@@ -49,8 +59,19 @@ export default function ServicesManager() {
   const [formStartDate, setFormStartDate] = useState('')
   const [formEndDate, setFormEndDate] = useState('')
   const [formAutoConfirm, setFormAutoConfirm] = useState(false)
+  const [formBranches, setFormBranches] = useState<string[]>([]) // Array vacío = todas las sucursales
+  const [formUseSpecificBranches, setFormUseSpecificBranches] = useState(false) // Toggle para activar selección de sucursales
 
   useEffect(() => { loadData() }, [])
+  
+  // Cargar sucursales cuando cambia el estado premium o el store
+  useEffect(() => {
+    if (isPremium && store?.id) {
+      loadBranches()
+    } else {
+      setBranches([])
+    }
+  }, [isPremium, store?.id])
 
   async function loadData() {
     try {
@@ -63,10 +84,37 @@ export default function ServicesManager() {
       setStore(storeData)
       const { data: servicesData } = await supabase.from('services').select('*').eq('store_id', storeData.id).order('name')
       setServices(servicesData || [])
+
+      // Las sucursales se cargarán en el useEffect separado cuando isPremium esté disponible
     } catch (error) {
       console.error('Error:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function loadBranches() {
+    if (!store?.id) return
+    
+    try {
+      console.log('Cargando sucursales para store:', store.id, 'isPremium:', isPremium)
+      const { data: branchesData, error: branchesError } = await supabase
+        .from('branches')
+        .select('id, name, address, city, province')
+        .eq('store_id', store.id)
+        .eq('is_active', true)
+        .order('display_order', { ascending: true })
+      
+      if (branchesError) {
+        console.error('Error cargando sucursales:', branchesError)
+        setBranches([])
+      } else {
+        console.log('Sucursales cargadas:', branchesData?.length || 0, branchesData)
+        setBranches(branchesData || [])
+      }
+    } catch (error) {
+      console.error('Error al cargar sucursales:', error)
+      setBranches([])
     }
   }
 
@@ -82,6 +130,9 @@ export default function ServicesManager() {
       setFormStartDate(service.start_date || '')
       setFormEndDate(service.end_date || '')
       setFormAutoConfirm(service.auto_confirm || false)
+      const branchesAvailable = service.branches_available || []
+      setFormBranches(branchesAvailable)
+      setFormUseSpecificBranches(branchesAvailable.length > 0) // Activar si ya tiene sucursales específicas
     } else {
       setEditingService(null)
       setFormName('')
@@ -93,6 +144,8 @@ export default function ServicesManager() {
       setFormStartDate('')
       setFormEndDate('')
       setFormAutoConfirm(false)
+      setFormBranches([]) // Vacío = todas las sucursales
+      setFormUseSpecificBranches(false) // Desactivado por defecto
     }
     setShowForm(true)
   }
@@ -121,7 +174,7 @@ export default function ServicesManager() {
     setSaving(true)
     setError(null)
 
-    const data = {
+    const data: any = {
       store_id: store.id,
       name: formName.trim(),
       description: formDescription.trim(),
@@ -132,6 +185,18 @@ export default function ServicesManager() {
       end_date: formHasDateRange && formEndDate ? formEndDate : null,
       auto_confirm: isPremium ? formAutoConfirm : false, // Solo permitir si es premium
       active: true
+    }
+
+    // Agregar branches_available solo si es premium, hay sucursales y está activado el toggle
+    if (isPremium && branches.length > 0 && formUseSpecificBranches) {
+      // Si formBranches está vacío pero el toggle está activado, no enviar (significa todas)
+      // Si tiene valores, enviar el array
+      if (formBranches.length > 0) {
+        data.branches_available = formBranches
+      }
+    } else if (isPremium && branches.length > 0 && !formUseSpecificBranches) {
+      // Si el toggle está desactivado, asegurar que no se envíe el campo (todas las sucursales)
+      data.branches_available = []
     }
 
     try {
@@ -375,8 +440,9 @@ export default function ServicesManager() {
       {/* Modal */}
       {showForm && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50 overflow-y-auto">
-          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full p-6 sm:p-8 my-8 animate-fadeIn">
-            <div className="flex items-center justify-between mb-6">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-lg w-full max-h-[90vh] flex flex-col my-8 animate-fadeIn">
+            {/* Header fijo */}
+            <div className="flex items-center justify-between p-6 sm:p-8 pb-4 border-b border-gray-100 flex-shrink-0">
               <h2 className="text-xl font-bold text-gray-900">
                 {editingService ? 'Editar Servicio' : 'Nuevo Servicio'}
               </h2>
@@ -390,11 +456,13 @@ export default function ServicesManager() {
               </button>
             </div>
 
-            {error && (
-              <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-xl text-sm">{error}</div>
-            )}
+            {/* Contenido con scroll */}
+            <div className="flex-1 overflow-y-auto px-6 sm:px-8 py-4">
+              {error && (
+                <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-xl text-sm">{error}</div>
+              )}
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+              <form onSubmit={handleSubmit} className="space-y-5">
               {/* Nombre */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Nombre del servicio *</label>
@@ -591,24 +659,124 @@ export default function ServicesManager() {
                
               </div>
 
-              {/* Botones */}
-              <div className="flex gap-3 pt-4">
-                <button
-                  type="button"
-                  onClick={closeForm}
-                  className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
-                >
-                  Cancelar
-                </button>
-                <button
-                  type="submit"
-                  disabled={saving}
-                  className="flex-1 py-3 px-4 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-50 transition-colors shadow-lg shadow-indigo-200"
-                >
-                  {saving ? 'Guardando...' : 'Guardar'}
-                </button>
-              </div>
-            </form>
+              {/* Sucursales disponibles (solo si es premium y hay sucursales) */}
+              {isPremium && branches.length > 0 && (
+                <div className="mt-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <div className="flex items-center gap-2">
+                      <label className="text-sm font-medium text-gray-700">
+                        Disponible solo en sucursales específicas
+                      </label>
+                      <span className="px-1.5 py-0.5 text-[10px] font-bold bg-gradient-to-r from-indigo-500 to-purple-500 text-white rounded">
+                        PRO
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setFormUseSpecificBranches(!formUseSpecificBranches)
+                        // Si se desactiva, limpiar la selección
+                        if (formUseSpecificBranches) {
+                          setFormBranches([])
+                        }
+                      }}
+                      className={`relative w-12 h-7 rounded-full transition-colors ${
+                        formUseSpecificBranches ? 'bg-indigo-600' : 'bg-gray-200'
+                      }`}
+                    >
+                      <span
+                        className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-all ${
+                          formUseSpecificBranches ? 'left-6' : 'left-1'
+                        }`}
+                      />
+                    </button>
+                  </div>
+                  
+                  {formUseSpecificBranches && (
+                    <>
+                      <p className="text-xs text-gray-500 mb-3">
+                        Seleccioná en qué sucursales está disponible este servicio. Si no seleccionás ninguna, estará disponible en todas.
+                      </p>
+                      <div className="space-y-2 max-h-48 overflow-y-auto p-3 bg-gray-50 rounded-xl">
+                        {branches.map((branch) => (
+                          <label
+                            key={branch.id}
+                            className="flex items-start gap-3 p-3 bg-white rounded-lg border border-gray-200 hover:border-indigo-300 cursor-pointer transition-colors"
+                          >
+                            <input
+                              type="checkbox"
+                              checked={formBranches.includes(branch.id)}
+                              onChange={(e) => {
+                                if (e.target.checked) {
+                                  setFormBranches([...formBranches, branch.id])
+                                } else {
+                                  setFormBranches(formBranches.filter(id => id !== branch.id))
+                                }
+                              }}
+                              className="mt-1 w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
+                            />
+                            <div className="flex-1">
+                              <div className="font-medium text-gray-900">{branch.name}</div>
+                              {branch.address && (
+                                <div className="text-xs text-gray-500 mt-0.5">{branch.address}</div>
+                              )}
+                              {(branch.city || branch.province) && (
+                                <div className="text-xs text-gray-400">
+                                  {[branch.city, branch.province].filter(Boolean).join(', ')}
+                                </div>
+                              )}
+                            </div>
+                          </label>
+                        ))}
+                      </div>
+                      {formBranches.length === 0 && (
+                        <p className="text-xs text-indigo-600 mt-2">
+                          ✓ Disponible en todas las sucursales
+                        </p>
+                      )}
+                      {formBranches.length > 0 && (
+                        <p className="text-xs text-gray-500 mt-2">
+                          Disponible en {formBranches.length} {formBranches.length === 1 ? 'sucursal' : 'sucursales'}
+                        </p>
+                      )}
+                    </>
+                  )}
+                  
+                  {!formUseSpecificBranches && (
+                    <p className="text-xs text-gray-500">
+                      El servicio estará disponible en todas las sucursales.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              </form>
+            </div>
+
+            {/* Botones fijos */}
+            <div className="flex gap-3 p-6 sm:p-8 pt-4 border-t border-gray-100 flex-shrink-0">
+              <button
+                type="button"
+                onClick={closeForm}
+                className="flex-1 py-3 px-4 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault()
+                  const form = e.currentTarget.closest('.bg-white')?.querySelector('form') as HTMLFormElement
+                  if (form) {
+                    form.requestSubmit()
+                  }
+                }}
+                disabled={saving}
+                className="flex-1 py-3 px-4 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors shadow-lg shadow-indigo-200"
+              >
+                {saving ? 'Guardando...' : editingService ? 'Actualizar' : 'Crear'}
+              </button>
+            </div>
           </div>
         </div>
       )}

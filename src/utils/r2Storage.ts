@@ -129,7 +129,6 @@ export async function deleteImageFromR2(path: string): Promise<void> {
  */
 export function generateR2ImagePath(storeId: string, type: string, filename: string): string {
   const timestamp = Date.now()
-  const extension = filename.split('.').pop()
   const sanitizedFilename = filename.replace(/[^a-zA-Z0-9.-]/g, '_')
   return `stores/${storeId}/${type}_${timestamp}_${sanitizedFilename}`
 }

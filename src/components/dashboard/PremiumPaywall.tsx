@@ -125,7 +125,7 @@ export function PremiumPaywall({
             </div>
 
             <p className="text-center text-sm text-gray-500 mt-4">
-              Probá 14 días gratis. Cancelá cuando quieras.
+              Probá 7 días gratis. Cancelá cuando quieras.
             </p>
           </div>
         </div>
@@ -156,7 +156,7 @@ export function PremiumPaywall({
       </button>
       
       <p className="text-sm text-gray-500 mt-4">
-        Desde {formatPrice(premiumPlan.priceMonthly)}/mes • 14 días gratis
+        Desde {formatPrice(premiumPlan.priceMonthly)}/mes • 7 días gratis
       </p>
     </div>
   );

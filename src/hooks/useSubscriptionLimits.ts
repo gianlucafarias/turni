@@ -16,6 +16,10 @@ interface SubscriptionLimits {
   limits: PlanLimits;
   isPremium: boolean;
   loading: boolean;
+  // Info del trial
+  isTrialActive: boolean;
+  trialDaysRemaining: number;
+  trialEndsAt: Date | null;
   // Contadores actuales
   counts: {
     products: number;
@@ -40,6 +44,9 @@ interface SubscriptionLimits {
 export function useSubscriptionLimits(): SubscriptionLimits {
   const [planId, setPlanId] = useState<PlanId>('free');
   const [loading, setLoading] = useState(true);
+  const [isTrialActive, setIsTrialActive] = useState(false);
+  const [trialDaysRemaining, setTrialDaysRemaining] = useState(0);
+  const [trialEndsAt, setTrialEndsAt] = useState<Date | null>(null);
   const [counts, setCounts] = useState({
     products: 0,
     services: 0,
@@ -77,12 +84,35 @@ export function useSubscriptionLimits(): SubscriptionLimits {
       // Obtener suscripción
       const { data: subscription } = await supabase
         .from('subscriptions')
-        .select('plan_id, status')
+        .select('plan_id, status, trial_ends_at')
         .eq('store_id', store.id)
         .single();
 
-      if (subscription && subscription.status === 'active') {
-        setPlanId(subscription.plan_id as PlanId);
+      if (subscription) {
+        // Verificar si el trial sigue activo
+        if (subscription.status === 'trial' && subscription.trial_ends_at) {
+          const trialEnd = new Date(subscription.trial_ends_at);
+          const now = new Date();
+          
+          if (trialEnd > now) {
+            setPlanId('trial');
+            setIsTrialActive(true);
+            setTrialEndsAt(trialEnd);
+            
+            // Calcular días restantes
+            const diffMs = trialEnd.getTime() - now.getTime();
+            const diffDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+            setTrialDaysRemaining(Math.max(0, diffDays));
+          } else {
+            // Trial expirado, es free
+            setPlanId('free');
+            setIsTrialActive(false);
+            setTrialDaysRemaining(0);
+          }
+        } else if (subscription.status === 'active') {
+          setPlanId(subscription.plan_id as PlanId);
+          setIsTrialActive(false);
+        }
       }
 
       // Contar productos
@@ -152,6 +182,9 @@ export function useSubscriptionLimits(): SubscriptionLimits {
     limits,
     isPremium,
     loading,
+    isTrialActive,
+    trialDaysRemaining,
+    trialEndsAt,
     counts,
     canAddProduct: checkLimit('products').allowed,
     canAddService: checkLimit('services').allowed,

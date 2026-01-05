@@ -398,22 +398,7 @@ export default function ClientProfile({ clientId }: Props) {
 
         {/* Columna derecha - Estadísticas e historial */}
         <div className="lg:col-span-2 space-y-6">
-          {/* Estadísticas */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <div className="bg-white rounded-2xl border border-gray-200 p-4">
-              <p className="text-3xl font-bold text-gray-900">{client.total_appointments}</p>
-              <p className="text-sm text-gray-500">Turnos totales</p>
-            </div>
-            <div className="bg-white rounded-2xl border border-gray-200 p-4">
-              <p className="text-3xl font-bold text-emerald-600">{client.completed_appointments}</p>
-              <p className="text-sm text-gray-500">Completados</p>
-            </div>
-            <div className="bg-white rounded-2xl border border-gray-200 p-4">
-              <p className="text-3xl font-bold text-green-600">${client.total_spent.toLocaleString()}</p>
-              <p className="text-sm text-gray-500">Total gastado</p>
-            </div>
-            
-          </div>
+          
 
           {/* Insights */}
           {avgDaysBetweenVisits && (
@@ -461,11 +446,7 @@ export default function ClientProfile({ clientId }: Props) {
                       </div>
                       <div className="text-right">
                         {getStatusBadge(apt.status)}
-                        {apt.service_price && apt.service_price > 0 && (
-                          <p className="text-sm font-semibold text-gray-900 mt-1">
-                            ${apt.service_price.toLocaleString()}
-                          </p>
-                        )}
+                        
                       </div>
                     </div>
                     {apt.notes && (

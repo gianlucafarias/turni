@@ -6,9 +6,10 @@ interface Props {
   storeName?: string | null
   storeSlug?: string | null
   storeId?: string
+  profileImageUrl?: string | null
 }
 
-export default function StoreOwnerAvatar({ storeUserId, storeName, storeSlug, storeId }: Props) {
+export default function StoreOwnerAvatar({ storeUserId, storeName, storeSlug, storeId, profileImageUrl }: Props) {
   const [showAvatar, setShowAvatar] = useState(false)
   const [userInitial, setUserInitial] = useState('U')
   const [userEmail, setUserEmail] = useState('')
@@ -106,9 +107,17 @@ export default function StoreOwnerAvatar({ storeUserId, storeName, storeSlug, st
         aria-expanded={isOpen}
         aria-haspopup="true"
       >
-        <div className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center text-white text-sm font-semibold shadow-sm">
-          {userInitial}
-        </div>
+        {profileImageUrl ? (
+          <img 
+            src={profileImageUrl} 
+            alt={storeName || 'Usuario'} 
+            className="h-8 w-8 rounded-full object-cover border-2 border-white shadow-sm"
+          />
+        ) : (
+          <div className="h-8 w-8 rounded-full bg-indigo-600 flex items-center justify-center text-white text-sm font-semibold shadow-sm">
+            {userInitial}
+          </div>
+        )}
         <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
         </svg>

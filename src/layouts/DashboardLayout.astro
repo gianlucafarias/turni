@@ -4,7 +4,6 @@ import DashboardNavbar from '../components/dashboard/DashboardNavbar'
 import DashboardSidebar from '../components/dashboard/DashboardSidebar'
 import { TrialBanner } from '../components/dashboard/TrialBanner'
 import { supabase } from '../lib/supabase'
-import { getTrialDaysRemaining, isTrialActive } from '../lib/subscription'
 
 interface Props {
   title: string
@@ -13,10 +12,52 @@ interface Props {
 const { title } = Astro.props
 const currentPath = Astro.url.pathname
 
-// Trial desactivado - no mostrar banner
-const showTrialBanner = false
-const trialDays = 0
-const storeId = ''
+// Obtener información del trial del usuario actual
+let showTrialBanner = false
+let trialDays = 0
+let storeId = ''
+
+try {
+  // Intentar obtener la sesión del usuario
+  const authHeader = Astro.request.headers.get('cookie')
+  
+  if (authHeader) {
+    const { data: { user } } = await supabase.auth.getUser()
+    
+    if (user) {
+      // Obtener la tienda del usuario
+      const { data: store } = await supabase
+        .from('stores')
+        .select('id')
+        .eq('user_id', user.id)
+        .single()
+      
+      if (store) {
+        storeId = store.id
+        
+        // Obtener la suscripción
+        const { data: subscription } = await supabase
+          .from('subscriptions')
+          .select('plan_id, status, trial_ends_at')
+          .eq('store_id', store.id)
+          .single()
+        
+        if (subscription && subscription.status === 'trial' && subscription.trial_ends_at) {
+          const trialEnd = new Date(subscription.trial_ends_at)
+          const now = new Date()
+          
+          if (trialEnd > now) {
+            showTrialBanner = true
+            const diffMs = trialEnd.getTime() - now.getTime()
+            trialDays = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+          }
+        }
+      }
+    }
+  }
+} catch (error) {
+  console.error('Error checking trial status:', error)
+}
 ---
 
 <Layout title={title}>
