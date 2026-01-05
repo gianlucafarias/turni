@@ -116,23 +116,24 @@ describe('Página de Tienda - Funcionalidad de Sucursales', () => {
 
     it('debe mostrar ubicación principal si no hay sucursales', () => {
       const branches: any[] = [];
-      const shouldShowMainLocation = branches.length === 0 && (mockStore.address || mockStore.location);
+      const shouldShowMainLocation = branches.length === 0 && !!(mockStore.address || mockStore.location);
       expect(shouldShowMainLocation).toBe(true);
     });
 
     it('debe mostrar ubicación principal incluso cuando hay sucursales', () => {
-      const shouldShowMainLocation = (mockStore.address || mockStore.location) && mockBranches.length > 0;
+      const shouldShowMainLocation = !!(mockStore.address || mockStore.location) && mockBranches.length > 0;
       expect(shouldShowMainLocation).toBe(true);
     });
   });
 
   describe('Datos de contacto', () => {
     it('debe mostrar sección de contacto si hay dirección, teléfono, email o sucursales', () => {
-      const hasContactInfo = 
+      const hasContactInfo = !!(
         mockStore.address || 
         mockStore.phone || 
         mockStore.email || 
-        mockBranches.length > 0;
+        mockBranches.length > 0
+      );
       
       expect(hasContactInfo).toBe(true);
     });
