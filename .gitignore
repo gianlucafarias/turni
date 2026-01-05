@@ -49,9 +49,7 @@ desktop.ini
 .settings/
 
 # Docker
-.dockerignore
-
-# Temporary files
+.dockerignore# Temporary files
 *.tmp
 *.temp
 .cache/

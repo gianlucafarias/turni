@@ -534,15 +534,7 @@ export function NotificationBell({ storeId }: NotificationBellProps) {
           onClearAll={clearAll}
           onRemove={removeNotification}
         />
-        {/* Indicador de conexión (solo visible en desarrollo) */}
-        {DEBUG && (
-          <div 
-            className={`absolute -bottom-1 -right-1 w-2.5 h-2.5 rounded-full border-2 border-white ${
-              isConnected ? 'bg-green-500' : 'bg-yellow-500'
-            }`}
-            title={isConnected ? 'Conectado a Realtime' : 'Usando polling (Realtime no disponible)'}
-          />
-        )}
+        
       </div>
       <ToastContainer toasts={toasts} removeToast={removeToast} onMarkAsRead={markAsRead} />
     </>

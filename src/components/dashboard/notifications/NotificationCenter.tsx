@@ -28,7 +28,7 @@ export function NotificationCenter({
     <div className="relative">
       <button
         type="button"
-        className="relative inline-flex items-center justify-center w-9 h-9 rounded-xl border border-surface-200 bg-white text-surface-500 hover:text-brand-600 hover:border-brand-200 shadow-sm transition-colors"
+        className="relative inline-flex items-center justify-center w-9 h-9 rounded-xl bg-white text-surface-500 hover:text-brand-600 hover:border-brand-200 transition-colors"
         aria-label="Notificaciones"
         onClick={() => setIsOpen((prev) => !prev)}
       >

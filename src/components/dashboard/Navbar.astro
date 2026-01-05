@@ -15,9 +15,6 @@ if (session) {
   store = data;
 }
 
-// #region agent log
-fetch('http://127.0.0.1:7242/ingest/b0f55e3a-8eac-449f-96b7-3ed570a5511d',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sessionId:'debug-session',runId:'pre-fix',hypothesisId:'H2',location:'src/components/dashboard/Navbar.astro:11',message:'Navbar session and store loaded',data:{hasSession:!!session,storeId:store?.id},timestamp:Date.now()})}).catch(()=>{});
-// #endregion
 ---
 
 <nav class="bg-white border-b">
