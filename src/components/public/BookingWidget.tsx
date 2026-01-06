@@ -3,6 +3,7 @@ import { supabase } from '../../lib/supabase'
 
 interface Props {
   storeId: string
+  clientToken?: string
 }
 
 interface Service {
@@ -72,7 +73,7 @@ const GENERAL_SERVICE: Service = {
   end_date: null
 }
 
-export default function BookingWidget({ storeId }: Props) {
+export default function BookingWidget({ storeId, clientToken }: Props) {
   const [store, setStore] = useState<Store | null>(null)
   const [services, setServices] = useState<Service[]>([])
   const [branches, setBranches] = useState<Branch[]>([])
@@ -112,11 +113,34 @@ export default function BookingWidget({ storeId }: Props) {
   const [error, setError] = useState<string | null>(null)
   const [isPremium, setIsPremium] = useState(false)
   const [createdAppointment, setCreatedAppointment] = useState<any>(null)
+  const [clientIdFromToken, setClientIdFromToken] = useState<string | null>(null)
 
   useEffect(() => {
     loadData()
     checkPremiumStatus()
-  }, [storeId])
+    if (clientToken) {
+      loadClientData()
+    }
+  }, [storeId, clientToken])
+
+  async function loadClientData() {
+    if (!clientToken) return
+    
+    try {
+      const response = await fetch(`/api/clients/get-by-booking-token?token=${clientToken}`)
+      if (response.ok) {
+        const clientData = await response.json()
+        setClientIdFromToken(clientData.id)
+        setClientName(clientData.first_name || '')
+        setClientLastName(clientData.last_name || '')
+        setClientEmail(clientData.email || '')
+        setClientPhone(clientData.phone?.replace(/^\+549/, '') || '')
+        setClientLocation(clientData.location || '')
+      }
+    } catch (error) {
+      console.error('Error cargando datos del cliente:', error)
+    }
+  }
 
   async function checkPremiumStatus() {
     try {
@@ -516,6 +540,11 @@ export default function BookingWidget({ storeId }: Props) {
         client_phone: `+549${clientPhone}`,
         client_location: clientLocation,
         status: shouldAutoConfirm ? 'confirmed' : 'pending'
+      }
+
+      // Si hay un clientIdFromToken, vincular el appointment con el cliente
+      if (clientIdFromToken) {
+        appointmentData.client_id = clientIdFromToken
       }
 
       // Agregar branch_id si se seleccionó una sucursal

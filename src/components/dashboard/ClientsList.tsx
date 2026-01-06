@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useSubscriptionLimits } from '../../hooks/useSubscriptionLimits'
 import { PremiumFeatureBlock } from './UpgradePrompt'
+import * as XLSX from 'xlsx'
 
 interface Client {
   id: string
@@ -69,6 +70,33 @@ export default function ClientsList() {
   const [newTagColor, setNewTagColor] = useState('#6366f1')
   const [editingTag, setEditingTag] = useState<Tag | null>(null)
 
+  // Modales para importar/exportar y agregar cliente
+  const [showImportModal, setShowImportModal] = useState(false)
+  const [showAddClientModal, setShowAddClientModal] = useState(false)
+  const [showEditClientModal, setShowEditClientModal] = useState(false)
+  const [editingClient, setEditingClient] = useState<Client | null>(null)
+  const [importing, setImporting] = useState(false)
+  
+  // Formulario para agregar cliente
+  const [newClient, setNewClient] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    location: '',
+    notes: ''
+  })
+
+  // Formulario para editar cliente
+  const [editClientForm, setEditClientForm] = useState({
+    first_name: '',
+    last_name: '',
+    email: '',
+    phone: '',
+    location: '',
+    notes: ''
+  })
+
   useEffect(() => {
     loadData()
   }, [])
@@ -95,7 +123,7 @@ export default function ClientsList() {
       setStoreId(storeData.id)
 
       // Cargar clientes con sus etiquetas y appointments (para servicios)
-      const { data: clientsData, error: clientsError } = await supabase
+      let { data: clientsData, error: clientsError } = await supabase
         .from('clients')
         .select(`
           *,
@@ -109,6 +137,40 @@ export default function ClientsList() {
         `)
         .eq('store_id', storeData.id)
         .order('last_appointment_date', { ascending: false, nullsFirst: false })
+
+      // Generar tokens si no existen
+      const clientsWithoutTokens = (clientsData || []).filter(c => !c.edit_token || !c.booking_token)
+      if (clientsWithoutTokens.length > 0) {
+        for (const client of clientsWithoutTokens) {
+          const updates: any = {}
+          if (!client.edit_token) {
+            updates.edit_token = generateToken()
+          }
+          if (!client.booking_token) {
+            updates.booking_token = generateToken()
+          }
+          await supabase.from('clients').update(updates).eq('id', client.id)
+        }
+        // Recargar datos después de generar tokens
+        const { data: refreshedData } = await supabase
+          .from('clients')
+          .select(`
+            *,
+            client_tag_relations (
+              tag_id,
+              client_tags (id, name, color)
+            ),
+            appointments (
+              service_id
+            )
+          `)
+          .eq('store_id', storeData.id)
+          .order('last_appointment_date', { ascending: false, nullsFirst: false })
+        
+        if (refreshedData) {
+          clientsData = refreshedData
+        }
+      }
 
       if (clientsError) throw clientsError
 
@@ -362,6 +424,345 @@ export default function ClientsList() {
     '#ec4899', '#f43f5e'
   ]
 
+  // Exportar clientes a Excel
+  function handleExportToExcel() {
+    if (!storeId || filteredClients.length === 0) {
+      alert('No hay clientes para exportar')
+      return
+    }
+
+    // Preparar datos para Excel
+    const excelData = filteredClients.map(client => ({
+      'Nombre': client.first_name,
+      'Apellido': client.last_name || '',
+      'Email': client.email || '',
+      'Teléfono': client.phone || '',
+      'Localidad': client.location || '',
+      'Notas': client.notes || '',
+      'Total Turnos': client.total_appointments,
+      'Turnos Completados': client.completed_appointments,
+      'Turnos Cancelados': client.cancelled_appointments,
+      'Primera Visita': client.first_appointment_date || '',
+      'Última Visita': client.last_appointment_date || '',
+      'Total Gastado': client.total_spent,
+      'Etiquetas': client.tags?.map(t => t.name).join(', ') || '',
+      'Activo': client.is_active ? 'Sí' : 'No'
+    }))
+
+    // Crear workbook y worksheet
+    const ws = XLSX.utils.json_to_sheet(excelData)
+    const wb = XLSX.utils.book_new()
+    XLSX.utils.book_append_sheet(wb, ws, 'Clientes')
+
+    // Ajustar ancho de columnas
+    const colWidths = [
+      { wch: 15 }, // Nombre
+      { wch: 15 }, // Apellido
+      { wch: 25 }, // Email
+      { wch: 15 }, // Teléfono
+      { wch: 20 }, // Localidad
+      { wch: 30 }, // Notas
+      { wch: 12 }, // Total Turnos
+      { wch: 18 }, // Turnos Completados
+      { wch: 18 }, // Turnos Cancelados
+      { wch: 15 }, // Primera Visita
+      { wch: 15 }, // Última Visita
+      { wch: 15 }, // Total Gastado
+      { wch: 25 }, // Etiquetas
+      { wch: 10 }  // Activo
+    ]
+    ws['!cols'] = colWidths
+
+    // Generar nombre de archivo con fecha
+    const date = new Date().toISOString().split('T')[0]
+    const fileName = `clientes_${date}.xlsx`
+
+    // Descargar archivo
+    XLSX.writeFile(wb, fileName)
+  }
+
+  // Importar clientes desde Excel
+  async function handleImportFromExcel(file: File) {
+    if (!storeId) return
+
+    setImporting(true)
+    try {
+      const reader = new FileReader()
+      
+      reader.onload = async (e) => {
+        try {
+          const data = new Uint8Array(e.target?.result as ArrayBuffer)
+          const workbook = XLSX.read(data, { type: 'array' })
+          const firstSheet = workbook.Sheets[workbook.SheetNames[0]]
+          const jsonData = XLSX.utils.sheet_to_json(firstSheet) as any[]
+
+          if (jsonData.length === 0) {
+            alert('El archivo Excel está vacío')
+            setImporting(false)
+            return
+          }
+
+          // Mapear columnas (flexible con diferentes nombres)
+          const clientsToImport = jsonData.map(row => {
+            if (!row) return null
+            
+            const firstName = row['Nombre'] || row['nombre'] || row['Nombre'] || row['first_name'] || ''
+            const lastName = row['Apellido'] || row['apellido'] || row['Apellido'] || row['last_name'] || ''
+            const email = row['Email'] || row['email'] || row['Email'] || ''
+            const phone = row['Teléfono'] || row['telefono'] || row['Teléfono'] || row['phone'] || ''
+            const location = row['Localidad'] || row['localidad'] || row['Localidad'] || row['location'] || ''
+            const notes = row['Notas'] || row['notas'] || row['Notas'] || row['notes'] || ''
+
+            if (!firstName.trim()) {
+              return null
+            }
+
+            return {
+              store_id: storeId,
+              first_name: firstName.trim(),
+              last_name: lastName?.trim() || null,
+              email: email?.trim() || null,
+              phone: phone?.trim() || null,
+              location: location?.trim() || null,
+              notes: notes?.trim() || null,
+              is_active: true
+            }
+          }).filter((client): client is NonNullable<typeof client> => client !== null)
+
+          if (clientsToImport.length === 0) {
+            alert('No se encontraron datos válidos en el archivo. Asegúrate de que la primera fila contenga los nombres de las columnas.')
+            setImporting(false)
+            return
+          }
+
+          // Insertar clientes (usar upsert para evitar duplicados)
+          let imported = 0
+          let updated = 0
+          let errors = 0
+
+          for (const clientData of clientsToImport) {
+            if (!clientData) continue
+            
+            try {
+              // Buscar cliente existente por email o teléfono
+              let existingClient = null
+              
+              if (clientData.email) {
+                const { data } = await supabase
+                  .from('clients')
+                  .select('id')
+                  .eq('store_id', storeId)
+                  .eq('email', clientData.email)
+                  .maybeSingle()
+                existingClient = data
+              }
+              
+              if (!existingClient && clientData.phone) {
+                const { data } = await supabase
+                  .from('clients')
+                  .select('id')
+                  .eq('store_id', storeId)
+                  .eq('phone', clientData.phone)
+                  .maybeSingle()
+                existingClient = data
+              }
+
+              if (existingClient) {
+                // Actualizar cliente existente
+                const { error } = await supabase
+                  .from('clients')
+                  .update({
+                    first_name: clientData.first_name,
+                    last_name: clientData.last_name,
+                    email: clientData.email || undefined,
+                    phone: clientData.phone || undefined,
+                    location: clientData.location || undefined,
+                    notes: clientData.notes || undefined,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', existingClient.id)
+                
+                if (error) throw error
+                updated++
+              } else {
+                // Crear nuevo cliente
+                const { error } = await supabase
+                  .from('clients')
+                  .insert(clientData)
+                
+                if (error) throw error
+                imported++
+              }
+            } catch (err: any) {
+              console.error('Error importando cliente:', err)
+              errors++
+            }
+          }
+
+          await loadData()
+          setShowImportModal(false)
+          
+          alert(`✅ Importación completada:\n- ${imported} cliente(s) nuevo(s)\n- ${updated} cliente(s) actualizado(s)${errors > 0 ? `\n- ${errors} error(es)` : ''}`)
+        } catch (err: any) {
+          console.error('Error procesando archivo:', err)
+          alert('Error al procesar el archivo: ' + err.message)
+        } finally {
+          setImporting(false)
+        }
+      }
+
+      reader.readAsArrayBuffer(file)
+    } catch (err: any) {
+      console.error('Error:', err)
+      alert('Error al importar: ' + err.message)
+      setImporting(false)
+    }
+  }
+
+  // Generar token único
+  function generateToken(): string {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
+    let token = ''
+    for (let i = 0; i < 32; i++) {
+      token += chars.charAt(Math.floor(Math.random() * chars.length))
+    }
+    return token
+  }
+
+  // Copiar link del cliente
+  function copyClientLink(token: string | null, type: 'edit' | 'booking') {
+    if (!token) {
+      alert('El cliente no tiene token. Por favor, recarga la página.')
+      return
+    }
+
+    const baseUrl = window.location.origin
+    const path = type === 'edit' ? `/client/edit/${token}` : `/client/booking/${token}`
+    const fullUrl = `${baseUrl}${path}`
+
+    navigator.clipboard.writeText(fullUrl).then(() => {
+      const message = type === 'edit' 
+        ? '✅ Link para editar perfil copiado al portapapeles'
+        : '✅ Link para reservar turno copiado al portapapeles'
+      alert(message)
+    }).catch(() => {
+      // Fallback para navegadores que no soportan clipboard API
+      const textArea = document.createElement('textarea')
+      textArea.value = fullUrl
+      document.body.appendChild(textArea)
+      textArea.select()
+      document.execCommand('copy')
+      document.body.removeChild(textArea)
+      const message = type === 'edit' 
+        ? '✅ Link para editar perfil copiado al portapapeles'
+        : '✅ Link para reservar turno copiado al portapapeles'
+      alert(message)
+    })
+  }
+
+  // Abrir modal de edición
+  function openEditModal(client: Client) {
+    setEditingClient(client)
+    setEditClientForm({
+      first_name: client.first_name,
+      last_name: client.last_name || '',
+      email: client.email || '',
+      phone: client.phone || '',
+      location: client.location || '',
+      notes: client.notes || ''
+    })
+    setShowEditClientModal(true)
+  }
+
+  // Editar cliente
+  async function handleEditClient() {
+    if (!storeId || !editingClient || !editClientForm.first_name.trim()) {
+      alert('El nombre es obligatorio')
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .update({
+          first_name: editClientForm.first_name.trim(),
+          last_name: editClientForm.last_name.trim() || null,
+          email: editClientForm.email.trim() || null,
+          phone: editClientForm.phone.trim() || null,
+          location: editClientForm.location.trim() || null,
+          notes: editClientForm.notes.trim() || null,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', editingClient.id)
+
+      if (error) {
+        if (error.code === '23505') {
+          alert('Ya existe otro cliente con ese email o teléfono')
+        } else {
+          throw error
+        }
+        return
+      }
+
+      setShowEditClientModal(false)
+      setEditingClient(null)
+      await loadData()
+      alert('✅ Cliente actualizado correctamente')
+    } catch (err: any) {
+      console.error('Error:', err)
+      alert('Error al actualizar cliente: ' + err.message)
+    }
+  }
+
+  // Agregar cliente manualmente
+  async function handleAddClient() {
+    if (!storeId || !newClient.first_name.trim()) {
+      alert('El nombre es obligatorio')
+      return
+    }
+
+    try {
+      const { error } = await supabase
+        .from('clients')
+        .insert({
+          store_id: storeId,
+          first_name: newClient.first_name.trim(),
+          last_name: newClient.last_name.trim() || null,
+          email: newClient.email.trim() || null,
+          phone: newClient.phone.trim() || null,
+          location: newClient.location.trim() || null,
+          notes: newClient.notes.trim() || null,
+          is_active: true
+        })
+
+      if (error) {
+        if (error.code === '23505') {
+          alert('Ya existe un cliente con ese email o teléfono')
+        } else {
+          throw error
+        }
+        return
+      }
+
+      // Limpiar formulario
+      setNewClient({
+        first_name: '',
+        last_name: '',
+        email: '',
+        phone: '',
+        location: '',
+        notes: ''
+      })
+      
+      setShowAddClientModal(false)
+      await loadData()
+      alert('✅ Cliente agregado correctamente')
+    } catch (err: any) {
+      console.error('Error:', err)
+      alert('Error al agregar cliente: ' + err.message)
+    }
+  }
+
   if (loading || limitsLoading) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -413,6 +814,35 @@ export default function ClientsList() {
           <p className="text-gray-500 mt-1">
             {clients.length} cliente{clients.length !== 1 ? 's' : ''} registrado{clients.length !== 1 ? 's' : ''}
           </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setShowAddClientModal(true)}
+            className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Agregar Cliente
+          </button>
+          <button
+            onClick={handleExportToExcel}
+            className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            Exportar Excel
+          </button>
+          <button
+            onClick={() => setShowImportModal(true)}
+            className="px-4 py-2 bg-white border border-gray-200 text-gray-700 rounded-xl font-medium hover:bg-gray-50 transition-colors flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+            </svg>
+            Importar Excel
+          </button>
         </div>
       </div>
 
@@ -751,6 +1181,26 @@ export default function ClientsList() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                         </svg>
                       </a>
+                      <button
+                        onClick={() => openEditModal(client)}
+                        className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                        title="Editar cliente"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                      {(client as any).booking_token && (
+                        <button
+                          onClick={() => copyClientLink((client as any).booking_token, 'booking')}
+                          className="p-2 text-gray-400 hover:text-purple-600 hover:bg-purple-50 rounded-lg transition-colors"
+                          title="Copiar link para reservar turno"
+                        >
+                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                          </svg>
+                        </button>
+                      )}
                       {client.phone && (
                         <a
                           href={`https://wa.me/${client.phone.replace(/\D/g, '')}`}
@@ -900,6 +1350,278 @@ export default function ClientsList() {
                 className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors"
               >
                 Enviar recordatorio
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de importar Excel */}
+      {showImportModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => !importing && setShowImportModal(false)}>
+          <div className="bg-white rounded-2xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-900 mb-2">Importar Clientes desde Excel</h3>
+            <p className="text-gray-500 mb-6 text-sm">
+              El archivo Excel debe tener las siguientes columnas: Nombre, Apellido, Email, Teléfono, Localidad, Notas
+            </p>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Seleccionar archivo Excel (.xlsx)
+                </label>
+                <input
+                  type="file"
+                  accept=".xlsx,.xls"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0]
+                    if (file) {
+                      handleImportFromExcel(file)
+                    }
+                  }}
+                  disabled={importing}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 disabled:opacity-50"
+                />
+              </div>
+
+              {importing && (
+                <div className="flex items-center gap-2 text-indigo-600">
+                  <div className="w-5 h-5 border-2 border-indigo-600 border-t-transparent rounded-full animate-spin" />
+                  <span className="text-sm">Importando clientes...</span>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => setShowImportModal(false)}
+                disabled={importing}
+                className="flex-1 py-3 text-gray-700 bg-gray-100 rounded-xl font-medium hover:bg-gray-200 transition-colors disabled:opacity-50"
+              >
+                Cancelar
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de agregar cliente */}
+      {showAddClientModal && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowAddClientModal(false)}>
+          <div className="bg-white rounded-2xl max-w-md w-full p-6" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Agregar Nuevo Cliente</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nombre <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={newClient.first_name}
+                  onChange={(e) => setNewClient({ ...newClient, first_name: e.target.value })}
+                  placeholder="Juan"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Apellido
+                </label>
+                <input
+                  type="text"
+                  value={newClient.last_name}
+                  onChange={(e) => setNewClient({ ...newClient, last_name: e.target.value })}
+                  placeholder="Pérez"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={newClient.email}
+                  onChange={(e) => setNewClient({ ...newClient, email: e.target.value })}
+                  placeholder="juan@ejemplo.com"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Teléfono
+                </label>
+                <input
+                  type="tel"
+                  value={newClient.phone}
+                  onChange={(e) => setNewClient({ ...newClient, phone: e.target.value })}
+                  placeholder="+5491112345678"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Localidad
+                </label>
+                <input
+                  type="text"
+                  value={newClient.location}
+                  onChange={(e) => setNewClient({ ...newClient, location: e.target.value })}
+                  placeholder="Ciudad o barrio"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Notas
+                </label>
+                <textarea
+                  value={newClient.notes}
+                  onChange={(e) => setNewClient({ ...newClient, notes: e.target.value })}
+                  placeholder="Notas adicionales sobre el cliente..."
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => {
+                  setShowAddClientModal(false)
+                  setNewClient({
+                    first_name: '',
+                    last_name: '',
+                    email: '',
+                    phone: '',
+                    location: '',
+                    notes: ''
+                  })
+                }}
+                className="flex-1 py-3 text-gray-700 bg-gray-100 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleAddClient}
+                disabled={!newClient.first_name.trim()}
+                className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Agregar Cliente
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Modal de editar cliente */}
+      {showEditClientModal && editingClient && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" onClick={() => setShowEditClientModal(false)}>
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Editar Cliente</h3>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Nombre <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={editClientForm.first_name}
+                  onChange={(e) => setEditClientForm({ ...editClientForm, first_name: e.target.value })}
+                  placeholder="Juan"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Apellido
+                </label>
+                <input
+                  type="text"
+                  value={editClientForm.last_name}
+                  onChange={(e) => setEditClientForm({ ...editClientForm, last_name: e.target.value })}
+                  placeholder="Pérez"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  value={editClientForm.email}
+                  onChange={(e) => setEditClientForm({ ...editClientForm, email: e.target.value })}
+                  placeholder="juan@ejemplo.com"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Teléfono
+                </label>
+                <input
+                  type="tel"
+                  value={editClientForm.phone}
+                  onChange={(e) => setEditClientForm({ ...editClientForm, phone: e.target.value })}
+                  placeholder="+5491112345678"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Localidad
+                </label>
+                <input
+                  type="text"
+                  value={editClientForm.location}
+                  onChange={(e) => setEditClientForm({ ...editClientForm, location: e.target.value })}
+                  placeholder="Ciudad o barrio"
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100"
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Notas
+                </label>
+                <textarea
+                  value={editClientForm.notes}
+                  onChange={(e) => setEditClientForm({ ...editClientForm, notes: e.target.value })}
+                  placeholder="Notas adicionales sobre el cliente..."
+                  rows={3}
+                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-2 focus:ring-indigo-100 resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => {
+                  setShowEditClientModal(false)
+                  setEditingClient(null)
+                }}
+                className="flex-1 py-3 text-gray-700 bg-gray-100 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+              >
+                Cancelar
+              </button>
+              <button
+                onClick={handleEditClient}
+                disabled={!editClientForm.first_name.trim()}
+                className="flex-1 py-3 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Guardar Cambios
               </button>
             </div>
           </div>
