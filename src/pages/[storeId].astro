@@ -194,7 +194,7 @@ try {
               )}
 
               {/* Horarios */}
-              {(schedules.length > 0 || store.business_hours_text) && (
+              {store.show_schedule_on_profile !== false && (schedules.length > 0 || store.business_hours_text) && (
                 <div class="bg-white rounded-2xl border border-stone-200 p-5">
                   <h3 class="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3 flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -524,7 +524,7 @@ try {
               )}
 
               {/* Horarios */}
-              {(schedules.length > 0 || store.business_hours_text) && (
+              {store.show_schedule_on_profile !== false && (schedules.length > 0 || store.business_hours_text) && (
                 <div class="bg-white rounded-2xl border border-stone-200 p-5">
                   <h3 class="text-sm font-semibold text-stone-500 uppercase tracking-wide mb-3 flex items-center gap-2">
                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

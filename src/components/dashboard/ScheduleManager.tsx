@@ -42,6 +42,8 @@ export default function ScheduleManager() {
   const [savingTemporaryClose, setSavingTemporaryClose] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [pendingAction, setPendingAction] = useState<'close' | 'open' | null>(null)
+  const [showScheduleOnProfile, setShowScheduleOnProfile] = useState(true)
+  const [savingShowOnProfile, setSavingShowOnProfile] = useState(false)
   
   // Form para día libre individual
   const [addMode, setAddMode] = useState<'single' | 'range'>('single')
@@ -63,6 +65,11 @@ export default function ScheduleManager() {
 
       setStore(storeData)
       setTemporarilyClosed(storeData.temporarily_closed || false)
+      setShowScheduleOnProfile(
+        typeof storeData.show_schedule_on_profile === 'boolean'
+          ? storeData.show_schedule_on_profile
+          : true
+      )
       
       const [schedulesRes, daysOffRes] = await Promise.all([
         supabase.from('schedules').select('*').eq('store_id', storeData.id),
@@ -259,6 +266,32 @@ export default function ScheduleManager() {
     setPendingAction(null)
   }
 
+  async function handleToggleShowOnProfile() {
+    if (!store) return
+
+    const newValue = !showScheduleOnProfile
+    setShowScheduleOnProfile(newValue)
+    setSavingShowOnProfile(true)
+
+    try {
+      const { error } = await supabase
+        .from('stores')
+        .update({ show_schedule_on_profile: newValue })
+        .eq('id', store.id)
+
+      if (error) throw error
+
+      setStore({ ...store, show_schedule_on_profile: newValue })
+    } catch (error) {
+      console.error('Error al actualizar visibilidad de horarios:', error)
+      alert('No pudimos actualizar la visibilidad de los horarios. Probá de nuevo.')
+      // Revertir valor en caso de error
+      setShowScheduleOnProfile(!newValue)
+    } finally {
+      setSavingShowOnProfile(false)
+    }
+  }
+
   function formatDate(dateStr: string) {
     const date = new Date(dateStr + 'T12:00:00')
     return date.toLocaleDateString('es', { weekday: 'short', day: 'numeric', month: 'short' })
@@ -335,9 +368,36 @@ export default function ScheduleManager() {
   return (
     <div className="max-w-3xl mx-auto">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-2xl font-bold text-gray-900">Mis Horarios</h1>
-        <p className="text-gray-500 mt-1">Configura cuándo atiendes a tus clientes</p>
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Mis Horarios</h1>
+          <p className="text-gray-500 mt-1">Configura cuándo atiendes a tus clientes</p>
+        </div>
+
+        <div className="bg-white border border-gray-200 rounded-2xl px-4 py-3 flex items-center gap-3 shadow-sm">
+          <div className="flex flex-col">
+            <span className="text-sm font-medium text-gray-900">Mostrar en el perfil</span>
+            <span className="text-xs text-gray-500">
+              {showScheduleOnProfile
+                ? 'Tus horarios se muestran en la página pública'
+                : 'Tus horarios no se muestran en la página pública'}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={handleToggleShowOnProfile}
+            disabled={savingShowOnProfile}
+            className={`relative w-12 h-7 rounded-full transition-colors ${
+              showScheduleOnProfile ? 'bg-indigo-600' : 'bg-gray-200'
+            } disabled:opacity-50`}
+          >
+            <span
+              className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow transition-all ${
+                showScheduleOnProfile ? 'left-6' : 'left-1'
+              }`}
+            />
+          </button>
+        </div>
       </div>
 
       {/* Tabs */}
