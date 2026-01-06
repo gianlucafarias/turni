@@ -48,9 +48,12 @@ interface Appointment {
   date: string
   time: string
   client_name: string
+  client_phone?: string
   service_name: string
   status: string
 }
+
+type AppointmentFilter = 'all' | 'today' | 'pending' | 'week'
 
 export default function DashboardOverview() {
   const [store, setStore] = useState<any>(null)
@@ -79,6 +82,8 @@ export default function DashboardOverview() {
   const [isShareModalOpen, setIsShareModalOpen] = useState(false)
   const [copied, setCopied] = useState(false)
   const [appointmentsByDay, setAppointmentsByDay] = useState<{ day: string; count: number }[]>([])
+  const [appointmentFilter, setAppointmentFilter] = useState<AppointmentFilter>('all')
+  const [actionMenuOpen, setActionMenuOpen] = useState<string | null>(null)
 
   useEffect(() => {
     loadData()
@@ -130,13 +135,13 @@ export default function DashboardOverview() {
           supabase.from('services').select('id, active').eq('store_id', storeData.id),
           supabase.from('schedules').select('id, enabled').eq('store_id', storeData.id),
           supabase.from('appointments')
-            .select('id, date, time, client_name, service_name, status')
+            .select('id, date, time, client_name, client_phone, service_name, status')
             .eq('store_id', storeData.id)
             .gte('date', todayStr)
             .in('status', ['pending', 'confirmed'])
             .order('date', { ascending: true })
             .order('time', { ascending: true })
-            .limit(5)
+            .limit(15)
         ])
 
         const all = allAppointments.data || []
@@ -286,6 +291,93 @@ export default function DashboardOverview() {
       </span>
     )
   }
+
+  // Funciones para la sección mejorada de próximos turnos
+  function getTimeUntil(dateStr: string, timeStr: string): { text: string; isUrgent: boolean; isPast: boolean } {
+    const appointmentDate = new Date(`${dateStr}T${timeStr}`)
+    const now = new Date()
+    const diffMs = appointmentDate.getTime() - now.getTime()
+    const diffMinutes = Math.floor(diffMs / (1000 * 60))
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60))
+    
+    if (diffMs < 0) return { text: 'Pasado', isUrgent: false, isPast: true }
+    if (diffMinutes < 60) return { text: `En ${diffMinutes}min`, isUrgent: true, isPast: false }
+    if (diffHours < 3) return { text: `En ${diffHours}h`, isUrgent: true, isPast: false }
+    if (diffHours < 24) return { text: `En ${diffHours}h`, isUrgent: false, isPast: false }
+    return { text: formatDate(dateStr), isUrgent: false, isPast: false }
+  }
+
+  function getFilteredAppointments(): Appointment[] {
+    const now = new Date()
+    const todayStr = now.toISOString().split('T')[0]
+    const weekEnd = new Date(now)
+    weekEnd.setDate(weekEnd.getDate() + 7)
+    const weekEndStr = weekEnd.toISOString().split('T')[0]
+
+    return upcomingAppointments.filter(apt => {
+      // Excluir turnos pasados
+      const aptTime = new Date(`${apt.date}T${apt.time}`)
+      if (aptTime < now) return false
+
+      switch (appointmentFilter) {
+        case 'today':
+          return apt.date === todayStr
+        case 'pending':
+          return apt.status === 'pending'
+        case 'week':
+          return apt.date <= weekEndStr
+        default:
+          return true
+      }
+    })
+  }
+
+  function getUrgentCount(): number {
+    const now = new Date()
+    const threeHoursLater = new Date(now.getTime() + 3 * 60 * 60 * 1000)
+    return upcomingAppointments.filter(apt => {
+      const aptTime = new Date(`${apt.date}T${apt.time}`)
+      return aptTime > now && aptTime <= threeHoursLater && apt.status !== 'cancelled'
+    }).length
+  }
+
+  function getTodayPendingCount(): number {
+    const todayStr = new Date().toISOString().split('T')[0]
+    return upcomingAppointments.filter(apt => 
+      apt.date === todayStr && apt.status === 'pending'
+    ).length
+  }
+
+  const handleCancelAppointment = async (apt: Appointment, e: React.MouseEvent) => {
+    e.stopPropagation()
+    
+    const { error: updateError } = await supabase
+      .from('appointments')
+      .update({ status: 'cancelled' })
+      .eq('id', apt.id)
+    
+    if (updateError) {
+      showConfirmToast({
+        type: 'error',
+        title: 'Error al cancelar',
+        message: updateError.message
+      })
+      return
+    }
+    
+    showConfirmToast({
+      type: 'success',
+      title: 'Turno cancelado',
+      message: `Se canceló el turno de ${apt.client_name}`
+    })
+    
+    setActionMenuOpen(null)
+    loadData()
+  }
+
+  const filteredAppointments = getFilteredAppointments()
+  const urgentCount = getUrgentCount()
+  const todayPendingCount = getTodayPendingCount()
 
   // Verificar si hay configuración pendiente para turnos
   const needsSetup = isAppointments && (!stats.hasServices || !stats.hasSchedules)
@@ -574,141 +666,178 @@ export default function DashboardOverview() {
                 </div>
               </div>
 
-              {upcomingAppointments.length > 0 ? (
-                <div className="space-y-3">
-                  {upcomingAppointments.map((apt) => (
-                    <div 
-                      key={apt.id}
-                      className="flex items-center gap-4 p-4 bg-surface-50 rounded-2xl hover:bg-white border border-transparent hover:border-surface-200 hover:shadow-sm transition-all cursor-pointer group"
-                      onClick={async () => {
-                        // Cargar datos completos del turno
-                        const { data } = await supabase
-                          .from('appointments')
-                          .select('*')
-                          .eq('id', apt.id)
-                          .single()
-                        if (data) {
-                          setSelectedAppointment(data)
-                          setIsModalOpen(true)
-                        }
-                      }}
+              {/* Filtros como pills redondeadas */}
+              <div className="flex gap-2 mb-5 overflow-x-auto pb-1">
+                {(['all', 'today', 'pending', 'week'] as AppointmentFilter[]).map((filter) => {
+                  const labels = { all: 'Todos', today: 'Hoy', pending: 'Pendientes', week: 'Semana' }
+                  const counts = {
+                    all: upcomingAppointments.length,
+                    today: upcomingAppointments.filter(a => a.date === new Date().toISOString().split('T')[0]).length,
+                    pending: upcomingAppointments.filter(a => a.status === 'pending').length,
+                    week: upcomingAppointments.filter(a => {
+                      const weekEnd = new Date()
+                      weekEnd.setDate(weekEnd.getDate() + 7)
+                      return a.date <= weekEnd.toISOString().split('T')[0]
+                    }).length
+                  }
+                  const count = counts[filter]
+                  return (
+                    <button
+                      key={filter}
+                      onClick={() => setAppointmentFilter(filter)}
+                      className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all ${
+                        appointmentFilter === filter
+                          ? 'bg-surface-900 text-white shadow-md'
+                          : 'bg-surface-100 text-surface-600 hover:bg-surface-200'
+                      }`}
                     >
-                      <div className="w-14 h-14 bg-white rounded-2xl flex flex-col items-center justify-center border border-surface-200 flex-shrink-0 group-hover:border-brand-200 transition-colors shadow-sm">
-                        <span className="text-[10px] text-surface-400 font-bold uppercase tracking-widest">
-                          {formatDate(apt.date).split(' ')[0]}
-                        </span>
-                        <span className="text-base font-bold text-surface-900 -mt-1">
-                          {apt.time.substring(0, 5)}
-                        </span>
-                      </div>
-                      <div className="flex-1 min-w-0">
-                        <p className="font-bold text-surface-900 truncate group-hover:text-brand-600 transition-colors">{apt.client_name}</p>
-                        <p className="text-xs font-semibold text-surface-500 truncate mt-0.5">{apt.service_name || 'Turno general'}</p>
-                      </div>
-                      <div className="flex items-center gap-3">
-                        <div className="hidden sm:block">
-                          {getStatusBadge(apt.status)}
+                      {labels[filter]}{count > 0 && filter !== 'all' ? ` (${count})` : ''}
+                    </button>
+                  )
+                })}
+              </div>
+
+              {filteredAppointments.length > 0 ? (
+                <div className="space-y-3">
+                  {filteredAppointments.slice(0, 5).map((apt) => {
+                    const timeInfo = getTimeUntil(apt.date, apt.time)
+                    
+                    return (
+                      <div 
+                        key={apt.id}
+                        className="flex items-center gap-4 p-4 bg-surface-50 rounded-2xl hover:bg-white border border-transparent hover:border-surface-200 hover:shadow-sm transition-all cursor-pointer group"
+                        onClick={async () => {
+                          const { data } = await supabase
+                            .from('appointments')
+                            .select('*')
+                            .eq('id', apt.id)
+                            .single()
+                          if (data) {
+                            setSelectedAppointment(data)
+                            setIsModalOpen(true)
+                          }
+                        }}
+                      >
+                        {/* Fecha en columna vertical */}
+                        <div className={`text-center min-w-[50px] ${timeInfo.isUrgent ? 'text-red-600' : ''}`}>
+                          <p className={`text-lg font-black ${timeInfo.isUrgent ? 'text-red-600' : 'text-surface-900'}`}>
+                            {new Date(apt.date + 'T12:00:00').getDate()}/{String(new Date(apt.date + 'T12:00:00').getMonth() + 1).padStart(2, '0')}
+                          </p>
+                          <p className={`text-[10px] font-bold ${timeInfo.isUrgent ? 'text-red-500' : 'text-surface-400'}`}>
+                            {apt.time.substring(0, 5)}
+                          </p>
                         </div>
-                        {apt.status === 'pending' && (
-                          <button
-                            onClick={async (e) => {
-                              e.stopPropagation()
-                              
-                              // Confirmar el turno
-                              const { error: updateError } = await supabase
-                                .from('appointments')
-                                .update({ status: 'confirmed' })
-                                .eq('id', apt.id)
-                              
-                              if (updateError) {
-                                showConfirmToast({
-                                  type: 'error',
-                                  title: 'Error al confirmar',
-                                  message: updateError.message
-                                })
-                                return
-                              }
-                              
-                              // Verificar suscripción y enviar notificación
-                              try {
-                                const { data: subscription } = await supabase
-                                  .from('subscriptions')
-                                  .select('plan_id, status, trial_ends_at')
-                                  .eq('store_id', store.id)
-                                  .single()
+
+                        {/* Línea divisoria */}
+                        <div className={`w-px h-10 ${timeInfo.isUrgent ? 'bg-red-200' : 'bg-surface-200'}`} />
+
+                        <div className="flex-1 min-w-0">
+                          <p className="font-bold text-surface-900 truncate group-hover:text-brand-600 transition-colors">{apt.client_name}</p>
+                          <p className="text-xs font-semibold text-surface-500 truncate mt-0.5">{apt.service_name || 'Turno general'}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="hidden sm:block">
+                            {getStatusBadge(apt.status)}
+                          </div>
+                          {timeInfo.isUrgent && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-lg font-bold border uppercase tracking-wider bg-red-50 text-red-700 border-red-100">
+                              {timeInfo.text}
+                            </span>
+                          )}
+                          {apt.status === 'pending' && (
+                            <button
+                              onClick={async (e) => {
+                                e.stopPropagation()
                                 
-                                const premiumPlans = ['premium', 'premium_annual']
-                                const isTrialActive = subscription?.status === 'trial' && 
-                                  subscription?.trial_ends_at && 
-                                  new Date(subscription.trial_ends_at) > new Date()
-                                const isPremium = (subscription?.status === 'active' && premiumPlans.includes(subscription?.plan_id)) || isTrialActive
+                                const { error: updateError } = await supabase
+                                  .from('appointments')
+                                  .update({ status: 'confirmed' })
+                                  .eq('id', apt.id)
                                 
-                                if (isPremium) {
-                                  // Usuario premium - enviar notificación por WhatsApp
-                                  const response = await fetch('/api/notifications/send', {
-                                    method: 'POST',
-                                    headers: { 'Content-Type': 'application/json' },
-                                    body: JSON.stringify({
-                                      type: 'appointment_confirmed',
-                                      appointment_id: apt.id,
-                                      store_id: store.id,
-                                    }),
+                                if (updateError) {
+                                  showConfirmToast({
+                                    type: 'error',
+                                    title: 'Error al confirmar',
+                                    message: updateError.message
                                   })
+                                  return
+                                }
+                                
+                                try {
+                                  const { data: subscription } = await supabase
+                                    .from('subscriptions')
+                                    .select('plan_id, status, trial_ends_at')
+                                    .eq('store_id', store.id)
+                                    .single()
                                   
-                                  if (response.ok) {
-                                    const result = await response.json()
-                                    showConfirmToast({
-                                      type: 'success',
-                                      title: '✅ Turno confirmado',
-                                      message: `${apt.client_name} fue notificado por WhatsApp`
+                                  const premiumPlans = ['premium', 'premium_annual']
+                                  const isTrialActive = subscription?.status === 'trial' && 
+                                    subscription?.trial_ends_at && 
+                                    new Date(subscription.trial_ends_at) > new Date()
+                                  const isPremium = (subscription?.status === 'active' && premiumPlans.includes(subscription?.plan_id)) || isTrialActive
+                                  
+                                  if (isPremium) {
+                                    const response = await fetch('/api/notifications/send', {
+                                      method: 'POST',
+                                      headers: { 'Content-Type': 'application/json' },
+                                      body: JSON.stringify({
+                                        type: 'appointment_confirmed',
+                                        appointment_id: apt.id,
+                                        store_id: store.id,
+                                      }),
                                     })
+                                    
+                                    if (response.ok) {
+                                      showConfirmToast({
+                                        type: 'success',
+                                        title: 'Turno confirmado',
+                                        message: `${apt.client_name} fue notificado por WhatsApp`
+                                      })
+                                    } else {
+                                      showConfirmToast({
+                                        type: 'warning',
+                                        title: 'Turno confirmado',
+                                        message: 'No se pudo notificar por WhatsApp'
+                                      })
+                                    }
                                   } else {
-                                    const errorData = await response.json().catch(() => ({}))
                                     showConfirmToast({
-                                      type: 'warning',
+                                      type: 'upgrade',
                                       title: 'Turno confirmado',
-                                      message: `⚠️ No se pudo notificar por WhatsApp: ${errorData.error || 'Error desconocido'}`
+                                      message: 'Notificá a tu cliente por WhatsApp automáticamente',
+                                      action: {
+                                        label: 'Activar notificaciones',
+                                        href: '/dashboard/subscription'
+                                      }
                                     })
                                   }
-                                } else {
-                                  // Usuario free - mostrar opción de upgrade
+                                } catch (error) {
                                   showConfirmToast({
-                                    type: 'upgrade',
-                                    title: '✅ Turno confirmado',
-                                    message: 'Notificá a tu cliente por WhatsApp automáticamente',
-                                    action: {
-                                      label: 'Activar notificaciones',
-                                      href: '/dashboard/subscription'
-                                    }
+                                    type: 'success',
+                                    title: 'Turno confirmado',
+                                    message: `Se confirmó el turno de ${apt.client_name}`
                                   })
                                 }
-                              } catch (error) {
-                                console.error('Error verificando suscripción:', error)
-                                showConfirmToast({
-                                  type: 'success',
-                                  title: '✅ Turno confirmado',
-                                  message: `Se confirmó el turno de ${apt.client_name}`
-                                })
-                              }
-                              
-                              loadData()
-                            }}
-                            className="w-8 h-8 flex items-center justify-center bg-emerald-600 text-white rounded-lg shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-90"
-                            title="Confirmar"
-                          >
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                
+                                loadData()
+                              }}
+                              className="w-8 h-8 flex items-center justify-center bg-emerald-600 text-white rounded-lg shadow-lg shadow-emerald-600/20 hover:bg-emerald-700 transition-all active:scale-90"
+                              title="Confirmar"
+                            >
+                              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                              </svg>
+                            </button>
+                          )}
+                          <div className="p-2 text-surface-300 group-hover:text-brand-600 transition-colors">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
                             </svg>
-                          </button>
-                        )}
-                        <div className="p-2 text-surface-300 group-hover:text-brand-600 transition-colors">
-                          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                          </svg>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  ))}
+                    )
+                  })}
                 </div>
               ) : (
                 <div className="text-center py-12 bg-surface-50 rounded-3xl border border-dashed border-surface-200">
@@ -717,7 +846,11 @@ export default function DashboardOverview() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <p className="text-surface-500 font-medium mb-4 text-sm px-6">No tenés turnos próximos agendados.</p>
+                  <p className="text-surface-500 font-medium mb-4 text-sm px-6">
+                    {appointmentFilter === 'all' 
+                      ? 'No tenés turnos próximos agendados' 
+                      : `No hay turnos ${appointmentFilter === 'today' ? 'para hoy' : appointmentFilter === 'pending' ? 'pendientes' : 'esta semana'}`}
+                  </p>
                   <button
                     onClick={() => setIsNewAppointmentModalOpen(true)}
                     className="inline-flex items-center gap-2 text-brand-600 font-bold hover:text-brand-700 text-sm px-4 py-2 bg-brand-50 rounded-xl transition-colors"
@@ -727,6 +860,18 @@ export default function DashboardOverview() {
                     </svg>
                     Crear turno manual
                   </button>
+                </div>
+              )}
+
+              {/* Link a ver todos */}
+              {filteredAppointments.length > 5 && (
+                <div className="mt-4 text-center">
+                  <a 
+                    href="/dashboard/appointments" 
+                    className="text-sm font-semibold text-brand-600 hover:text-brand-700 transition-colors"
+                  >
+                    Ver todos los turnos →
+                  </a>
                 </div>
               )}
             </div>
@@ -1097,7 +1242,7 @@ export default function DashboardOverview() {
         ))}
       </div>
 
-      {/* Estilos para animaciones de toast */}
+      {/* Estilos para animaciones de toast y dropdown */}
       <style>{`
         @keyframes shrinkToast {
           from { width: 100%; }
@@ -1107,7 +1252,12 @@ export default function DashboardOverview() {
           from { opacity: 0; transform: translateX(100%); }
           to { opacity: 1; transform: translateX(0); }
         }
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(-4px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
         .animate-slideIn { animation: slideIn 0.3s ease-out; }
+        .animate-fadeIn { animation: fadeIn 0.15s ease-out; }
       `}</style>
     </div>
   )

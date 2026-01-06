@@ -57,6 +57,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Clean previous builds (defensive)
+        run: rm -rf dist .astro || true
+
       - name: Build application
         run: npm run build
         env:
@@ -115,22 +118,6 @@ jobs:
           CLOUDFLARE_R2_PUBLIC_URL=${{ secrets.CLOUDFLARE_R2_PUBLIC_URL }}
           EOF
 
-      - name: Deploy to VPS
-        run: |
-          ssh -p ${{ secrets.VPS_SSH_PORT || '22' }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
-            set -e
-            cd /opt/turni 2>/dev/null || cd /opt/tiendita 2>/dev/null || (mkdir -p /opt/tiendita && cd /opt/tiendita)
-            
-            # Crear directorios necesarios
-            mkdir -p nginx/conf.d nginx/ssl nginx/logs logs
-            
-            # Detener contenedores si están corriendo
-            docker compose down || true
-            
-            # Esperar un momento
-            sleep 2
-          ENDSSH
-
       - name: Copy files to VPS
         run: |
           SSH_PORT="${{ secrets.VPS_SSH_PORT || '22' }}"
@@ -142,20 +129,75 @@ jobs:
           scp -P $SSH_PORT -r src/ public/ package*.json tsconfig.json astro.config.mjs tailwind.config.mjs ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:$DEPLOY_PATH/
           scp -P $SSH_PORT .env.production ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }}:$DEPLOY_PATH/.env.production
 
-      - name: Build and start containers
+      - name: Build and deploy (zero-downtime)
         run: |
           ssh -p ${{ secrets.VPS_SSH_PORT || '22' }} ${{ secrets.VPS_USER }}@${{ secrets.VPS_HOST }} << 'ENDSSH'
             set -e
             cd /opt/turni 2>/dev/null || cd /opt/tiendita
             
-            # Construir y levantar contenedores (sin --no-cache para usar cache de Docker)
-            docker compose build
-            docker compose up -d
+            # Crear directorios necesarios
+            mkdir -p nginx/conf.d nginx/ssl nginx/logs logs
             
-            # Esperar a que la aplicación esté lista
-            sleep 10
+            # Construir la nueva imagen (el contenedor viejo sigue corriendo)
+            echo "🔨 Construyendo nueva imagen..."
+            docker compose build --quiet
             
-            # Verificar salud
+            # Levantar el nuevo contenedor (reemplaza el viejo sin downtime)
+            echo "🚀 Desplegando nueva versión..."
+            docker compose up -d --no-deps --build app
+            
+            # Esperar a que el nuevo contenedor esté saludable
+            echo "⏳ Esperando que la aplicación esté lista..."
+            timeout=90
+            elapsed=0
+            while [ $elapsed -lt $timeout ]; do
+              # Verificar que el contenedor esté corriendo
+              if ! docker compose ps app | grep -q "Up"; then
+                echo "❌ El contenedor no está corriendo"
+                docker compose logs app --tail=50
+                exit 1
+              fi
+              
+              # Verificar que el puerto responda (desde el host, no desde dentro del contenedor)
+              if command -v curl >/dev/null 2>&1; then
+                if curl -f -s http://localhost:4321/ >/dev/null 2>&1; then
+                  echo "✅ Aplicación saludable"
+                  break
+                fi
+              elif command -v wget >/dev/null 2>&1; then
+                if wget --quiet --spider http://localhost:4321/ 2>/dev/null; then
+                  echo "✅ Aplicación saludable"
+                  break
+                fi
+              else
+                # Si no hay curl ni wget, solo esperar un tiempo fijo
+                if [ $elapsed -ge 15 ]; then
+                  echo "✅ Aplicación debería estar lista (verificación básica)"
+                  break
+                fi
+              fi
+              
+              sleep 3
+              elapsed=$((elapsed + 3))
+              echo "   Esperando... (${elapsed}s/${timeout}s)"
+            done
+            
+            if [ $elapsed -ge $timeout ]; then
+              echo "❌ Timeout: La aplicación no respondió a tiempo"
+              echo "📋 Logs del contenedor:"
+              docker compose logs app --tail=50
+              exit 1
+            fi
+            
+            # Reiniciar nginx para asegurar conexión con el nuevo contenedor
+            docker compose restart nginx || true
+            
+            # Limpiar imágenes viejas (opcional, ahorra espacio)
+            echo "🧹 Limpiando imágenes viejas..."
+            docker image prune -f || true
+            
+            # Verificar estado final
+            echo "📊 Estado de contenedores:"
             docker compose ps
           ENDSSH
 
