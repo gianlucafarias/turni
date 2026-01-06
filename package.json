@@ -5,7 +5,9 @@
   "scripts": {
     "dev": "astro dev",
     "start": "astro dev",
-    "build": "astro check && astro build",
+    "clean": "rm -rf dist .astro",
+    "clean:win": "if exist dist rmdir /s /q dist && if exist .astro rmdir /s /q .astro",
+    "build": "npm run clean:win 2>nul || npm run clean || true && astro check && astro build",
     "preview": "astro preview",
     "astro": "astro",
     "test": "vitest run",
