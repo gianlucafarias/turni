@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { supabase } from '../../lib/supabase'
+import { useDynamicPricing } from '../../hooks/useDynamicPricing'
 
 // Provincias de Argentina
 const PROVINCIAS = [
@@ -107,8 +108,8 @@ const STORE_TYPES = [
   },
 ]
 
-// Planes disponibles
-const PLANS = [
+// Planes disponibles (precio premium se obtiene dinámicamente)
+const getPlans = (premiumPrice: number = 4990) => [
   {
     id: 'free',
     name: 'Gratis',
@@ -125,7 +126,7 @@ const PLANS = [
   {
     id: 'premium',
     name: 'Premium',
-    price: 2999,
+    price: premiumPrice,
     description: 'Para negocios en crecimiento',
     features: [
       'Productos ilimitados',
@@ -197,6 +198,11 @@ export default function MultiStepRegisterForm() {
   const [validatingCoupon, setValidatingCoupon] = useState(false)
   const [couponValidation, setCouponValidation] = useState<{ valid: boolean; discount?: number; discountType?: string; error?: string } | null>(null)
   const [showCouponInput, setShowCouponInput] = useState(false)
+  
+  // Obtener precios dinámicos
+  const { formattedMonthlyPrice, plans: dynamicPlans, isLoading: pricingLoading } = useDynamicPricing()
+  const premiumPrice = dynamicPlans?.premium.priceMonthly || 4990
+  const PLANS = getPlans(premiumPrice)
   
   const [formData, setFormData] = useState<FormData>({
     // Paso 1
@@ -335,7 +341,7 @@ export default function MultiStepRegisterForm() {
     try {
       // SIEMPRE validar como Premium, porque un cupón del 100% activa Premium
       const planId = 'premium'
-      const planPrice = 2999
+      const planPrice = premiumPrice
 
       const response = await fetch('/api/coupons/validate', {
         method: 'POST',
@@ -748,7 +754,7 @@ export default function MultiStepRegisterForm() {
           return
         } else if (formData.selectedPlan === 'premium' || isFullDiscount) {
           // Cupón parcial con plan Premium: Redirigir a Mercado Pago con precio descontado
-          const planPrice = 2999
+          const planPrice = premiumPrice
           const discountAmount = couponValidation.discountType === 'percentage'
             ? planPrice * ((couponValidation.discount || 0) / 100)
             : (couponValidation.discount || 0)
@@ -1248,6 +1254,12 @@ export default function MultiStepRegisterForm() {
               <p className="text-surface-600 mt-2">Empezá gratis o pasate a Premium</p>
             </div>
 
+            {pricingLoading ? (
+              <div className="text-center py-8">
+                <div className="w-8 h-8 border-2 border-brand-600 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                <p className="text-surface-600">Cargando planes...</p>
+              </div>
+            ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {PLANS.map((plan) => (
                 <button
@@ -1307,6 +1319,7 @@ export default function MultiStepRegisterForm() {
                 </button>
               ))}
             </div>
+            )}
 
             {/* Campo de cupón */}
             <div className="bg-surface-50 rounded-2xl p-6 border-2 border-surface-200">
@@ -1379,7 +1392,7 @@ export default function MultiStepRegisterForm() {
                               <p className="text-xs mt-1">¡Premium gratis por 1 mes!</p>
                             ) : formData.selectedPlan === 'premium' && couponValidation.discount !== undefined && (
                               <p className="text-xs mt-1">
-                                Precio final: ${(2999 * (1 - (couponValidation.discount / 100))).toLocaleString('es-AR')}
+                                Precio final: ${(premiumPrice * (1 - (couponValidation.discount / 100))).toLocaleString('es-AR')}
                               </p>
                             )}
                           </div>

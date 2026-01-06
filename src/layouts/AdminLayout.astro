@@ -178,12 +178,15 @@ function isActive(href: string, exact: boolean = false) {
       </div>
     </main>
   </div>
-  </div>
 </body>
 </html>
 
-<script type="module">
-  import { supabase } from '../lib/supabase';
+<script>
+  import { createClient } from '@supabase/supabase-js';
+  
+  const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+  const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+  const supabase = createClient(supabaseUrl, supabaseKey);
 
   const deniedEl = document.getElementById('admin-denied');
   const mainEl = document.getElementById('admin-main');
@@ -193,7 +196,7 @@ function isActive(href: string, exact: boolean = false) {
   const userAvatarEl = document.getElementById('admin-user-avatar');
 
   async function checkAdmin() {
-    debugEl.textContent = 'Verificando sesión...';
+    if (debugEl) debugEl.textContent = 'Verificando sesión...';
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) {
       debugEl.textContent = 'No hay sesión. Cerrá sesión y volvé a iniciar.';

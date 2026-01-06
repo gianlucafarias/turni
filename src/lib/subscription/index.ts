@@ -16,7 +16,21 @@ export {
   hasPremiumAccess,
   FEATURE_DESCRIPTIONS,
   PLAN_COMPARISON,
+  getPlansWithDynamicPricing,
 } from './plans';
+
+// Precios dinámicos desde DB
+export {
+  DEFAULT_PRICING,
+  getPricing,
+  getPricingSync,
+  invalidatePricingCache,
+  getPremiumMonthlyPrice,
+  getPremiumAnnualPrice,
+  formatPrice as formatPriceFromPricing,
+  calculateAnnualSavings,
+  type PricingConfig,
+} from './pricing';
 
 // Verificación de límites
 export {

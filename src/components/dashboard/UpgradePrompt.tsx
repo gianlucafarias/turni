@@ -2,7 +2,7 @@
 // Componente para mostrar cuando el usuario excede los límites de su plan
 // =============================================================================
 
-import { PLANS, formatPrice } from '../../lib/subscription';
+import { useDynamicPricing } from '../../hooks/useDynamicPricing';
 
 interface UpgradePromptProps {
   feature: 'products' | 'services' | 'clients' | 'appointments' | 'notifications';
@@ -51,7 +51,7 @@ export function UpgradePrompt({
   variant = 'card' 
 }: UpgradePromptProps) {
   const info = FEATURE_INFO[feature];
-  const premiumPlan = PLANS.premium;
+  const { formattedMonthlyPrice } = useDynamicPricing();
 
   if (variant === 'banner') {
     return (
@@ -139,7 +139,7 @@ export function UpgradePrompt({
             href="/dashboard/subscription"
             className="block w-full py-3 px-4 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
           >
-            Actualizar a Premium - {formatPrice(premiumPlan.priceMonthly)}/mes
+            Actualizar a Premium - {formattedMonthlyPrice}/mes
           </a>
           <p className="text-xs text-gray-500">
             Cancelá cuando quieras · Sin compromisos

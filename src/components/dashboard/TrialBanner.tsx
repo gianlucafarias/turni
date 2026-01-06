@@ -3,7 +3,7 @@
 // Muestra los días restantes del trial y CTA para actualizar
 // =============================================================================
 
-import { formatPrice, PLANS } from '../../lib/subscription';
+import { useDynamicPricing } from '../../hooks/useDynamicPricing';
 
 interface TrialBannerProps {
   daysRemaining: number;
@@ -13,7 +13,7 @@ interface TrialBannerProps {
 
 export function TrialBanner({ daysRemaining, storeId, onDismiss }: TrialBannerProps) {
   const isUrgent = daysRemaining <= 3;
-  const premiumPlan = PLANS.premium;
+  const { formattedMonthlyPrice } = useDynamicPricing();
 
   async function handleUpgrade() {
     try {
@@ -98,7 +98,7 @@ export function TrialBanner({ daysRemaining, storeId, onDismiss }: TrialBannerPr
         </div>
         <div className="flex items-center gap-3">
           <span className="text-white/90 text-sm">
-            Después: {formatPrice(premiumPlan.priceMonthly)}/mes
+            Después: {formattedMonthlyPrice}/mes
           </span>
           <button
             onClick={handleUpgrade}
