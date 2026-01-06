@@ -26,84 +26,174 @@ try {
 const currentPath = Astro.url.pathname;
 ---
 
-<nav class="bg-white/95 backdrop-blur-sm border-b border-surface-200/50 shadow-sm sticky top-0 z-50">
-  <div class="container mx-auto px-4">
-    <div class="flex justify-between items-center h-16">
+<nav class="fixed top-0 left-0 w-full z-50 transition-all duration-300 bg-surface-900/95 backdrop-blur-md border-b border-white/10 shadow-lg shadow-black/10">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex justify-between items-center h-20">
       <!-- Logo -->
-      <a href="/" class="flex items-center space-x-2 group">
-        <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center shadow-md group-hover:shadow-lg transition-all group-hover:scale-105">
-          <svg class="h-6 w-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <a href="/" class="flex items-center gap-3 group">
+        <div class="w-10 h-10 bg-gradient-to-br from-brand-500 to-brand-600 rounded-xl flex items-center justify-center text-white shadow-lg shadow-brand-500/20">
+          <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
           </svg>
         </div>
-        <span class="text-xl font-display font-bold bg-gradient-to-r from-brand-600 to-brand-700 bg-clip-text text-transparent">
-          turni.pro
-        </span>
+        <span class="text-xl font-display font-bold text-white tracking-tight">turni.pro</span>
       </a>
 
-      <!-- Navigation -->
-      <div class="flex items-center space-x-2 sm:space-x-4">
-        <a
-          href="/pricing"
-          class:list={[
-            'px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all',
-            currentPath === '/pricing'
-              ? 'bg-brand-50 text-brand-600 shadow-sm'
-              : 'text-surface-600 hover:text-surface-900 hover:bg-surface-50'
-          ]}
-        >
-          Precios
-        </a>
+      <!-- Desktop Navigation -->
+      <div class="hidden md:flex items-center gap-8">
+        <div class="flex items-center gap-6 text-sm font-medium">
+          <a href="#precios" class="text-slate-200 hover:text-white transition-colors font-medium">Precios</a>
+          <a href="/contacto" class="text-slate-200 hover:text-white transition-colors font-medium">Contacto</a>
+          <a href="/login" id="nav-login-link" class="text-slate-200 hover:text-white transition-colors font-medium">Iniciar sesión</a>
+        </div>
         
         <!-- UserMenu verifica la sesión del lado del cliente -->
         <UserMenu client:load store={initialStore ? { id: initialStore.id } : undefined} />
         
         <!-- Botones de autenticación (se ocultan si hay sesión del lado del cliente) -->
-        <div id="auth-buttons" class="flex items-center space-x-2 sm:space-x-3" data-auth-fallback>
-          <a
-            href="/login"
-            class:list={[
-              'px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-medium transition-all whitespace-nowrap',
-              currentPath === '/login'
-                ? 'bg-brand-50 text-brand-600 shadow-sm'
-                : 'text-surface-600 hover:text-surface-900 hover:bg-surface-50'
-            ]}
-          >
-            Iniciar sesión
-          </a>
+        <div id="auth-buttons" class="flex items-center gap-2" data-auth-fallback>
           <a
             href="/registro"
-            class="px-3 py-1.5 sm:px-5 sm:py-2.5 rounded-lg text-xs sm:text-sm font-semibold text-white bg-gradient-to-r from-brand-600 to-brand-700 hover:from-brand-700 hover:to-brand-800 shadow-md hover:shadow-lg transition-all whitespace-nowrap"
+            class="bg-white text-brand-900 hover:bg-slate-100 px-5 py-2.5 rounded-full text-sm font-bold transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
           >
             Empezar gratis
           </a>
         </div>
+      </div>
+
+      <!-- Mobile Navigation -->
+      <div class="md:hidden flex items-center gap-3">
+        <!-- UserMenu en mobile (si hay sesión) -->
+        <UserMenu client:load store={initialStore ? { id: initialStore.id } : undefined} />
+        
+        <!-- Botón "Empezar gratis" en mobile -->
+        <div id="mobile-auth-buttons" class="flex items-center" data-auth-fallback>
+          <a
+            href="/registro"
+            class="bg-white text-brand-900 hover:bg-slate-100 px-4 py-2 rounded-full text-sm font-bold transition-all shadow-lg hover:shadow-xl"
+          >
+            Empezar gratis
+          </a>
+        </div>
+        
+        <!-- Botón hamburguesa -->
+        <button
+          id="mobile-menu-button"
+          type="button"
+          class="text-white hover:text-slate-200 focus:outline-none focus:ring-2 focus:ring-white/20 rounded-lg p-2 transition-colors"
+          aria-label="Abrir menú"
+        >
+          <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="menu-icon">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+          </svg>
+          <svg class="w-6 h-6 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24" id="close-icon">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Mobile Menu -->
+    <div id="mobile-menu" class="hidden md:hidden pb-4 border-t border-white/10 mt-2">
+      <div class="flex flex-col gap-2 pt-4">
+        <a
+          href="/login"
+          id="mobile-login-link"
+          class="px-4 py-3 text-slate-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors font-medium"
+        >
+          Iniciar sesión
+        </a>
+        <a
+          href="#precios"
+          class="px-4 py-3 text-slate-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors font-medium"
+        >
+          Precios
+        </a>
+        <a
+          href="/contacto"
+          class="px-4 py-3 text-slate-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors font-medium"
+        >
+          Contacto
+        </a>
       </div>
     </div>
   </div>
 </nav>
 
 <script is:inline>
-  // Script para ocultar/mostrar botones de auth basado en la sesión del cliente
-  // Este script se ejecuta después de que el componente UserMenu se hidrate
+  // Script de fallback para ocultar/mostrar botones de auth
+  // El UserMenu.tsx controla esto principalmente, pero este script actúa como respaldo
   (function() {
-    // Esperar a que el DOM esté listo y los componentes React se hidraten
-    if (typeof window !== 'undefined') {
-      setTimeout(function() {
-        // Verificar si el UserMenu está visible (tiene contenido)
-        const userMenu = document.querySelector('[data-user-menu]') || 
-                        document.querySelector('nav > div > div:last-child > div');
-        const authButtons = document.getElementById('auth-buttons');
+    function updateNavbarVisibility() {
+      const userMenu = document.querySelector('[data-user-menu]');
+      const authButtons = document.getElementById('auth-buttons');
+      const navLoginLink = document.getElementById('nav-login-link');
+      const mobileLoginLink = document.getElementById('mobile-login-link');
+      const mobileAuthButtons = document.getElementById('mobile-auth-buttons');
+      
+      if (userMenu) {
+        // Verificar si UserMenu tiene contenido visible (no es el div vacío con display:none)
+        const userMenuVisible = userMenu.offsetParent !== null && 
+                                userMenu.children.length > 0 &&
+                                userMenu.style.display !== 'none';
         
-        if (userMenu && authButtons) {
-          // Ocultar botones de auth si UserMenu está visible
-          const userMenuVisible = userMenu.offsetParent !== null && 
-                                  userMenu.children.length > 0;
-          if (userMenuVisible) {
-            authButtons.style.display = 'none';
-          }
+        if (userMenuVisible) {
+          // Ocultar botones de auth y link de login si hay sesión
+          if (authButtons) authButtons.style.display = 'none';
+          if (navLoginLink) navLoginLink.style.display = 'none';
+          if (mobileLoginLink) mobileLoginLink.style.display = 'none';
+          if (mobileAuthButtons) mobileAuthButtons.style.display = 'none';
+        } else {
+          // Mostrar botones de auth y link de login si no hay sesión
+          if (authButtons) authButtons.style.display = 'flex';
+          if (navLoginLink) navLoginLink.style.display = 'block';
+          if (mobileLoginLink) mobileLoginLink.style.display = 'block';
+          if (mobileAuthButtons) mobileAuthButtons.style.display = 'flex';
         }
-      }, 100);
+      }
+    }
+    
+    // Toggle mobile menu
+    function initMobileMenu() {
+      const menuButton = document.getElementById('mobile-menu-button');
+      const mobileMenu = document.getElementById('mobile-menu');
+      const menuIcon = document.getElementById('menu-icon');
+      const closeIcon = document.getElementById('close-icon');
+      
+      if (menuButton && mobileMenu && menuIcon && closeIcon) {
+        menuButton.addEventListener('click', function() {
+          const isHidden = mobileMenu.classList.contains('hidden');
+          
+          if (isHidden) {
+            mobileMenu.classList.remove('hidden');
+            menuIcon.classList.add('hidden');
+            closeIcon.classList.remove('hidden');
+          } else {
+            mobileMenu.classList.add('hidden');
+            menuIcon.classList.remove('hidden');
+            closeIcon.classList.add('hidden');
+          }
+        });
+        
+        // Cerrar menú al hacer click en un link
+        const menuLinks = mobileMenu.querySelectorAll('a');
+        menuLinks.forEach(link => {
+          link.addEventListener('click', function() {
+            mobileMenu.classList.add('hidden');
+            menuIcon.classList.remove('hidden');
+            closeIcon.classList.add('hidden');
+          });
+        });
+      }
+    }
+    
+    if (typeof window !== 'undefined') {
+      // Inicializar menú mobile
+      initMobileMenu();
+      
+      // Ejecutar después de que React se hidrate
+      setTimeout(updateNavbarVisibility, 300);
+      setTimeout(updateNavbarVisibility, 1000);
     }
   })();
 </script>

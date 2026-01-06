@@ -1,173 +1,374 @@
 ---
-import Layout from '../../layouts/Layout.astro';
-import { PLANS, FREE_LIMITS, PREMIUM_LIMITS, PRICING } from '../../lib/subscription/plans';
+// =============================================================================
+// Panel de Administración: Gestión de Planes y Precios
+// Permite editar precios dinámicos desde la base de datos
+// =============================================================================
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { supabaseAdmin } from '../../lib/supabase';
+import { FREE_LIMITS, PREMIUM_LIMITS, DEFAULT_PRICING } from '../../lib/subscription';
+
+// Obtener configuración actual de precios (con manejo de errores)
+let config = null;
+let configError = null;
+
+try {
+  const result = await supabaseAdmin
+    .from('site_config')
+    .select('pricing, updated_at')
+    .eq('id', 'main')
+    .single();
+  
+  config = result.data;
+  if (result.error && result.error.code !== 'PGRST116') {
+    // PGRST116 = no rows found (es ok, usamos defaults)
+    configError = result.error.message;
+  }
+} catch (err: any) {
+  configError = err.message;
+}
+
+const currentPricing = {
+  ...DEFAULT_PRICING,
+  ...(config?.pricing || {}),
+};
 ---
 
-<Layout title="Planes y Límites - Admin">
-  <div id="admin-loading" class="min-h-screen bg-gray-900 flex items-center justify-center">
-    <div class="w-10 h-10 border-4 border-indigo-500 border-t-transparent rounded-full animate-spin"></div>
-  </div>
-
-  <div id="admin-denied" class="min-h-screen bg-gray-900 flex items-center justify-center hidden">
-    <div class="text-center p-6">
-      <h1 class="text-2xl font-bold text-red-500 mb-4">Acceso Denegado</h1>
-      <p id="denied-reason" class="text-gray-400 mb-6"></p>
-      <a href="/dashboard" class="px-6 py-3 bg-indigo-600 text-white rounded-lg">Volver</a>
+<AdminLayout title="Planes y Precios">
+  <div class="max-w-4xl space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-2xl font-bold text-white">Configuración de Planes</h2>
+        <p class="text-gray-400 mt-1">Gestiona los precios y límites de los planes</p>
+      </div>
     </div>
-  </div>
 
-  <div id="admin-content" class="min-h-screen bg-gray-900 hidden">
-    <div class="flex">
-      <!-- Sidebar -->
-      <aside class="w-64 min-h-screen bg-gray-800 border-r border-gray-700 fixed">
-        <div class="p-4 border-b border-gray-700">
-          <div class="flex items-center gap-3">
-            <div class="w-10 h-10 bg-gradient-to-br from-red-500 to-orange-500 rounded-lg flex items-center justify-center">
-              <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-              </svg>
-            </div>
-            <div>
-              <h1 class="font-bold text-white">Admin Panel</h1>
-              <p class="text-xs text-gray-400">Tiendita</p>
-            </div>
+    {configError && (
+      <div class="bg-amber-500/10 border border-amber-500/30 rounded-xl p-4">
+        <div class="flex gap-3">
+          <svg class="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
+          <div class="text-sm text-amber-300">
+            <p class="font-medium">Nota: Usando valores por defecto</p>
+            <p class="text-amber-400 mt-1">
+              La tabla site_config no existe o está vacía. Se crearán los registros al guardar. 
+              <span class="text-xs opacity-75">(Error: {configError})</span>
+            </p>
           </div>
         </div>
-        <nav class="p-4 space-y-1">
-          <a href="/admin" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
-            Dashboard
-          </a>
-          <a href="/admin/users" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>
-            Usuarios
-          </a>
-          <a href="/admin/subscriptions" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" /></svg>
-            Suscripciones
-          </a>
-          <a href="/admin/coupons" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-300 hover:bg-gray-700">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" /></svg>
-            Cupones
-          </a>
-          <a href="/admin/plans" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium bg-indigo-600 text-white">
-            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" /></svg>
-            Planes
-          </a>
-          <div class="pt-4 mt-4 border-t border-gray-700">
-            <a href="/dashboard" class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium text-gray-400 hover:bg-gray-700">
-              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 17l-5-5m0 0l5-5m-5 5h12" /></svg>
-              Volver al Dashboard
-            </a>
-          </div>
-        </nav>
-      </aside>
-      
-      <!-- Main -->
-      <main class="flex-1 ml-64 p-6">
-        <h2 class="text-2xl font-bold text-white mb-6">Configuración de Planes</h2>
-        
-        <!-- Info -->
-        <div class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4 mb-6">
-          <p class="text-blue-400 text-sm">
-            <strong>Nota:</strong> Los límites están definidos en el código (<code class="bg-gray-800 px-1 rounded">src/lib/subscription/plans.ts</code>). 
-            Para modificarlos permanentemente, editá ese archivo y reiniciá el servidor.
+      </div>
+    )}
+
+    <!-- Alerta de info -->
+    <div class="bg-blue-500/10 border border-blue-500/30 rounded-xl p-4">
+      <div class="flex gap-3">
+        <svg class="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        <div class="text-sm text-blue-300">
+          <p class="font-medium">Precios centralizados</p>
+          <p class="text-blue-400 mt-1">
+            Los cambios se reflejan automáticamente en toda la plataforma: página de inicio, pricing, 
+            registro y checkout con Mercado Pago.
           </p>
         </div>
+      </div>
+    </div>
 
-        <!-- Precios -->
-        <div class="bg-gray-800 rounded-xl border border-gray-700 p-6 mb-6">
-          <h3 class="text-lg font-semibold text-white mb-4">Precios Actuales</h3>
-          <div class="grid grid-cols-2 gap-4">
-            <div class="bg-gray-700/50 rounded-lg p-4">
-              <p class="text-gray-400 text-sm">Mensual</p>
-              <p class="text-2xl font-bold text-white">${(PRICING.PREMIUM_MONTHLY / 100).toLocaleString('es-AR')} ARS</p>
+    <!-- Formulario de Precios -->
+    <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-700 flex items-center justify-between">
+        <h3 class="font-semibold text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+          Precios de Membresía Premium
+        </h3>
+        <span class="text-xs text-gray-500">Moneda: ARS</span>
+      </div>
+      
+      <form id="pricingForm" class="p-6">
+        <div class="grid md:grid-cols-2 gap-6">
+          <!-- Precio Mensual -->
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-300">
+              Precio Mensual
+            </label>
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+              <input
+                type="number"
+                name="premium_monthly"
+                id="premium_monthly"
+                value={currentPricing.premium_monthly}
+                min="0"
+                step="10"
+                class="w-full pl-8 pr-16 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-lg font-semibold focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">/mes</span>
             </div>
-            <div class="bg-gray-700/50 rounded-lg p-4">
-              <p class="text-gray-400 text-sm">Anual</p>
-              <p class="text-2xl font-bold text-white">${(PRICING.PREMIUM_ANNUAL / 100).toLocaleString('es-AR')} ARS</p>
-              <p class="text-emerald-400 text-xs">Ahorro: {Math.round((1 - PRICING.PREMIUM_ANNUAL / (PRICING.PREMIUM_MONTHLY * 12)) * 100)}%</p>
+            <p class="text-xs text-gray-500">
+              Precio que se mostrará: ${currentPricing.premium_monthly.toLocaleString('es-AR')} ARS
+            </p>
+          </div>
+
+          <!-- Precio Anual -->
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-300">
+              Precio Anual
+            </label>
+            <div class="relative">
+              <span class="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400">$</span>
+              <input
+                type="number"
+                name="premium_annual"
+                id="premium_annual"
+                value={currentPricing.premium_annual}
+                min="0"
+                step="100"
+                class="w-full pl-8 pr-16 py-3 bg-gray-700 border border-gray-600 rounded-lg text-white text-lg font-semibold focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+              <span class="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400">/año</span>
+            </div>
+            <p class="text-xs text-gray-500">
+              Equivale a ${Math.round(currentPricing.premium_annual / 12).toLocaleString('es-AR')}/mes
+            </p>
+          </div>
+        </div>
+
+        <!-- Calculadora de ahorro -->
+        <div id="savingsCalculator" class="mt-6 p-4 bg-gray-700/50 rounded-lg">
+          <p class="text-sm text-gray-400 mb-2">Ahorro del plan anual:</p>
+          <div class="flex items-center gap-4">
+            <div class="flex-1">
+              <p class="text-2xl font-bold text-emerald-400" id="savingsAmount">
+                ${((currentPricing.premium_monthly * 12) - currentPricing.premium_annual).toLocaleString('es-AR')}
+              </p>
+              <p class="text-xs text-gray-500">por año</p>
+            </div>
+            <div class="flex-1">
+              <p class="text-2xl font-bold text-emerald-400" id="savingsPercent">
+                {Math.round((1 - currentPricing.premium_annual / (currentPricing.premium_monthly * 12)) * 100)}%
+              </p>
+              <p class="text-xs text-gray-500">de descuento</p>
+            </div>
+            <div class="flex-1">
+              <p class="text-2xl font-bold text-emerald-400" id="monthsFree">
+                {Math.round(((currentPricing.premium_monthly * 12) - currentPricing.premium_annual) / currentPricing.premium_monthly)}
+              </p>
+              <p class="text-xs text-gray-500">meses gratis</p>
             </div>
           </div>
         </div>
 
-        <!-- Comparación de límites -->
-        <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
-          <div class="p-4 border-b border-gray-700">
-            <h3 class="text-lg font-semibold text-white">Comparación de Límites</h3>
+        <!-- Configuración adicional -->
+        <div class="grid md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-gray-700">
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-300">
+              Días de Trial
+            </label>
+            <input
+              type="number"
+              name="trial_days"
+              id="trial_days"
+              value={currentPricing.trial_days ?? 7}
+              min="0"
+              max="30"
+              class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
           </div>
-          <table class="w-full">
-            <thead class="bg-gray-700/50">
-              <tr>
-                <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase">Característica</th>
-                <th class="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase">Free</th>
-                <th class="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase">Premium</th>
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-gray-700">
-              <tr class="hover:bg-gray-700/50">
-                <td class="px-6 py-4 text-gray-300">Productos</td>
-                <td class="px-6 py-4 text-center text-white">{FREE_LIMITS.maxProducts}</td>
-                <td class="px-6 py-4 text-center text-emerald-400">{PREMIUM_LIMITS.maxProducts === -1 ? '∞' : PREMIUM_LIMITS.maxProducts}</td>
-              </tr>
-              <tr class="hover:bg-gray-700/50">
-                <td class="px-6 py-4 text-gray-300">Servicios</td>
-                <td class="px-6 py-4 text-center text-white">{FREE_LIMITS.maxServices}</td>
-                <td class="px-6 py-4 text-center text-emerald-400">{PREMIUM_LIMITS.maxServices === -1 ? '∞' : PREMIUM_LIMITS.maxServices}</td>
-              </tr>
-              <tr class="hover:bg-gray-700/50">
-                <td class="px-6 py-4 text-gray-300">Clientes</td>
-                <td class="px-6 py-4 text-center text-white">{FREE_LIMITS.maxClients}</td>
-                <td class="px-6 py-4 text-center text-emerald-400">{PREMIUM_LIMITS.maxClients === -1 ? '∞' : PREMIUM_LIMITS.maxClients}</td>
-              </tr>
-              <tr class="hover:bg-gray-700/50">
-                <td class="px-6 py-4 text-gray-300">Turnos/mes</td>
-                <td class="px-6 py-4 text-center text-white">{FREE_LIMITS.maxAppointmentsPerMonth}</td>
-                <td class="px-6 py-4 text-center text-emerald-400">{PREMIUM_LIMITS.maxAppointmentsPerMonth === -1 ? '∞' : PREMIUM_LIMITS.maxAppointmentsPerMonth}</td>
-              </tr>
-              <tr class="hover:bg-gray-700/50">
-                <td class="px-6 py-4 text-gray-300">Notificaciones</td>
-                <td class="px-6 py-4 text-center">
-                  {FREE_LIMITS.features.includes('notifications') 
-                    ? <span class="text-emerald-400">✓</span> 
-                    : <span class="text-red-400">✗</span>}
-                </td>
-                <td class="px-6 py-4 text-center text-emerald-400">✓</td>
-              </tr>
-              <tr class="hover:bg-gray-700/50">
-                <td class="px-6 py-4 text-gray-300">Gestión de Clientes</td>
-                <td class="px-6 py-4 text-center">
-                  {FREE_LIMITS.features.includes('clients_management') 
-                    ? <span class="text-emerald-400">✓</span> 
-                    : <span class="text-red-400">✗</span>}
-                </td>
-                <td class="px-6 py-4 text-center text-emerald-400">✓</td>
-              </tr>
-              <tr class="hover:bg-gray-700/50">
-                <td class="px-6 py-4 text-gray-300">Analytics</td>
-                <td class="px-6 py-4 text-center">
-                  {FREE_LIMITS.features.includes('advanced_stats') 
-                    ? <span class="text-emerald-400">✓</span> 
-                    : <span class="text-red-400">✗</span>}
-                </td>
-                <td class="px-6 py-4 text-center text-emerald-400">✓</td>
-              </tr>
-              <tr class="hover:bg-gray-700/50">
-                <td class="px-6 py-4 text-gray-300">Soporte Prioritario</td>
-                <td class="px-6 py-4 text-center">
-                  {FREE_LIMITS.features.includes('priority_support') 
-                    ? <span class="text-emerald-400">✓</span> 
-                    : <span class="text-red-400">✗</span>}
-                </td>
-                <td class="px-6 py-4 text-center text-emerald-400">✓</td>
-              </tr>
-            </tbody>
-          </table>
+
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-300">
+              Días de Gracia
+            </label>
+            <input
+              type="number"
+              name="grace_period_days"
+              id="grace_period_days"
+              value={currentPricing.grace_period_days ?? 3}
+              min="0"
+              max="14"
+              class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+            <p class="text-xs text-gray-500">Para pagos fallidos</p>
+          </div>
+
+          <div class="space-y-2">
+            <label class="block text-sm font-medium text-gray-300">
+              Turnos/día (Free)
+            </label>
+            <input
+              type="number"
+              name="free_daily_appointments"
+              id="free_daily_appointments"
+              value={currentPricing.free_daily_appointments ?? 5}
+              min="1"
+              max="20"
+              class="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+            />
+          </div>
         </div>
-      </main>
+
+        <!-- Botones -->
+        <div class="flex items-center justify-between mt-6 pt-6 border-t border-gray-700">
+          <p id="lastSaved" class="text-sm text-gray-500">
+            Última actualización: {config?.updated_at ? new Date(config.updated_at).toLocaleString('es-AR') : 'Nunca'}
+          </p>
+          <div class="flex gap-3">
+            <button
+              type="button"
+              id="resetBtn"
+              class="px-4 py-2 text-gray-400 hover:text-white transition-colors"
+            >
+              Restaurar defaults
+            </button>
+            <button
+              type="submit"
+              id="saveBtn"
+              class="px-6 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium flex items-center gap-2"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+              </svg>
+              Guardar cambios
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+
+    <!-- Comparación de límites -->
+    <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-700">
+        <h3 class="font-semibold text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+          </svg>
+          Comparación de Límites por Plan
+        </h3>
+      </div>
+      <div class="overflow-x-auto">
+        <table class="w-full">
+          <thead class="bg-gray-700/50">
+            <tr>
+              <th class="px-6 py-3 text-left text-xs font-medium text-gray-400 uppercase tracking-wider">Característica</th>
+              <th class="px-6 py-3 text-center text-xs font-medium text-gray-400 uppercase tracking-wider">Free</th>
+              <th class="px-6 py-3 text-center text-xs font-medium text-emerald-400 uppercase tracking-wider">Premium</th>
+            </tr>
+          </thead>
+          <tbody class="divide-y divide-gray-700">
+            <tr class="hover:bg-gray-700/30 transition-colors">
+              <td class="px-6 py-4 text-gray-300">Productos</td>
+              <td class="px-6 py-4 text-center text-white font-medium">{FREE_LIMITS.maxProducts}</td>
+              <td class="px-6 py-4 text-center text-emerald-400 font-medium">{PREMIUM_LIMITS.maxProducts === -1 ? '∞' : PREMIUM_LIMITS.maxProducts}</td>
+            </tr>
+            <tr class="hover:bg-gray-700/30 transition-colors">
+              <td class="px-6 py-4 text-gray-300">Servicios</td>
+              <td class="px-6 py-4 text-center text-white font-medium">{FREE_LIMITS.maxServices}</td>
+              <td class="px-6 py-4 text-center text-emerald-400 font-medium">{PREMIUM_LIMITS.maxServices === -1 ? '∞' : PREMIUM_LIMITS.maxServices}</td>
+            </tr>
+            <tr class="hover:bg-gray-700/30 transition-colors">
+              <td class="px-6 py-4 text-gray-300">Clientes</td>
+              <td class="px-6 py-4 text-center text-white font-medium">{FREE_LIMITS.maxClients === 0 ? 'Sin acceso' : FREE_LIMITS.maxClients}</td>
+              <td class="px-6 py-4 text-center text-emerald-400 font-medium">{PREMIUM_LIMITS.maxClients === -1 ? '∞' : PREMIUM_LIMITS.maxClients}</td>
+            </tr>
+            <tr class="hover:bg-gray-700/30 transition-colors">
+              <td class="px-6 py-4 text-gray-300">Turnos por mes</td>
+              <td class="px-6 py-4 text-center text-white font-medium">{FREE_LIMITS.maxAppointmentsPerMonth === -1 ? '∞' : FREE_LIMITS.maxAppointmentsPerMonth}</td>
+              <td class="px-6 py-4 text-center text-emerald-400 font-medium">{PREMIUM_LIMITS.maxAppointmentsPerMonth === -1 ? '∞' : PREMIUM_LIMITS.maxAppointmentsPerMonth}</td>
+            </tr>
+            <tr class="hover:bg-gray-700/30 transition-colors">
+              <td class="px-6 py-4 text-gray-300">Turnos por día</td>
+              <td class="px-6 py-4 text-center text-white font-medium" id="freeDailyLimit">{FREE_LIMITS.maxAppointmentsPerDay}</td>
+              <td class="px-6 py-4 text-center text-emerald-400 font-medium">{PREMIUM_LIMITS.maxAppointmentsPerDay === -1 ? '∞' : PREMIUM_LIMITS.maxAppointmentsPerDay}</td>
+            </tr>
+            <tr class="hover:bg-gray-700/30 transition-colors">
+              <td class="px-6 py-4 text-gray-300">Notificaciones</td>
+              <td class="px-6 py-4 text-center">
+                <span class="text-red-400">✗</span>
+              </td>
+              <td class="px-6 py-4 text-center text-emerald-400">✓</td>
+            </tr>
+            <tr class="hover:bg-gray-700/30 transition-colors">
+              <td class="px-6 py-4 text-gray-300">Gestión de Clientes</td>
+              <td class="px-6 py-4 text-center">
+                <span class="text-red-400">✗</span>
+              </td>
+              <td class="px-6 py-4 text-center text-emerald-400">✓</td>
+            </tr>
+            <tr class="hover:bg-gray-700/30 transition-colors">
+              <td class="px-6 py-4 text-gray-300">Analytics Avanzado</td>
+              <td class="px-6 py-4 text-center">
+                <span class="text-red-400">✗</span>
+              </td>
+              <td class="px-6 py-4 text-center text-emerald-400">✓</td>
+            </tr>
+            <tr class="hover:bg-gray-700/30 transition-colors">
+              <td class="px-6 py-4 text-gray-300">Google Calendar</td>
+              <td class="px-6 py-4 text-center">
+                <span class="text-red-400">✗</span>
+              </td>
+              <td class="px-6 py-4 text-center text-emerald-400">✓</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="px-6 py-3 bg-gray-700/30 border-t border-gray-700">
+        <p class="text-xs text-gray-500">
+          <strong>Nota:</strong> Los límites de funcionalidades están definidos en el código y requieren deploy para cambiarlos. 
+          Los precios pueden modificarse desde este panel sin necesidad de redeploy.
+        </p>
+      </div>
+    </div>
+
+    <!-- Vista previa -->
+    <div class="bg-gray-800 rounded-xl border border-gray-700 overflow-hidden">
+      <div class="px-6 py-4 border-b border-gray-700">
+        <h3 class="font-semibold text-white flex items-center gap-2">
+          <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+          </svg>
+          Vista Previa
+        </h3>
+      </div>
+      <div class="p-6">
+        <div class="grid md:grid-cols-2 gap-6">
+          <!-- Premium Mensual Preview -->
+          <div class="bg-gradient-to-br from-indigo-600 to-indigo-700 rounded-xl p-6 text-white">
+            <div class="inline-block px-2 py-1 bg-white/20 rounded text-xs font-medium mb-3">Más popular</div>
+            <h4 class="text-xl font-bold mb-1">Premium</h4>
+            <p class="text-indigo-200 text-sm mb-4">Todo lo que necesitás</p>
+            <p class="mb-1">
+              <span id="previewMonthly" class="text-4xl font-bold">${currentPricing.premium_monthly.toLocaleString('es-AR')}</span>
+              <span class="text-indigo-200">/mes</span>
+            </p>
+            <p class="text-sm text-indigo-200">Facturación mensual</p>
+          </div>
+
+          <!-- Premium Anual Preview -->
+          <div class="bg-gray-700 rounded-xl p-6">
+            <div class="inline-block px-2 py-1 bg-emerald-500/20 text-emerald-400 rounded text-xs font-medium mb-3">
+              <span id="previewMonthsFree">{Math.round(((currentPricing.premium_monthly * 12) - currentPricing.premium_annual) / currentPricing.premium_monthly)}</span> meses gratis
+            </div>
+            <h4 class="text-xl font-bold text-white mb-1">Premium Anual</h4>
+            <p class="text-gray-400 text-sm mb-4">Ahorrá pagando anual</p>
+            <p class="mb-1">
+              <span id="previewAnnualMonthly" class="text-4xl font-bold text-white">${Math.round(currentPricing.premium_annual / 12).toLocaleString('es-AR')}</span>
+              <span class="text-gray-400">/mes</span>
+            </p>
+            <p class="text-sm text-gray-400">
+              $<span id="previewAnnual">{currentPricing.premium_annual.toLocaleString('es-AR')}</span> facturado anualmente
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-</Layout>
+</AdminLayout>
 
 <script>
   import { createClient } from '@supabase/supabase-js';
@@ -177,23 +378,158 @@ import { PLANS, FREE_LIMITS, PREMIUM_LIMITS, PRICING } from '../../lib/subscript
     import.meta.env.PUBLIC_SUPABASE_ANON_KEY
   );
 
-  async function checkAdmin() {
-    const { data: { session } } = await supabase.auth.getSession();
-    if (!session) return showDenied('No hay sesión activa');
-    
-    const { data: store } = await supabase.from('stores').select('is_admin').eq('user_id', session.user.id).single();
-    if (!store?.is_admin) return showDenied('No sos administrador');
-    
-    document.getElementById('admin-loading')?.classList.add('hidden');
-    document.getElementById('admin-content')?.classList.remove('hidden');
+  const form = document.getElementById('pricingForm') as HTMLFormElement;
+  const saveBtn = document.getElementById('saveBtn') as HTMLButtonElement;
+  const resetBtn = document.getElementById('resetBtn') as HTMLButtonElement;
+  
+  // Inputs
+  const monthlyInput = document.getElementById('premium_monthly') as HTMLInputElement;
+  const annualInput = document.getElementById('premium_annual') as HTMLInputElement;
+  const trialInput = document.getElementById('trial_days') as HTMLInputElement;
+  const graceInput = document.getElementById('grace_period_days') as HTMLInputElement;
+  const freeDailyInput = document.getElementById('free_daily_appointments') as HTMLInputElement;
+  
+  // Preview elements
+  const savingsAmount = document.getElementById('savingsAmount');
+  const savingsPercent = document.getElementById('savingsPercent');
+  const monthsFree = document.getElementById('monthsFree');
+  const previewMonthly = document.getElementById('previewMonthly');
+  const previewAnnual = document.getElementById('previewAnnual');
+  const previewAnnualMonthly = document.getElementById('previewAnnualMonthly');
+  const previewMonthsFree = document.getElementById('previewMonthsFree');
+  const freeDailyLimit = document.getElementById('freeDailyLimit');
+
+  // Defaults
+  const DEFAULTS = {
+    premium_monthly: 4990,
+    premium_annual: 49900,
+    trial_days: 7,
+    grace_period_days: 3,
+    free_daily_appointments: 5,
+  };
+
+  function formatNumber(num: number): string {
+    return num.toLocaleString('es-AR');
   }
 
-  function showDenied(reason: string) {
-    document.getElementById('admin-loading')?.classList.add('hidden');
-    document.getElementById('admin-denied')?.classList.remove('hidden');
-    const el = document.getElementById('denied-reason');
-    if (el) el.textContent = reason;
+  function updateCalculations() {
+    const monthly = parseInt(monthlyInput.value) || 0;
+    const annual = parseInt(annualInput.value) || 0;
+    const freeDaily = parseInt(freeDailyInput.value) || 5;
+    
+    const yearlyFromMonthly = monthly * 12;
+    const savings = yearlyFromMonthly - annual;
+    const percent = yearlyFromMonthly > 0 ? Math.round((savings / yearlyFromMonthly) * 100) : 0;
+    const months = monthly > 0 ? Math.round(savings / monthly) : 0;
+    
+    // Update savings calculator
+    if (savingsAmount) savingsAmount.textContent = `$${formatNumber(savings)}`;
+    if (savingsPercent) savingsPercent.textContent = `${percent}%`;
+    if (monthsFree) monthsFree.textContent = months.toString();
+    
+    // Update previews
+    if (previewMonthly) previewMonthly.textContent = `$${formatNumber(monthly)}`;
+    if (previewAnnual) previewAnnual.textContent = formatNumber(annual);
+    if (previewAnnualMonthly) previewAnnualMonthly.textContent = `$${formatNumber(Math.round(annual / 12))}`;
+    if (previewMonthsFree) previewMonthsFree.textContent = months.toString();
+    if (freeDailyLimit) freeDailyLimit.textContent = freeDaily.toString();
   }
 
-  checkAdmin();
+  // Listen for input changes
+  [monthlyInput, annualInput, freeDailyInput].forEach(input => {
+    input?.addEventListener('input', updateCalculations);
+  });
+
+  // Reset to defaults
+  resetBtn?.addEventListener('click', () => {
+    if (confirm('¿Restaurar los valores por defecto?')) {
+      monthlyInput.value = DEFAULTS.premium_monthly.toString();
+      annualInput.value = DEFAULTS.premium_annual.toString();
+      trialInput.value = DEFAULTS.trial_days.toString();
+      graceInput.value = DEFAULTS.grace_period_days.toString();
+      freeDailyInput.value = DEFAULTS.free_daily_appointments.toString();
+      updateCalculations();
+    }
+  });
+
+  // Save form
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = `
+      <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+      </svg>
+      Guardando...
+    `;
+
+    try {
+      const pricingData = {
+        premium_monthly: parseInt(monthlyInput.value),
+        premium_annual: parseInt(annualInput.value),
+        trial_days: parseInt(trialInput.value),
+        grace_period_days: parseInt(graceInput.value),
+        free_daily_appointments: parseInt(freeDailyInput.value),
+        currency: 'ARS',
+      };
+
+      const response = await fetch('/api/admin/config', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          type: 'pricing',
+          data: pricingData,
+        }),
+      });
+
+      const result = await response.json();
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Error al guardar');
+      }
+
+      // Success feedback
+      saveBtn.innerHTML = `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        ¡Guardado!
+      `;
+      saveBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-700');
+      saveBtn.classList.add('bg-emerald-600');
+
+      // Update last saved time
+      const lastSaved = document.getElementById('lastSaved');
+      if (lastSaved) {
+        lastSaved.textContent = `Última actualización: ${new Date().toLocaleString('es-AR')}`;
+      }
+
+      setTimeout(() => {
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = `
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+          </svg>
+          Guardar cambios
+        `;
+        saveBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-700');
+        saveBtn.classList.remove('bg-emerald-600');
+      }, 2000);
+
+    } catch (error: any) {
+      alert('Error: ' + error.message);
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = `
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
+        </svg>
+        Guardar cambios
+      `;
+    }
+  });
+
+  // Initial calculation
+  updateCalculations();
 </script>

@@ -5,6 +5,7 @@
 
 import { supabase } from '../supabase';
 import { PRICING, getPlan } from './plans';
+import { getPricing } from './pricing';
 import type { Subscription, PlanId, SubscriptionStatus } from '../../types/subscription';
 
 /**
@@ -52,8 +53,11 @@ export async function processExpiredSubscriptions(): Promise<ExpirationCheckResu
 
     // 2. Buscar suscripciones de pago con período vencido y en estado past_due
     // que ya pasaron el período de gracia
+    // Usar configuración dinámica de días de gracia
+    const pricingConfig = await getPricing();
+    const graceDays = pricingConfig.grace_period_days ?? PRICING.GRACE_PERIOD_DAYS;
     const gracePeriodEnd = new Date();
-    gracePeriodEnd.setDate(gracePeriodEnd.getDate() - PRICING.GRACE_PERIOD_DAYS);
+    gracePeriodEnd.setDate(gracePeriodEnd.getDate() - graceDays);
 
     const { data: expiredPaid, error: paidError } = await supabase
       .from('subscriptions')
@@ -299,6 +303,10 @@ export async function markAsPastDue(subscriptionId: string): Promise<void> {
     throw updateError;
   }
 
+  // Obtener días de gracia dinámicos
+  const pricingConfig = await getPricing();
+  const graceDays = pricingConfig.grace_period_days ?? PRICING.GRACE_PERIOD_DAYS;
+
   // Registrar evento
   await supabase.from('subscription_events').insert({
     subscription_id: subscriptionId,
@@ -307,7 +315,7 @@ export async function markAsPastDue(subscriptionId: string): Promise<void> {
     event_data: {
       previous_status: subscription.status,
       grace_period_ends: new Date(
-        Date.now() + PRICING.GRACE_PERIOD_DAYS * 24 * 60 * 60 * 1000
+        Date.now() + graceDays * 24 * 60 * 60 * 1000
       ).toISOString(),
     },
   });

@@ -3,7 +3,7 @@
 // Gestiona la creación, cancelación y estado de suscripciones recurrentes
 // =============================================================================
 
-import { PRICING, getPlan, type PlanId } from '../lib/subscription';
+import { PRICING, getPlan, getPlansWithDynamicPricing, getPricing, type PlanId } from '../lib/subscription';
 
 // Configuración de la API de Mercado Pago
 const MP_API_URL = 'https://api.mercadopago.com';
@@ -127,13 +127,17 @@ async function mpFetch<T>(
 /**
  * Crea un plan de suscripción en Mercado Pago
  * Solo necesita ejecutarse una vez para crear los planes base
+ * Usa precios dinámicos desde la base de datos
  */
 export async function createMPPlan(planId: PlanId): Promise<MPPreapprovalPlan> {
-  const plan = getPlan(planId);
+  // Obtener precios dinámicos desde la DB
+  const { plans, pricing } = await getPlansWithDynamicPricing();
+  const plan = plans[planId];
   const siteUrl = import.meta.env.PUBLIC_SITE_URL || 'http://localhost:4321';
   
   // Determinar frecuencia según el plan
   const isAnnual = planId === 'premium_annual';
+  const trialDays = pricing.trial_days ?? PRICING.TRIAL_DAYS;
   
   const payload = {
     reason: `Tiendita ${plan.name}`,
@@ -142,10 +146,10 @@ export async function createMPPlan(planId: PlanId): Promise<MPPreapprovalPlan> {
       frequency_type: 'months' as const,
       transaction_amount: isAnnual ? plan.priceAnnual : plan.priceMonthly,
       currency_id: 'ARS',
-      // Trial de 7 días para plan mensual
+      // Trial dinámico para plan mensual
       ...(planId === 'premium' && {
         free_trial: {
-          frequency: PRICING.TRIAL_DAYS,
+          frequency: trialDays,
           frequency_type: 'days' as const,
         },
       }),
@@ -192,6 +196,7 @@ export async function getOrCreateMPPlan(planId: PlanId): Promise<string> {
 /**
  * Crea una suscripción en Mercado Pago
  * Devuelve el init_point (URL de checkout) para redirigir al usuario
+ * Usa precios dinámicos desde la base de datos
  * 
  * IMPORTANTE: Para checkout redirect (sin pedir tarjeta), NO usar preapproval_plan_id
  * Solo enviar auto_recurring con los datos del plan. MP genera init_point para redirect.
@@ -200,7 +205,10 @@ export async function createSubscription(
   params: CreateSubscriptionParams & { finalPrice?: number }
 ): Promise<{ subscriptionId: string; initPoint: string }> {
   const { storeId, planId, payerEmail, backUrl, externalReference, finalPrice } = params;
-  const plan = getPlan(planId);
+  
+  // Obtener precios dinámicos desde la DB
+  const { plans } = await getPlansWithDynamicPricing();
+  const plan = plans[planId];
   
   // Solo permitir planes de pago
   if (planId === 'free' || planId === 'trial') {
@@ -219,7 +227,7 @@ export async function createSubscription(
     endDate.setMonth(endDate.getMonth() + 12); // 12 meses de suscripción
   }
 
-  // Usar precio final con descuento si se proporciona
+  // Usar precio final con descuento si se proporciona, o precio dinámico de la DB
   const transactionAmount = finalPrice !== undefined 
     ? finalPrice 
     : (isAnnual ? plan.priceAnnual : plan.priceMonthly)
@@ -486,14 +494,19 @@ export function calculatePeriodEnd(startDate: Date, isAnnual: boolean): Date {
 
 /**
  * Verifica si una suscripción está en período de gracia
+ * @param periodEnd - Fecha de fin del período
+ * @param gracePeriodDays - Días de gracia (opcional, usa config dinámica si no se especifica)
  */
-export function isInGracePeriod(
+export async function isInGracePeriod(
   periodEnd: Date,
-  gracePeriodDays: number = PRICING.GRACE_PERIOD_DAYS
-): boolean {
+  gracePeriodDays?: number
+): Promise<boolean> {
+  // Obtener días de gracia dinámicos si no se especifican
+  const effectiveGraceDays = gracePeriodDays ?? (await getPricing()).grace_period_days ?? PRICING.GRACE_PERIOD_DAYS;
+  
   const now = new Date();
   const graceEnd = new Date(periodEnd);
-  graceEnd.setDate(graceEnd.getDate() + gracePeriodDays);
+  graceEnd.setDate(graceEnd.getDate() + effectiveGraceDays);
   
   return now > periodEnd && now <= graceEnd;
 }

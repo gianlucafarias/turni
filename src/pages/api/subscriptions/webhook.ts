@@ -1,27 +1,54 @@
 // =============================================================================
 // Webhook de Mercado Pago para Suscripciones
-// Recibe notificaciones de cambios en suscripciones y pagos
+// Recibe notificaciones de cambios en suscripciones y pagos recurrentes
+// 
+// IMPORTANTE: Mercado Pago envía estos tipos de eventos para suscripciones:
+// - subscription_preapproval: Cambios en el estado de la suscripción
+// - subscription_authorized_payment: Pago recurrente procesado
+// - payment: Pago genérico (puede ser de suscripción)
 // =============================================================================
 
 import type { APIRoute } from 'astro';
-import { supabase } from '../../../lib/supabase';
+import { supabaseAdmin } from '../../../lib/supabase';
 import { processWebhook, getSubscription, mapMPStatusToLocal, calculatePeriodEnd } from '../../../services/subscriptions';
 import type { WebhookEvent } from '../../../services/subscriptions';
 import { markAsPastDue } from '../../../lib/subscription';
+
+// Helper para obtener información de un pago de MP
+async function getMPPayment(paymentId: string) {
+  const MP_ACCESS_TOKEN = import.meta.env.MERCADOPAGO_ACCESS_TOKEN;
+  const response = await fetch(`https://api.mercadopago.com/v1/payments/${paymentId}`, {
+    headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN}` },
+  });
+  if (!response.ok) throw new Error(`Payment not found: ${paymentId}`);
+  return response.json();
+}
+
+// Helper para obtener información de un pago autorizado de suscripción
+async function getMPAuthorizedPayment(authorizedPaymentId: string) {
+  const MP_ACCESS_TOKEN = import.meta.env.MERCADOPAGO_ACCESS_TOKEN;
+  const response = await fetch(`https://api.mercadopago.com/authorized_payments/${authorizedPaymentId}`, {
+    headers: { 'Authorization': `Bearer ${MP_ACCESS_TOKEN}` },
+  });
+  if (!response.ok) throw new Error(`Authorized payment not found: ${authorizedPaymentId}`);
+  return response.json();
+}
 
 export const POST: APIRoute = async ({ request }) => {
   try {
     // Parsear el body del webhook
     const event = await request.json() as WebhookEvent;
     
-    console.log('Received MP Webhook:', {
+    console.log('📥 Received MP Webhook:', {
       type: event.type,
       action: event.action,
       dataId: event.data?.id,
+      timestamp: new Date().toISOString(),
     });
 
     // Validar que tenemos los datos necesarios
     if (!event.type || !event.data?.id) {
+      console.warn('⚠️ Invalid webhook payload - missing type or data.id');
       return new Response(JSON.stringify({ error: 'Invalid webhook payload' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
@@ -49,7 +76,7 @@ export const POST: APIRoute = async ({ request }) => {
       const localStatus = mapMPStatusToLocal(mpSubscription.status);
 
       // Obtener suscripción local para saber plan pendiente
-      const { data: localSub } = await supabase
+      const { data: localSub } = await supabaseAdmin
         .from('subscriptions')
         .select('id, metadata')
         .eq('store_id', storeId)
@@ -61,7 +88,7 @@ export const POST: APIRoute = async ({ request }) => {
       const periodEnd = calculatePeriodEnd(periodStart, isAnnual);
       
       // Actualizar la suscripción en nuestra DB
-      const { error: updateError } = await supabase
+      const { error: updateError } = await supabaseAdmin
         .from('subscriptions')
         .update({
           status: localStatus,
@@ -82,85 +109,205 @@ export const POST: APIRoute = async ({ request }) => {
         .eq('store_id', storeId);
 
       if (updateError) {
-        console.error('Error updating subscription:', updateError);
+        console.error('❌ Error updating subscription:', updateError);
+      } else {
+        console.log('✅ Subscription updated:', { storeId, status: localStatus });
       }
 
       // Registrar el evento
-      await supabase.from('subscription_events').insert({
-        subscription_id: (await supabase
-          .from('subscriptions')
-          .select('id')
-          .eq('store_id', storeId)
-          .single()
-        ).data?.id,
-        store_id: storeId,
-        event_type: `mp_${event.action}`,
-        event_data: {
-          mp_subscription_id: mpSubscription.id,
-          mp_status: mpSubscription.status,
-          local_status: localStatus,
-        },
-      });
+      if (localSub?.id) {
+        await supabaseAdmin.from('subscription_events').insert({
+          subscription_id: localSub.id,
+          store_id: storeId,
+          event_type: `mp_${event.action}`,
+          event_data: {
+            mp_subscription_id: mpSubscription.id,
+            mp_status: mpSubscription.status,
+            local_status: localStatus,
+          },
+        });
+      }
     }
 
-    // Para pagos de suscripción
-    if (event.type === 'subscription_authorized_payment' || event.type === 'payment') {
-      const result = await processWebhook(event);
+    // ==========================================================================
+    // PAGOS RECURRENTES DE SUSCRIPCIÓN
+    // Mercado Pago envía 'subscription_authorized_payment' para cada débito
+    // ==========================================================================
+    if (event.type === 'subscription_authorized_payment') {
+      console.log('💳 Processing subscription payment:', event.data.id);
       
-      if (result && 'preapprovalId' in result) {
-        // Obtener la suscripción para encontrar el store_id
-        const mpSubscription = await getSubscription(result.preapprovalId);
+      try {
+        // Obtener información del pago autorizado
+        const authorizedPayment = await getMPAuthorizedPayment(event.data.id);
+        console.log('📄 Authorized payment info:', {
+          id: authorizedPayment.id,
+          preapproval_id: authorizedPayment.preapproval_id,
+          payment: authorizedPayment.payment,
+        });
+        
+        // Obtener la suscripción de MP para el external_reference
+        const mpSubscription = await getSubscription(authorizedPayment.preapproval_id);
         const externalRef = mpSubscription.external_reference;
         const storeIdMatch = externalRef?.match(/store_([^_]+)/);
         
-        if (storeIdMatch) {
+        if (!storeIdMatch) {
+          console.error('❌ Could not extract store_id from:', externalRef);
+        } else {
           const storeId = storeIdMatch[1];
           
-          // Obtener la suscripción local
-            const { data: subscription } = await supabase
-            .from('subscriptions')
-              .select('id, metadata')
+          // Verificar si ya registramos este pago (evitar duplicados)
+          const { data: existingPayment } = await supabaseAdmin
+            .from('subscription_payments')
+            .select('id')
+            .eq('mp_payment_id', authorizedPayment.payment?.id?.toString())
+            .single();
+          
+          if (existingPayment) {
+            console.log('⚠️ Payment already registered:', authorizedPayment.payment?.id);
+          } else {
+            // Obtener la suscripción local
+            const { data: subscription } = await supabaseAdmin
+              .from('subscriptions')
+              .select('id, plan_id, metadata')
               .eq('store_id', storeId)
               .single();
 
             if (subscription) {
-              // Registrar el pago
-              await supabase.from('subscription_payments').insert({
-                subscription_id: subscription.id,
-                store_id: storeId,
-                amount: mpSubscription.auto_recurring?.transaction_amount || 0,
-                currency: 'ARS',
-                status: result.paymentStatus === 'approved' ? 'approved' : 'pending',
-                mp_payment_id: result.paymentId,
-                mp_status: result.paymentStatus,
-                paid_at: result.paymentStatus === 'approved' 
-                  ? new Date().toISOString() 
-                  : null,
-              });
+              const paymentStatus = authorizedPayment.payment?.status;
+              const paymentAmount = authorizedPayment.transaction_amount || 
+                                    mpSubscription.auto_recurring?.transaction_amount || 0;
+              
+              // Registrar el pago en el historial
+              const { error: insertError } = await supabaseAdmin
+                .from('subscription_payments')
+                .insert({
+                  subscription_id: subscription.id,
+                  store_id: storeId,
+                  amount: paymentAmount,
+                  currency: 'ARS',
+                  status: paymentStatus === 'approved' ? 'approved' : 
+                          paymentStatus === 'rejected' ? 'rejected' : 'pending',
+                  mp_payment_id: authorizedPayment.payment?.id?.toString(),
+                  mp_status: paymentStatus,
+                  mp_status_detail: authorizedPayment.payment?.status_detail,
+                  paid_at: paymentStatus === 'approved' ? new Date().toISOString() : null,
+                });
 
-              // Si el pago fue aprobado, actualizar período y plan (usar el pendiente si existe)
-              if (result.paymentStatus === 'approved') {
-                const pendingPlanId = (subscription.metadata as any)?.pending_plan_id as string | undefined;
-                const isAnnual = pendingPlanId === 'premium_annual';
+              if (insertError) {
+                console.error('❌ Error inserting payment:', insertError);
+              } else {
+                console.log('✅ Payment registered:', {
+                  mp_payment_id: authorizedPayment.payment?.id,
+                  amount: paymentAmount,
+                  status: paymentStatus,
+                });
+              }
+
+              // Si el pago fue aprobado, renovar el período
+              if (paymentStatus === 'approved') {
+                const isAnnual = subscription.plan_id === 'premium_annual';
                 const periodStart = new Date();
                 const periodEnd = calculatePeriodEnd(periodStart, isAnnual);
 
-                await supabase
+                await supabaseAdmin
                   .from('subscriptions')
                   .update({
                     status: 'active',
-                    plan_id: pendingPlanId || 'premium',
                     current_period_start: periodStart.toISOString(),
                     current_period_end: periodEnd.toISOString(),
                     updated_at: new Date().toISOString(),
                   })
                   .eq('id', subscription.id);
-              } else {
-                // Si el pago no fue aprobado, marcar la suscripción como past_due
+                
+                console.log('✅ Subscription period renewed until:', periodEnd.toISOString());
+                
+                // Registrar evento de renovación
+                await supabaseAdmin.from('subscription_events').insert({
+                  subscription_id: subscription.id,
+                  store_id: storeId,
+                  event_type: 'payment_succeeded',
+                  event_data: {
+                    mp_payment_id: authorizedPayment.payment?.id,
+                    amount: paymentAmount,
+                    period_end: periodEnd.toISOString(),
+                  },
+                });
+              } else if (paymentStatus === 'rejected') {
+                // Pago rechazado - marcar como past_due
                 await markAsPastDue(subscription.id);
+                console.log('⚠️ Payment rejected, subscription marked as past_due');
+                
+                // Registrar evento de fallo
+                await supabaseAdmin.from('subscription_events').insert({
+                  subscription_id: subscription.id,
+                  store_id: storeId,
+                  event_type: 'payment_failed',
+                  event_data: {
+                    mp_payment_id: authorizedPayment.payment?.id,
+                    status_detail: authorizedPayment.payment?.status_detail,
+                  },
+                });
               }
             }
+          }
         }
+      } catch (paymentError) {
+        console.error('❌ Error processing subscription payment:', paymentError);
+      }
+    }
+
+    // ==========================================================================
+    // PAGOS GENÉRICOS (puede ser primer pago de suscripción)
+    // ==========================================================================
+    if (event.type === 'payment') {
+      console.log('💰 Processing generic payment:', event.data.id);
+      
+      try {
+        const payment = await getMPPayment(event.data.id);
+        
+        // Solo procesar si está relacionado con una suscripción (tiene preapproval)
+        if (payment.metadata?.preapproval_id) {
+          const mpSubscription = await getSubscription(payment.metadata.preapproval_id);
+          const externalRef = mpSubscription.external_reference;
+          const storeIdMatch = externalRef?.match(/store_([^_]+)/);
+          
+          if (storeIdMatch) {
+            const storeId = storeIdMatch[1];
+            
+            // Verificar duplicados
+            const { data: existingPayment } = await supabaseAdmin
+              .from('subscription_payments')
+              .select('id')
+              .eq('mp_payment_id', payment.id?.toString())
+              .single();
+            
+            if (!existingPayment) {
+              const { data: subscription } = await supabaseAdmin
+                .from('subscriptions')
+                .select('id, plan_id')
+                .eq('store_id', storeId)
+                .single();
+
+              if (subscription) {
+                await supabaseAdmin.from('subscription_payments').insert({
+                  subscription_id: subscription.id,
+                  store_id: storeId,
+                  amount: payment.transaction_amount || 0,
+                  currency: payment.currency_id || 'ARS',
+                  status: payment.status === 'approved' ? 'approved' : 'pending',
+                  mp_payment_id: payment.id?.toString(),
+                  mp_status: payment.status,
+                  mp_status_detail: payment.status_detail,
+                  paid_at: payment.status === 'approved' ? new Date().toISOString() : null,
+                });
+                
+                console.log('✅ Generic payment registered:', payment.id);
+              }
+            }
+          }
+        }
+      } catch (paymentError) {
+        console.error('❌ Error processing generic payment:', paymentError);
       }
     }
 

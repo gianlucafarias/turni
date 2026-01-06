@@ -9,10 +9,10 @@ import {
   PLANS,
   PLAN_COMPARISON,
   getSubscriptionSummary,
-  formatPrice,
   type Subscription,
   type PlanId
 } from '../../lib/subscription';
+import { useDynamicPricing } from '../../hooks/useDynamicPricing';
 
 interface PaymentRecord {
   id: string;
@@ -41,6 +41,9 @@ export function SubscriptionPanel() {
   const [showCancelModal, setShowCancelModal] = useState(false);
   const [cancelReason, setCancelReason] = useState('');
   const [error, setError] = useState<string | null>(null);
+  
+  // Hook de precios dinámicos - DEBE estar antes de cualquier return condicional
+  const { formattedMonthlyPrice, plans: dynamicPlans } = useDynamicPricing();
 
   // Cargar storeId y datos de suscripción
   useEffect(() => {
@@ -206,6 +209,11 @@ export function SubscriptionPanel() {
 
   const { summary } = data;
   const currentPlan = PLANS[summary.planId as PlanId] || PLANS.free;
+  
+  // Obtener precio dinámico según el plan actual
+  const currentPrice = summary.planId === 'premium_annual' 
+    ? `$${(dynamicPlans?.premium_annual.priceAnnual || 49900).toLocaleString('es-AR')}/año`
+    : `${formattedMonthlyPrice}/mes`;
 
   return (
     <div className="space-y-6">
@@ -236,7 +244,7 @@ export function SubscriptionPanel() {
               <div className="text-right">
                 <p className="text-sm text-gray-500">Próxima factura</p>
                 <p className="text-lg font-semibold text-gray-900">
-                  {formatPrice(currentPlan.priceMonthly)}
+                  {currentPrice}
                 </p>
               </div>
             )}
@@ -433,7 +441,7 @@ export function SubscriptionPanel() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <div className="text-sm font-semibold text-gray-900">
-                          {formatPrice(payment.amount)}
+                          ${payment.amount.toLocaleString('es-AR')}
                         </div>
                         <div className="text-xs text-gray-500">
                           {payment.currency}

@@ -6,14 +6,20 @@
 
 import LandingLayout from '../layouts/LandingLayout.astro';
 import MainNavbar from '../components/MainNavbar.astro';
-import { PLANS, PLAN_COMPARISON, PRICING } from '../lib/subscription';
+import { PLAN_COMPARISON, getPlansWithDynamicPricing, calculateAnnualSavings } from '../lib/subscription';
+
+// Obtener planes con precios dinámicos desde la base de datos
+const { plans: dynamicPlans, pricing } = await getPlansWithDynamicPricing();
 
 // Filtrar PLAN_COMPARISON para solo mostrar Turnos y Extras (sin Productos)
 const filteredComparison = PLAN_COMPARISON.filter(cat => cat.category !== 'Productos');
 
+// Calcular ahorro anual
+const annualSavings = calculateAnnualSavings(pricing.premium_monthly, pricing.premium_annual);
+
 const plans = [
   {
-    ...PLANS.free,
+    ...dynamicPlans.free,
     features: [
       '1 servicio para turnos',
       '30 turnos por mes',
@@ -29,7 +35,7 @@ const plans = [
     ],
   },
   {
-    ...PLANS.premium,
+    ...dynamicPlans.premium,
     features: [
       'Servicios ilimitados',
       'Turnos ilimitados',
@@ -43,10 +49,12 @@ const plans = [
     notIncluded: [],
   },
   {
-    ...PLANS.premium_annual,
+    ...dynamicPlans.premium_annual,
+    // Sobrescribir el badge con el cálculo dinámico
+    badge: `${annualSavings.monthsFree} meses gratis`,
     features: [
       'Todo lo de Premium',
-      '2 meses gratis',
+      `${annualSavings.monthsFree} meses gratis`,
       'Precio congelado por 1 año',
       'Soporte VIP',
     ],

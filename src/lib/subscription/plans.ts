@@ -3,26 +3,28 @@
 // =============================================================================
 
 import type { Plan, PlanId, PlanLimits, PremiumFeature } from '../../types/subscription';
+import { getPricing, DEFAULT_PRICING, type PricingConfig } from './pricing';
 
 /**
- * Configuración de precios en ARS
- * Ajustar según el mercado argentino
+ * Configuración de precios en ARS (valores por defecto)
+ * NOTA: Usar getPricing() para obtener valores dinámicos desde la DB
+ * Estos valores se usan como fallback y para compatibilidad con código existente
  */
 export const PRICING = {
   // Plan Premium mensual
-  PREMIUM_MONTHLY: 4990,      // ~5000 ARS/mes
+  PREMIUM_MONTHLY: DEFAULT_PRICING.premium_monthly,
   
   // Plan Premium anual (2 meses gratis = 16% descuento)
-  PREMIUM_ANNUAL: 49900,      // ~50000 ARS/año (vs 59880 mensual)
+  PREMIUM_ANNUAL: DEFAULT_PRICING.premium_annual,
   
   // Días de trial (7 días de prueba con todas las funciones premium)
-  TRIAL_DAYS: 7,
+  TRIAL_DAYS: DEFAULT_PRICING.trial_days ?? 7,
   
   // Límite de turnos por día en plan free
-  FREE_DAILY_APPOINTMENTS: 5,
+  FREE_DAILY_APPOINTMENTS: DEFAULT_PRICING.free_daily_appointments ?? 5,
   
   // Grace period después de fallo de pago (días)
-  GRACE_PERIOD_DAYS: 3,
+  GRACE_PERIOD_DAYS: DEFAULT_PRICING.grace_period_days ?? 3,
 } as const;
 
 /**
@@ -240,4 +242,57 @@ export const PLAN_COMPARISON = [
     ],
   },
 ];
+
+/**
+ * Obtiene los planes con precios dinámicos desde la base de datos
+ * Esta función es async y debe usarse en contextos server-side
+ */
+export async function getPlansWithDynamicPricing(): Promise<{
+  plans: Record<PlanId, Plan>;
+  pricing: PricingConfig;
+}> {
+  const pricing = await getPricing();
+  
+  const dynamicPlans: Record<PlanId, Plan> = {
+    free: {
+      id: 'free',
+      name: 'Gratis',
+      description: 'Perfecto para empezar y probar la plataforma',
+      priceMonthly: 0,
+      limits: FREE_LIMITS,
+    },
+    
+    trial: {
+      id: 'trial',
+      name: 'Prueba Premium',
+      description: 'Acceso completo por tiempo limitado',
+      priceMonthly: 0,
+      trialDays: pricing.trial_days ?? PRICING.TRIAL_DAYS,
+      limits: TRIAL_LIMITS,
+      badge: `${pricing.trial_days ?? PRICING.TRIAL_DAYS} días gratis`,
+    },
+    
+    premium: {
+      id: 'premium',
+      name: 'Premium',
+      description: 'Todo lo que necesitás para tu negocio',
+      priceMonthly: pricing.premium_monthly,
+      limits: PREMIUM_LIMITS,
+      highlighted: true,
+      badge: 'Más popular',
+    },
+    
+    premium_annual: {
+      id: 'premium_annual',
+      name: 'Premium Anual',
+      description: 'Ahorrá 2 meses pagando anual',
+      priceMonthly: Math.round(pricing.premium_annual / 12),
+      priceAnnual: pricing.premium_annual,
+      limits: PREMIUM_LIMITS,
+      badge: '2 meses gratis',
+    },
+  };
+
+  return { plans: dynamicPlans, pricing };
+}
 

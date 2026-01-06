@@ -4,11 +4,10 @@
 // =============================================================================
 
 import { 
-  PAYWALL_MESSAGES, 
-  PLANS,
-  formatPrice,
+  PAYWALL_MESSAGES,
   type PremiumFeature 
 } from '../../lib/subscription';
+import { useDynamicPricing } from '../../hooks/useDynamicPricing';
 
 interface PremiumPaywallProps {
   feature: PremiumFeature;
@@ -24,7 +23,7 @@ export function PremiumPaywall({
   variant = 'inline' 
 }: PremiumPaywallProps) {
   const message = PAYWALL_MESSAGES[feature];
-  const premiumPlan = PLANS.premium;
+  const { formattedMonthlyPrice, trialDays } = useDynamicPricing();
 
   async function handleUpgrade() {
     try {
@@ -91,7 +90,7 @@ export function PremiumPaywall({
           <div className="px-6 py-6">
             <div className="flex items-center justify-center gap-2 mb-6">
               <span className="text-4xl font-bold text-gray-900">
-                {formatPrice(premiumPlan.priceMonthly)}
+                {formattedMonthlyPrice}
               </span>
               <span className="text-gray-500">/mes</span>
             </div>
@@ -156,7 +155,7 @@ export function PremiumPaywall({
       </button>
       
       <p className="text-sm text-gray-500 mt-4">
-        Desde {formatPrice(premiumPlan.priceMonthly)}/mes • 7 días gratis
+        Desde {formattedMonthlyPrice}/mes • {trialDays} días gratis
       </p>
     </div>
   );
