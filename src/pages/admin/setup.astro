@@ -1,0 +1,227 @@
+---
+// =============================================================================
+// Página de Setup de Admin - Permite crear el primer admin
+// =============================================================================
+
+import '../../base.css'
+---
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configurar Admin | Tiendita</title>
+</head>
+<body class="bg-gray-900 min-h-screen flex items-center justify-center p-4">
+  <div class="max-w-md w-full">
+    <div class="bg-gray-800 rounded-2xl p-8 border border-gray-700 shadow-xl">
+      <!-- Header -->
+      <div class="text-center mb-8">
+        <div class="w-16 h-16 bg-gradient-to-br from-indigo-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-4">
+          <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+          </svg>
+        </div>
+        <h1 class="text-2xl font-bold text-white">Configurar Administrador</h1>
+        <p class="text-gray-400 mt-2">Convertite en admin para acceder al panel de control</p>
+      </div>
+
+      <!-- Estado actual -->
+      <div id="status" class="mb-6 p-4 bg-gray-700/50 rounded-xl text-sm text-gray-300">
+        Cargando información...
+      </div>
+
+      <!-- Botón hacer admin -->
+      <button 
+        id="makeAdminBtn"
+        class="w-full py-3 px-4 bg-indigo-600 hover:bg-indigo-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+        disabled
+      >
+        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+        </svg>
+        Convertirme en Admin
+      </button>
+
+      <!-- Mensaje resultado -->
+      <div id="result" class="mt-4 hidden"></div>
+
+      <!-- Link al panel -->
+      <div id="adminLink" class="mt-6 hidden">
+        <a 
+          href="/admin/plans" 
+          class="w-full py-3 px-4 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-xl transition-colors flex items-center justify-center gap-2"
+        >
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+          </svg>
+          Ir a Planes y Precios
+        </a>
+      </div>
+
+      <!-- Secret key input (solo si hay otros admins) -->
+      <div id="secretSection" class="mt-6 hidden">
+        <label class="block text-sm text-gray-400 mb-2">
+          Ya hay administradores. Ingresá el secret key:
+        </label>
+        <input 
+          type="password" 
+          id="secretKey"
+          placeholder="Secret key..."
+          class="w-full px-4 py-3 bg-gray-700 border border-gray-600 rounded-xl text-white focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+        />
+      </div>
+    </div>
+  </div>
+
+  <script>
+    import { createClient } from '@supabase/supabase-js';
+    
+    const supabaseUrl = import.meta.env.PUBLIC_SUPABASE_URL;
+    const supabaseKey = import.meta.env.PUBLIC_SUPABASE_ANON_KEY;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const statusEl = document.getElementById('status');
+    const makeAdminBtn = document.getElementById('makeAdminBtn');
+    const resultEl = document.getElementById('result');
+    const adminLinkEl = document.getElementById('adminLink');
+    const secretSection = document.getElementById('secretSection');
+    const secretKeyInput = document.getElementById('secretKey');
+
+    let currentUserId = null;
+
+    async function checkStatus() {
+      try {
+        // Obtener sesión
+        const { data: { session } } = await supabase.auth.getSession();
+        
+        if (!session?.user) {
+          statusEl.innerHTML = `
+            <div class="text-amber-400">
+              <strong>No hay sesión activa</strong>
+              <p class="mt-1 text-gray-400">Primero tenés que <a href="/login" class="text-indigo-400 underline">iniciar sesión</a>.</p>
+            </div>
+          `;
+          return;
+        }
+
+        currentUserId = session.user.id;
+
+        // Verificar si ya es admin
+        const { data: store, error } = await supabase
+          .from('stores')
+          .select('id, name, is_admin')
+          .eq('user_id', session.user.id)
+          .single();
+
+        if (error || !store) {
+          statusEl.innerHTML = `
+            <div class="text-red-400">
+              <strong>No tenés una tienda creada</strong>
+              <p class="mt-1 text-gray-400">Primero <a href="/registro" class="text-indigo-400 underline">creá tu tienda</a>.</p>
+            </div>
+          `;
+          return;
+        }
+
+        if (store.is_admin) {
+          statusEl.innerHTML = `
+            <div class="text-emerald-400">
+              <strong>¡Ya sos administrador!</strong>
+              <p class="mt-1 text-gray-400">Tienda: ${store.name}</p>
+            </div>
+          `;
+          adminLinkEl?.classList.remove('hidden');
+          return;
+        }
+
+        // Verificar cuántos admins hay
+        const { count: adminCount } = await supabase
+          .from('stores')
+          .select('*', { count: 'exact', head: true })
+          .eq('is_admin', true);
+
+        if ((adminCount ?? 0) > 0) {
+          statusEl.innerHTML = `
+            <div class="text-amber-400">
+              <strong>Ya hay ${adminCount} admin(s)</strong>
+              <p class="mt-1 text-gray-400">Necesitás el secret key para convertirte en admin.</p>
+            </div>
+          `;
+          secretSection?.classList.remove('hidden');
+        } else {
+          statusEl.innerHTML = `
+            <div class="text-blue-400">
+              <strong>No hay administradores todavía</strong>
+              <p class="mt-1 text-gray-400">Serás el primer admin de la plataforma.</p>
+              <p class="mt-1 text-gray-500">Usuario: ${session.user.email}</p>
+              <p class="text-gray-500">Tienda: ${store.name}</p>
+            </div>
+          `;
+        }
+
+        makeAdminBtn.disabled = false;
+
+      } catch (err) {
+        statusEl.innerHTML = `<div class="text-red-400">Error: ${err.message}</div>`;
+      }
+    }
+
+    makeAdminBtn?.addEventListener('click', async () => {
+      if (!currentUserId) return;
+      
+      makeAdminBtn.disabled = true;
+      makeAdminBtn.textContent = 'Procesando...';
+
+      try {
+        const response = await fetch('/api/admin/make-admin', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            user_id: currentUserId,
+            secret_key: secretKeyInput?.value || ''
+          })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+          resultEl.innerHTML = `
+            <div class="p-4 bg-emerald-500/20 border border-emerald-500/30 rounded-xl text-emerald-300">
+              <strong>¡Éxito!</strong>
+              <p class="mt-1">${data.message}</p>
+            </div>
+          `;
+          resultEl?.classList.remove('hidden');
+          adminLinkEl?.classList.remove('hidden');
+          makeAdminBtn.textContent = '✓ Ya sos Admin';
+        } else {
+          resultEl.innerHTML = `
+            <div class="p-4 bg-red-500/20 border border-red-500/30 rounded-xl text-red-300">
+              <strong>Error</strong>
+              <p class="mt-1">${data.error}</p>
+            </div>
+          `;
+          resultEl?.classList.remove('hidden');
+          makeAdminBtn.disabled = false;
+          makeAdminBtn.textContent = 'Reintentar';
+        }
+
+      } catch (err) {
+        resultEl.innerHTML = `
+          <div class="p-4 bg-red-500/20 border border-red-500/30 rounded-xl text-red-300">
+            Error de conexión
+          </div>
+        `;
+        resultEl?.classList.remove('hidden');
+        makeAdminBtn.disabled = false;
+        makeAdminBtn.textContent = 'Reintentar';
+      }
+    });
+
+    // Iniciar
+    checkStatus();
+  </script>
+</body>
+</html>

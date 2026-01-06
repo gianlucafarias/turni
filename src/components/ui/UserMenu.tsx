@@ -126,11 +126,37 @@ export default function UserMenu({ store }: Props) {
   // Controlar visibilidad de botones de auth basado en la sesión
   useEffect(() => {
     const authButtons = document.getElementById('auth-buttons');
-    if (authButtons) {
-      if (!session) {
+    const navLoginLink = document.getElementById('nav-login-link');
+    const mobileLoginLink = document.getElementById('mobile-login-link');
+    const mobileAuthButtons = document.getElementById('mobile-auth-buttons');
+    
+    if (!session) {
+      // Mostrar botones de auth si no hay sesión
+      if (authButtons) {
         authButtons.style.display = 'flex';
-      } else {
+      }
+      if (navLoginLink) {
+        navLoginLink.style.display = 'block';
+      }
+      if (mobileLoginLink) {
+        mobileLoginLink.style.display = 'block';
+      }
+      if (mobileAuthButtons) {
+        mobileAuthButtons.style.display = 'flex';
+      }
+    } else {
+      // Ocultar botones de auth si hay sesión
+      if (authButtons) {
         authButtons.style.display = 'none';
+      }
+      if (navLoginLink) {
+        navLoginLink.style.display = 'none';
+      }
+      if (mobileLoginLink) {
+        mobileLoginLink.style.display = 'none';
+      }
+      if (mobileAuthButtons) {
+        mobileAuthButtons.style.display = 'none';
       }
     }
   }, [session]);
@@ -149,7 +175,7 @@ export default function UserMenu({ store }: Props) {
       {userStore && (
         <a
           href={`/${userStore.id}`}
-          className="hidden sm:flex items-center space-x-2 px-4 py-2 text-sm font-medium text-gray-700 hover:text-indigo-600 hover:bg-gray-50 rounded-lg transition-colors"
+          className="hidden sm:flex items-center space-x-2 px-4 py-2 text-sm font-medium text-slate-200 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
         >
           <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
@@ -162,29 +188,29 @@ export default function UserMenu({ store }: Props) {
         <button
           ref={buttonRef}
           type="button"
-          className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-gray-50 transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2"
+          className="flex items-center space-x-3 px-3 py-2 rounded-lg hover:bg-white/10 transition-colors focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-2 focus:ring-offset-surface-900"
           onClick={() => setIsOpen(!isOpen)}
           aria-expanded={isOpen}
           aria-haspopup="true"
         >
           <div className="hidden sm:block text-right">
-            <p className="text-sm font-medium text-gray-900">{userName}</p>
+            <p className="text-sm font-medium text-white">{userName}</p>
             {userStore && (
-              <p className="text-xs text-gray-500">{userStore.name}</p>
+              <p className="text-xs text-slate-300">{userStore.name}</p>
             )}
           </div>
           {profileImageUrl ? (
             <img 
               src={profileImageUrl} 
               alt={userStore?.name || userName} 
-              className="h-9 w-9 rounded-full object-cover border-2 border-white shadow-sm"
+              className="h-9 w-9 rounded-full object-cover border-2 border-white/20 shadow-sm"
             />
           ) : (
-            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-400 to-purple-500 flex items-center justify-center shadow-sm">
+            <div className="h-9 w-9 rounded-full bg-gradient-to-br from-brand-400 to-brand-600 flex items-center justify-center shadow-sm">
               <span className="text-sm font-semibold text-white">{userInitial}</span>
             </div>
           )}
-          <svg className="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg className="h-5 w-5 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
           </svg>
         </button>

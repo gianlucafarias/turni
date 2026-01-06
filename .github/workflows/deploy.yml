@@ -148,8 +148,8 @@ jobs:
             set -e
             cd /opt/turni 2>/dev/null || cd /opt/tiendita
             
-            # Construir y levantar contenedores
-            docker compose build --no-cache
+            # Construir y levantar contenedores (sin --no-cache para usar cache de Docker)
+            docker compose build
             docker compose up -d
             
             # Esperar a que la aplicación esté lista

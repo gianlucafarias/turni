@@ -1,47 +1,51 @@
 ---
 import LandingLayout from '../layouts/LandingLayout.astro';
 import MainNavbar from '../components/MainNavbar.astro';
+import { getPricing } from '../lib/subscription/pricing';
+
+// Obtener precios dinámicos desde la base de datos
+const pricing = await getPricing();
+const formattedMonthlyPrice = `$${pricing.premium_monthly.toLocaleString('es-AR')}`;
+const trialDays = pricing.trial_days ?? 7;
 ---
 
 <LandingLayout 
-  title="Gestioná tus turnos de forma profesional" 
+  title="Tu agenda de turnos, simplificada" 
   description="La plataforma de gestión de turnos que tu negocio necesita. Agendá, organizá y automatizá tus citas con recordatorios por WhatsApp."
 >
   <MainNavbar />
   
   <!-- Hero Section -->
-  <section class="relative min-h-[90vh] flex items-center overflow-hidden bg-gradient-to-br from-surface-900 via-surface-800 to-surface-900">
-    <!-- Decorative elements -->
-    <div class="absolute inset-0">
-      <div class="absolute top-0 left-1/4 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl"></div>
-      <div class="absolute bottom-0 right-1/4 w-80 h-80 bg-brand-600/10 rounded-full blur-3xl"></div>
-      <div class="absolute top-1/2 left-0 w-64 h-64 bg-emerald-500/5 rounded-full blur-3xl"></div>
-    </div>
+  <section class="hero-mesh relative pt-32 pb-20 lg:pt-48 lg:pb-32 overflow-hidden min-h-[90vh] flex items-center">
+    <div class="absolute top-1/4 left-0 w-96 h-96 bg-brand-500/20 rounded-full blur-[100px] -translate-x-1/2 pointer-events-none"></div>
+    <div class="absolute bottom-0 right-0 w-[500px] h-[500px] bg-blue-600/10 rounded-full blur-[120px] translate-x-1/3 pointer-events-none"></div>
     
-    <div class="relative max-w-7xl mx-auto px-5 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-24">
-      <div class="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 w-full">
+      <div class="grid lg:grid-cols-2 gap-16 lg:gap-12 items-center">
         <!-- Left: Content -->
-        <div class="text-center lg:text-left space-y-6 sm:space-y-8 animate-fade-in">
-          <div class="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-brand-500/20 border border-brand-500/30 text-brand-300 text-xs sm:text-sm font-medium backdrop-blur-sm">
-            <span class="w-2 h-2 bg-brand-400 rounded-full animate-pulse"></span>
-            Gratis para empezar • Sin tarjeta
+        <div class="text-center lg:text-left">
+          <div class="inline-flex items-center gap-2 bg-white/5 backdrop-blur-sm px-4 py-2 rounded-full border border-white/10 mb-8 animate-fade-in-up">
+            <span class="relative flex h-2.5 w-2.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400"></span>
+            </span>
+            <span class="text-sm text-slate-200 font-medium tracking-wide">Gratis para empezar · Sin tarjeta</span>
           </div>
           
-          <h1 class="text-3xl sm:text-4xl md:text-5xl lg:text-6xl xl:text-7xl font-display font-bold text-white leading-[1.1] tracking-tight">
-            Tu agenda de turnos,
-            <span class="block bg-gradient-to-r from-brand-400 to-emerald-400 bg-clip-text text-transparent mt-1 sm:mt-2">
-              simplificada.
-            </span>
+          <h1 class="text-5xl sm:text-6xl lg:text-7xl font-display font-extrabold text-white leading-[1.1] mb-8 tracking-tight">
+            Tu agenda de <br/>
+            turnos, <br/>
+            <span class="text-gradient">simplificada.</span>
           </h1>
           
-          <p class="text-base sm:text-lg lg:text-xl text-surface-300 leading-relaxed max-w-xl mx-auto lg:mx-0">
+          <p class="text-lg sm:text-xl text-slate-300 mb-10 max-w-xl mx-auto lg:mx-0 leading-relaxed font-light">
             Dejá de perder turnos por mensajes de WhatsApp. Con turni.pro tus clientes reservan online y vos gestionás todo desde un solo lugar.
           </p>
           
-          <div class="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center lg:justify-start">
+          <div class="flex flex-col sm:flex-row gap-4 justify-center lg:justify-start">
             <a 
               href="/registro" 
-              class="group inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 bg-brand-500 text-white font-bold rounded-2xl hover:bg-brand-400 shadow-xl shadow-brand-500/25 hover:shadow-brand-400/30 transition-all transform hover:-translate-y-0.5"
+              class="bg-brand-500 hover:bg-brand-400 text-white px-8 py-4 rounded-full font-bold text-lg transition-all shadow-glow flex items-center justify-center gap-2 group"
             >
               Empezar gratis
               <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -50,7 +54,7 @@ import MainNavbar from '../components/MainNavbar.astro';
             </a>
             <a 
               href="#demo" 
-              class="inline-flex items-center justify-center gap-2 px-6 sm:px-8 py-3.5 sm:py-4 text-white font-semibold rounded-2xl border-2 border-surface-600 hover:border-surface-500 hover:bg-surface-800/50 transition-all backdrop-blur-sm"
+              class="bg-white/5 hover:bg-white/10 border border-white/10 text-white px-8 py-4 rounded-full font-bold text-lg transition-all flex items-center justify-center gap-2 backdrop-blur-sm"
             >
               <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM9.555 7.168A1 1 0 008 8v4a1 1 0 001.555.832l3-2a1 1 0 000-1.664l-3-2z" clip-rule="evenodd" />
@@ -58,118 +62,65 @@ import MainNavbar from '../components/MainNavbar.astro';
               Ver demo
             </a>
           </div>
-          
-          <!-- Stats -->
-          
         </div>
         
         <!-- Right: Dashboard Mockup -->
-        <div class="relative animate-fade-in-up mt-4 lg:mt-0" style="animation-delay: 0.2s;">
-          <!-- Main Dashboard Card -->
-          <div class="relative bg-white rounded-2xl sm:rounded-[2rem] shadow-2xl p-4 sm:p-6 md:p-8 border border-surface-200/50 transform lg:rotate-1 hover:rotate-0 transition-transform duration-500 mx-2 sm:mx-0">
+        <div class="relative lg:ml-auto w-full max-w-md mx-auto lg:max-w-full">
+          <div class="glass-card rounded-3xl p-6 md:p-8 shadow-2xl relative z-10 border border-white/10">
             <!-- Header -->
-            <div class="flex items-center justify-between mb-4 sm:mb-6">
-              <div class="flex items-center gap-2 sm:gap-3">
-                <div class="w-8 sm:w-10 h-8 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/20">
-                  <svg class="w-4 sm:w-5 h-4 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <div>
-                  <p class="font-bold text-surface-900 text-sm sm:text-base">Turnos de hoy</p>
-                  <p class="text-[10px] sm:text-xs text-surface-500 font-medium">Viernes 2 de enero</p>
-                </div>
+            <div class="flex justify-between items-center mb-8 border-b border-gray-100 dark:border-gray-700 pb-4">
+              <div>
+                <h3 class="font-display font-bold text-slate-900 dark:text-white text-xl">Turnos de hoy</h3>
+                <p class="text-sm text-slate-500 dark:text-slate-400 font-medium">Viernes, 2 de Enero</p>
               </div>
-              <div class="flex gap-2">
-                <span class="px-2 sm:px-3 py-1 sm:py-1.5 bg-emerald-50 text-emerald-700 text-[8px] sm:text-[10px] font-bold rounded-md sm:rounded-lg border border-emerald-100 uppercase tracking-wider">3 confirmados</span>
+              <div class="flex items-center gap-2 bg-green-50 dark:bg-green-900/30 pl-2 pr-3 py-1.5 rounded-full border border-green-100 dark:border-green-800">
+                <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
+                </svg>
+                <span class="text-xs font-bold text-green-700 dark:text-green-300 uppercase tracking-wide">Activo</span>
               </div>
             </div>
             
             <!-- Appointments List -->
-            <div class="space-y-2 sm:space-y-3">
-              <!-- Appointment 1 -->
-              <div class="flex items-center gap-2 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-brand-50/50 border border-brand-100/50 group hover:bg-brand-50 transition-colors">
-                <div class="w-11 sm:w-14 h-11 sm:h-14 rounded-lg sm:rounded-xl bg-brand-600 flex flex-col items-center justify-center text-white shadow-lg shadow-brand-600/20">
-                  <span class="text-[8px] sm:text-[10px] font-medium opacity-80">HOY</span>
-                  <span class="text-sm sm:text-lg font-bold leading-none">10:00</span>
+            <div class="space-y-4">
+              <div class="group flex items-center gap-4 p-4 bg-white dark:bg-surface-800 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-2xl transition-all shadow-sm border border-gray-100 dark:border-gray-700 cursor-pointer">
+                <div class="bg-brand-500 text-white p-3 rounded-xl text-center min-w-[4rem] shadow-lg shadow-brand-500/20 group-hover:scale-105 transition-transform">
+                  <span class="block text-[10px] font-bold opacity-80 uppercase tracking-wider">HOY</span>
+                  <span class="block text-lg font-bold">10:00</span>
                 </div>
                 <div class="flex-1 min-w-0">
-                  <p class="font-bold text-surface-900 text-sm sm:text-base truncate">María González</p>
-                  <p class="text-xs sm:text-sm text-surface-500 truncate">Consulta general</p>
+                  <h4 class="font-bold text-slate-900 dark:text-white truncate">María González</h4>
+                  <p class="text-sm text-slate-500 dark:text-slate-400 truncate">Consulta general</p>
                 </div>
-                <span class="px-2 sm:px-3 py-1 sm:py-1.5 bg-emerald-100 text-emerald-700 text-[8px] sm:text-[10px] font-bold rounded-md sm:rounded-lg uppercase tracking-wider whitespace-nowrap">Confirmado</span>
+                <span class="flex-shrink-0 bg-green-100 dark:bg-green-500/20 text-green-700 dark:text-green-300 text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wide">Confirmado</span>
               </div>
               
-              <!-- Appointment 2 -->
-              <div class="flex items-center gap-2 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-surface-50 border border-surface-200/50 group hover:bg-surface-100/50 transition-colors">
-                <div class="w-11 sm:w-14 h-11 sm:h-14 rounded-lg sm:rounded-xl bg-surface-200 flex flex-col items-center justify-center text-surface-600">
-                  <span class="text-[8px] sm:text-[10px] font-medium opacity-80">HOY</span>
-                  <span class="text-sm sm:text-lg font-bold leading-none">14:30</span>
+              <div class="group flex items-center gap-4 p-4 bg-white dark:bg-surface-800 hover:bg-slate-50 dark:hover:bg-slate-700 rounded-2xl transition-all shadow-sm border border-gray-100 dark:border-gray-700 cursor-pointer">
+                <div class="bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 p-3 rounded-xl text-center min-w-[4rem] group-hover:scale-105 transition-transform">
+                  <span class="block text-[10px] font-bold opacity-80 uppercase tracking-wider">HOY</span>
+                  <span class="block text-lg font-bold">14:30</span>
                 </div>
                 <div class="flex-1 min-w-0">
-                  <p class="font-bold text-surface-900 text-sm sm:text-base truncate">Juan Pérez</p>
-                  <p class="text-xs sm:text-sm text-surface-500 truncate">Corte de pelo</p>
+                  <h4 class="font-bold text-slate-900 dark:text-white truncate">Juan Pérez</h4>
+                  <p class="text-sm text-slate-500 dark:text-slate-400 truncate">Corte de pelo</p>
                 </div>
-                <span class="px-2 sm:px-3 py-1 sm:py-1.5 bg-amber-100 text-amber-700 text-[8px] sm:text-[10px] font-bold rounded-md sm:rounded-lg uppercase tracking-wider whitespace-nowrap">Pendiente</span>
-              </div>
-              
-              <!-- Appointment 3 - Hidden on very small screens -->
-              <div class="hidden xs:flex items-center gap-2 sm:gap-4 p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-surface-50 border border-surface-200/50 group hover:bg-surface-100/50 transition-colors">
-                <div class="w-11 sm:w-14 h-11 sm:h-14 rounded-lg sm:rounded-xl bg-surface-200 flex flex-col items-center justify-center text-surface-600">
-                  <span class="text-[8px] sm:text-[10px] font-medium opacity-80">HOY</span>
-                  <span class="text-sm sm:text-lg font-bold leading-none">17:00</span>
-                </div>
-                <div class="flex-1 min-w-0">
-                  <p class="font-bold text-surface-900 text-sm sm:text-base truncate">Ana Martínez</p>
-                  <p class="text-xs sm:text-sm text-surface-500 truncate">Masaje relajante</p>
-                </div>
-                <span class="px-2 sm:px-3 py-1 sm:py-1.5 bg-emerald-100 text-emerald-700 text-[8px] sm:text-[10px] font-bold rounded-md sm:rounded-lg uppercase tracking-wider whitespace-nowrap">Confirmado</span>
+                <span class="flex-shrink-0 bg-amber-100 dark:bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[10px] font-bold px-2.5 py-1 rounded-md uppercase tracking-wide">Pendiente</span>
               </div>
             </div>
             
             <!-- Quick Stats -->
-            <div class="grid grid-cols-3 gap-2 sm:gap-3 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-surface-200/50">
-              <div class="text-center p-2 sm:p-3 rounded-lg sm:rounded-xl bg-surface-50">
-                <p class="text-lg sm:text-2xl font-bold text-surface-900">12</p>
-                <p class="text-[8px] sm:text-[10px] font-semibold text-surface-500 uppercase tracking-wider">Esta semana</p>
+            <div class="grid grid-cols-3 gap-4 mt-8 pt-6 border-t border-gray-100 dark:border-gray-700">
+              <div class="text-center">
+                <div class="text-2xl font-bold text-slate-900 dark:text-white font-display">12</div>
+                <div class="text-[10px] text-slate-400 uppercase tracking-wider font-bold mt-1">Esta semana</div>
               </div>
-              <div class="text-center p-2 sm:p-3 rounded-lg sm:rounded-xl bg-surface-50">
-                <p class="text-lg sm:text-2xl font-bold text-emerald-600">95%</p>
-                <p class="text-[8px] sm:text-[10px] font-semibold text-surface-500 uppercase tracking-wider">Confirmados</p>
+              <div class="text-center border-x border-gray-100 dark:border-gray-700">
+                <div class="text-2xl font-bold text-brand-500 font-display">95%</div>
+                <div class="text-[10px] text-slate-400 uppercase tracking-wider font-bold mt-1">Confirmados</div>
               </div>
-              <div class="text-center p-2 sm:p-3 rounded-lg sm:rounded-xl bg-surface-50">
-                <p class="text-lg sm:text-2xl font-bold text-surface-900">47</p>
-                <p class="text-[8px] sm:text-[10px] font-semibold text-surface-500 uppercase tracking-wider">Clientes</p>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Floating WhatsApp notification - Hidden on mobile -->
-          <div class="hidden sm:block absolute top-4 -right-8 bg-white rounded-2xl shadow-xl p-4 border border-surface-200/50 animate-float max-w-[200px]">
-            <div class="flex items-start gap-3">
-              <div class="w-10 h-10 rounded-xl bg-emerald-500 flex items-center justify-center flex-shrink-0">
-                <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 24 24">
-                  <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-                </svg>
-              </div>
-              <div class="flex-1 min-w-0">
-                <p class="text-xs font-bold text-surface-900">Recordatorio enviado</p>
-                <p class="text-[10px] text-surface-500 mt-0.5">María González - 10:00</p>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Floating new appointment badge - Hidden on mobile -->
-          <div class="hidden sm:block absolute bottom-8 -left-8 bg-white rounded-2xl shadow-xl p-4 border border-surface-200/50 animate-float" style="animation-delay: 1s;">
-            <div class="flex items-center gap-3">
-              <div class="w-10 h-10 rounded-xl bg-brand-500 flex items-center justify-center">
-                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" />
-                </svg>
-              </div>
-              <div>
-                <p class="text-xs font-bold text-surface-900">Nuevo turno</p>
-                <p class="text-[10px] text-surface-500">Reservado online</p>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-slate-900 dark:text-white font-display">47</div>
+                <div class="text-[10px] text-slate-400 uppercase tracking-wider font-bold mt-1">Clientes</div>
               </div>
             </div>
           </div>
@@ -178,106 +129,103 @@ import MainNavbar from '../components/MainNavbar.astro';
     </div>
     
     <!-- Scroll indicator -->
-    <div class="absolute bottom-8 left-1/2 -translate-x-1/2 animate-bounce">
-      <svg class="w-6 h-6 text-surface-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+    <div class="absolute bottom-8 left-1/2 transform -translate-x-1/2 animate-bounce hidden lg:block">
+      <svg class="w-8 h-8 text-slate-500/50" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
       </svg>
     </div>
   </section>
 
   <!-- Features Grid -->
-  <section class="py-14 sm:py-20 lg:py-28 bg-white">
-    <div class="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
-      <div class="text-center mb-10 sm:mb-16">
-        <span class="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-brand-50 text-brand-700 text-xs sm:text-sm font-semibold mb-3 sm:mb-4">
-          <svg class="w-3.5 sm:w-4 h-3.5 sm:h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path fill-rule="evenodd" d="M11.3 1.046A1 1 0 0112 2v5h4a1 1 0 01.82 1.573l-7 10A1 1 0 018 18v-5H4a1 1 0 01-.82-1.573l7-10a1 1 0 011.12-.38z" clip-rule="evenodd" />
-          </svg>
-          Funcionalidades
+  <section class="py-24 lg:py-32 bg-slate-50 dark:bg-surface-800">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center max-w-3xl mx-auto mb-20">
+        <span class="inline-block py-1 px-3 rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 text-xs font-bold uppercase tracking-wide mb-6">
+          ⚡ Funcionalidades
         </span>
-        <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold text-surface-900 mb-3 sm:mb-4">
-          Todo lo que necesitás en un solo lugar
+        <h2 class="text-3xl md:text-5xl font-display font-bold text-slate-900 dark:text-white mb-6 tracking-tight">
+          Todo lo que necesitás <br class="hidden md:block"/> en un solo lugar
         </h2>
-        <p class="text-base sm:text-lg text-surface-600 max-w-2xl mx-auto">
-          Herramientas diseñadas para que tu negocio funcione mejor, sin complicaciones
+        <p class="text-slate-600 dark:text-slate-400 text-xl font-light leading-relaxed">
+          Herramientas diseñadas para que tu negocio funcione mejor, sin complicaciones técnicas.
         </p>
       </div>
       
-      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
+      <div class="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
         <!-- Feature 1: Agenda Online -->
-        <div class="group p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-brand-50 to-brand-100/50 border border-brand-100 hover:shadow-xl hover:shadow-brand-500/10 transition-all duration-300">
-          <div class="w-12 sm:w-14 h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-brand-600 flex items-center justify-center mb-4 sm:mb-6 shadow-lg shadow-brand-600/20 group-hover:scale-110 transition-transform">
-            <svg class="w-6 sm:w-7 h-6 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-white dark:bg-surface-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 group">
+          <div class="w-14 h-14 bg-brand-50 dark:bg-brand-900/20 rounded-2xl flex items-center justify-center text-brand-600 dark:text-brand-400 mb-6 group-hover:bg-brand-500 group-hover:text-white transition-colors">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
             </svg>
           </div>
-          <h3 class="text-lg sm:text-xl font-bold text-surface-900 mb-2 sm:mb-3">Agenda online 24/7</h3>
-          <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3 font-display">Agenda online 24/7</h3>
+          <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
             Tus clientes reservan cuando quieran, desde cualquier dispositivo. Vos recibís la notificación al instante.
           </p>
         </div>
         
         <!-- Feature 2: WhatsApp -->
-        <div class="group p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-emerald-50 to-emerald-100/50 border border-emerald-100 hover:shadow-xl hover:shadow-emerald-500/10 transition-all duration-300">
-          <div class="w-12 sm:w-14 h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-emerald-600 flex items-center justify-center mb-4 sm:mb-6 shadow-lg shadow-emerald-600/20 group-hover:scale-110 transition-transform">
-            <svg class="w-6 sm:w-7 h-6 sm:h-7 text-white" fill="currentColor" viewBox="0 0 24 24">
+        <div class="bg-white dark:bg-surface-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 group">
+          <div class="w-14 h-14 bg-emerald-50 dark:bg-emerald-900/20 rounded-2xl flex items-center justify-center text-emerald-600 dark:text-emerald-400 mb-6 group-hover:bg-emerald-500 group-hover:text-white transition-colors">
+            <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 24 24">
               <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
             </svg>
           </div>
-          <h3 class="text-lg sm:text-xl font-bold text-surface-900 mb-2 sm:mb-3">Recordatorios por WhatsApp</h3>
-          <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3 font-display">Recordatorios por WhatsApp</h3>
+          <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
             Enviá recordatorios automáticos el día del turno. Reducí los no-shows hasta un 40%.
           </p>
         </div>
         
         <!-- Feature 3: Services -->
-        <div class="group p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-purple-50 to-purple-100/50 border border-purple-100 hover:shadow-xl hover:shadow-purple-500/10 transition-all duration-300">
-          <div class="w-12 sm:w-14 h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-purple-600 flex items-center justify-center mb-4 sm:mb-6 shadow-lg shadow-purple-600/20 group-hover:scale-110 transition-transform">
-            <svg class="w-6 sm:w-7 h-6 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+        <div class="bg-white dark:bg-surface-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 group">
+          <div class="w-14 h-14 bg-purple-50 dark:bg-purple-900/20 rounded-2xl flex items-center justify-center text-purple-600 dark:text-purple-400 mb-6 group-hover:bg-purple-500 group-hover:text-white transition-colors">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4" />
             </svg>
           </div>
-          <h3 class="text-lg sm:text-xl font-bold text-surface-900 mb-2 sm:mb-3">Servicios configurables</h3>
-          <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3 font-display">Servicios configurables</h3>
+          <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
             Definí tus servicios con duración y precio. Tus clientes eligen lo que necesitan al reservar.
           </p>
         </div>
         
         <!-- Feature 4: Schedule -->
-        <div class="group p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-amber-50 to-amber-100/50 border border-amber-100 hover:shadow-xl hover:shadow-amber-500/10 transition-all duration-300">
-          <div class="w-12 sm:w-14 h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-amber-600 flex items-center justify-center mb-4 sm:mb-6 shadow-lg shadow-amber-600/20 group-hover:scale-110 transition-transform">
-            <svg class="w-6 sm:w-7 h-6 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-white dark:bg-surface-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 group">
+          <div class="w-14 h-14 bg-amber-50 dark:bg-amber-900/20 rounded-2xl flex items-center justify-center text-amber-600 dark:text-amber-400 mb-6 group-hover:bg-amber-500 group-hover:text-white transition-colors">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
-          <h3 class="text-lg sm:text-xl font-bold text-surface-900 mb-2 sm:mb-3">Horarios flexibles</h3>
-          <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3 font-display">Horarios flexibles</h3>
+          <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
             Configurá tu disponibilidad por día. Bloqueá horarios especiales o días de descanso fácilmente.
           </p>
         </div>
         
         <!-- Feature 5: Clients -->
-        <div class="group p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-rose-50 to-rose-100/50 border border-rose-100 hover:shadow-xl hover:shadow-rose-500/10 transition-all duration-300">
-          <div class="w-12 sm:w-14 h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-rose-600 flex items-center justify-center mb-4 sm:mb-6 shadow-lg shadow-rose-600/20 group-hover:scale-110 transition-transform">
-            <svg class="w-6 sm:w-7 h-6 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-white dark:bg-surface-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 group">
+          <div class="w-14 h-14 bg-rose-50 dark:bg-rose-900/20 rounded-2xl flex items-center justify-center text-rose-600 dark:text-rose-400 mb-6 group-hover:bg-rose-500 group-hover:text-white transition-colors">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
             </svg>
           </div>
-          <h3 class="text-lg sm:text-xl font-bold text-surface-900 mb-2 sm:mb-3">Gestión de clientes</h3>
-          <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3 font-display">Gestión de clientes</h3>
+          <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
             Base de datos automática con historial completo. Conocé a tus clientes VIP y frecuentes.
           </p>
         </div>
         
         <!-- Feature 6: Stats -->
-        <div class="group p-5 sm:p-8 rounded-2xl sm:rounded-3xl bg-gradient-to-br from-cyan-50 to-cyan-100/50 border border-cyan-100 hover:shadow-xl hover:shadow-cyan-500/10 transition-all duration-300">
-          <div class="w-12 sm:w-14 h-12 sm:h-14 rounded-xl sm:rounded-2xl bg-cyan-600 flex items-center justify-center mb-4 sm:mb-6 shadow-lg shadow-cyan-600/20 group-hover:scale-110 transition-transform">
-            <svg class="w-6 sm:w-7 h-6 sm:h-7 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="bg-white dark:bg-surface-900 p-8 rounded-3xl border border-slate-100 dark:border-slate-800 shadow-card hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 group">
+          <div class="w-14 h-14 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center text-blue-600 dark:text-blue-400 mb-6 group-hover:bg-blue-500 group-hover:text-white transition-colors">
+            <svg class="w-7 h-7" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
           </div>
-          <h3 class="text-lg sm:text-xl font-bold text-surface-900 mb-2 sm:mb-3">Estadísticas claras</h3>
-          <p class="text-sm sm:text-base text-surface-600 leading-relaxed">
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3 font-display">Estadísticas claras</h3>
+          <p class="text-slate-600 dark:text-slate-400 leading-relaxed">
             Métricas en tiempo real: turnos confirmados, cancelaciones, ingresos y más.
           </p>
         </div>
@@ -286,492 +234,268 @@ import MainNavbar from '../components/MainNavbar.astro';
   </section>
 
   <!-- Demo Section: Booking Widget -->
-  <section id="demo" class="py-14 sm:py-20 lg:py-28 bg-gradient-to-b from-surface-50 to-white">
-    <div class="max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
-      <div class="grid lg:grid-cols-2 gap-10 lg:gap-20 items-center">
+  <section id="demo" class="py-24 lg:py-32 bg-white dark:bg-surface-900 overflow-hidden relative">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="grid lg:grid-cols-2 gap-20 items-center">
         <!-- Left: Content -->
-        <div class="space-y-6 sm:space-y-8">
-          <span class="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-emerald-50 text-emerald-700 text-xs sm:text-sm font-semibold">
-            <svg class="w-3.5 sm:w-4 h-3.5 sm:h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <div class="order-2 lg:order-1">
+          <div class="flex items-center gap-2 mb-6">
+            <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
             </svg>
-            Así lo ven tus clientes
-          </span>
+            <span class="text-sm font-bold text-brand-500 uppercase tracking-widest">Así lo ven tus clientes</span>
+          </div>
           
-          <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold text-surface-900 leading-tight">
-            Reservar un turno
-            <span class="block text-brand-600">nunca fue tan fácil</span>
+          <h2 class="text-4xl lg:text-5xl font-display font-bold text-slate-900 dark:text-white mb-6 leading-tight">
+            Reservar un turno <br/>
+            <span class="text-brand-500">nunca fue tan fácil</span>
           </h2>
           
-          <p class="text-base sm:text-lg text-surface-600 leading-relaxed">
+          <p class="text-lg text-slate-600 dark:text-slate-400 mb-12 leading-relaxed">
             Tus clientes acceden a tu página personalizada, eligen el servicio, fecha y hora disponible, y listo. Sin mensajes de ida y vuelta, sin confusiones.
           </p>
           
-          <div class="space-y-3 sm:space-y-4">
-            <div class="flex items-start gap-3 sm:gap-4">
-              <div class="w-7 sm:w-8 h-7 sm:h-8 rounded-lg sm:rounded-xl bg-brand-100 flex items-center justify-center flex-shrink-0 text-brand-600 font-bold text-xs sm:text-sm">1</div>
+          <div class="space-y-10">
+            <div class="flex gap-6 group">
+              <div class="flex-shrink-0 w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 flex items-center justify-center font-display font-bold text-xl group-hover:scale-110 transition-transform">1</div>
               <div>
-                <h4 class="font-bold text-surface-900 text-sm sm:text-base">Eligen el servicio</h4>
-                <p class="text-surface-600 text-xs sm:text-sm">Ven todos tus servicios con duración y precio</p>
+                <h4 class="text-lg font-bold text-slate-900 dark:text-white mb-1 font-display">Eligen el servicio</h4>
+                <p class="text-slate-500 dark:text-slate-400">Ven todos tus servicios con duración y precio.</p>
               </div>
             </div>
-            <div class="flex items-start gap-3 sm:gap-4">
-              <div class="w-7 sm:w-8 h-7 sm:h-8 rounded-lg sm:rounded-xl bg-brand-100 flex items-center justify-center flex-shrink-0 text-brand-600 font-bold text-xs sm:text-sm">2</div>
+            <div class="flex gap-6 group">
+              <div class="flex-shrink-0 w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 flex items-center justify-center font-display font-bold text-xl group-hover:scale-110 transition-transform">2</div>
               <div>
-                <h4 class="font-bold text-surface-900 text-sm sm:text-base">Seleccionan fecha y hora</h4>
-                <p class="text-surface-600 text-xs sm:text-sm">Solo ven los horarios que vos tenés disponibles</p>
+                <h4 class="text-lg font-bold text-slate-900 dark:text-white mb-1 font-display">Seleccionan fecha y hora</h4>
+                <p class="text-slate-500 dark:text-slate-400">Solo ven los horarios que vos tenés disponibles.</p>
               </div>
             </div>
-            <div class="flex items-start gap-3 sm:gap-4">
-              <div class="w-7 sm:w-8 h-7 sm:h-8 rounded-lg sm:rounded-xl bg-brand-100 flex items-center justify-center flex-shrink-0 text-brand-600 font-bold text-xs sm:text-sm">3</div>
+            <div class="flex gap-6 group">
+              <div class="flex-shrink-0 w-12 h-12 rounded-2xl bg-brand-50 dark:bg-brand-900/20 text-brand-600 dark:text-brand-400 flex items-center justify-center font-display font-bold text-xl group-hover:scale-110 transition-transform">3</div>
               <div>
-                <h4 class="font-bold text-surface-900 text-sm sm:text-base">Confirman el turno</h4>
-                <p class="text-surface-600 text-xs sm:text-sm">Reciben confirmación instantánea y vos la notificación</p>
+                <h4 class="text-lg font-bold text-slate-900 dark:text-white mb-1 font-display">Confirman el turno</h4>
+                <p class="text-slate-500 dark:text-slate-400">Reciben confirmación instantánea y vos la notificación.</p>
               </div>
             </div>
           </div>
           
-          <a href="/registro" class="inline-flex items-center gap-2 px-5 sm:px-6 py-2.5 sm:py-3 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 shadow-lg shadow-brand-600/20 transition-all group text-sm sm:text-base">
-            Crear mi página gratis
-            <svg class="w-4 sm:w-5 h-4 sm:h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-          </a>
+          <div class="mt-12">
+            <a href="/registro" class="bg-brand-500 hover:bg-brand-600 text-white px-8 py-4 rounded-xl font-bold transition-colors inline-flex items-center gap-3 shadow-lg shadow-brand-500/25">
+              Crear mi página gratis
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </a>
+          </div>
         </div>
         
         <!-- Right: Booking Widget Mockup -->
-        <div class="relative">
-          <div class="bg-white rounded-3xl shadow-2xl p-6 sm:p-8 border border-surface-200/50 max-w-md mx-auto">
+        <div class="order-1 lg:order-2 relative perspective-1000">
+          <div class="absolute inset-0 bg-gradient-to-tr from-slate-200 to-slate-100 dark:from-slate-800 dark:to-slate-700 rounded-[2.5rem] transform rotate-3 scale-95 opacity-50 -z-10"></div>
+          <div class="bg-white dark:bg-surface-800 p-6 sm:p-8 rounded-[2rem] shadow-2xl relative border border-slate-100 dark:border-slate-700 max-w-sm mx-auto transform transition-transform hover:rotate-0 hover:scale-105 duration-500">
             <!-- Store Header -->
-            <div class="flex items-center gap-4 mb-6 pb-6 border-b border-surface-200/50">
-              <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-brand-500/20">
-                JD
-              </div>
+            <div class="flex items-center gap-4 mb-8 pb-6 border-b border-slate-100 dark:border-slate-700">
+              <div class="w-14 h-14 bg-gradient-to-br from-brand-500 to-brand-600 rounded-full flex items-center justify-center text-white font-bold text-xl shadow-md">BJ</div>
               <div>
-                <h3 class="font-bold text-surface-900 text-lg">Barbería Juan</h3>
-                <p class="text-sm text-surface-500">Reservá tu turno online</p>
+                <h4 class="font-bold text-slate-900 dark:text-white text-lg font-display">Barbería Juan</h4>
+                <p class="text-xs text-green-500 font-bold flex items-center gap-1.5 mt-1 bg-green-50 dark:bg-green-900/20 px-2 py-1 rounded-full w-fit">
+                  <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                  Reservá online
+                </p>
               </div>
             </div>
             
             <!-- Service Selection -->
-            <div class="mb-6">
-              <p class="text-xs font-bold text-surface-400 uppercase tracking-wider mb-3">Elegí un servicio</p>
-              <div class="space-y-2">
-                <div class="p-4 rounded-xl bg-brand-50 border-2 border-brand-500 flex items-center justify-between">
-                  <div>
-                    <p class="font-bold text-surface-900">Corte clásico</p>
-                    <p class="text-sm text-surface-500">45 min</p>
-                  </div>
-                  <p class="font-bold text-brand-600">$5.500</p>
+            <div class="mb-8">
+              <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">Elegí un servicio</label>
+              <div class="border-2 border-brand-500 rounded-xl p-4 mb-3 flex justify-between items-center bg-brand-50 dark:bg-brand-900/10 shadow-sm relative overflow-hidden">
+                <div class="absolute left-0 top-0 bottom-0 w-1 bg-brand-500"></div>
+                <div>
+                  <h5 class="font-bold text-slate-900 dark:text-white text-sm">Corte clásico</h5>
+                  <p class="text-xs text-slate-500 mt-1">45 min</p>
                 </div>
-                <div class="p-4 rounded-xl bg-surface-50 border border-surface-200 flex items-center justify-between opacity-75">
-                  <div>
-                    <p class="font-semibold text-surface-700">Corte + Barba</p>
-                    <p class="text-sm text-surface-500">60 min</p>
-                  </div>
-                  <p class="font-semibold text-surface-600">$8.000</p>
+                <span class="font-bold text-brand-600 dark:text-brand-400">$5.500</span>
+              </div>
+              <div class="border border-slate-200 dark:border-slate-700 rounded-xl p-4 flex justify-between items-center opacity-60 hover:opacity-100 transition-opacity cursor-pointer">
+                <div>
+                  <h5 class="font-bold text-slate-900 dark:text-white text-sm">Corte + Barba</h5>
+                  <p class="text-xs text-slate-500 mt-1">60 min</p>
                 </div>
+                <span class="font-bold text-slate-600 dark:text-slate-400">$8.000</span>
               </div>
             </div>
             
             <!-- Date Selection -->
-            <div class="mb-6">
-              <p class="text-xs font-bold text-surface-400 uppercase tracking-wider mb-3">Elegí fecha</p>
-              <div class="grid grid-cols-5 gap-2">
-                <div class="p-3 rounded-xl bg-surface-50 text-center opacity-50">
-                  <p class="text-[10px] text-surface-400 uppercase">Lun</p>
-                  <p class="font-bold text-surface-400">30</p>
+            <div class="mb-8">
+              <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">Elegí fecha</label>
+              <div class="flex justify-between text-center gap-3">
+                <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex-1 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer">
+                  <span class="block text-xs text-slate-400 font-bold mb-1">LUN</span>
+                  <span class="block font-bold text-slate-900 dark:text-white text-lg">30</span>
                 </div>
-                <div class="p-3 rounded-xl bg-surface-50 text-center opacity-50">
-                  <p class="text-[10px] text-surface-400 uppercase">Mar</p>
-                  <p class="font-bold text-surface-400">31</p>
+                <div class="p-3 rounded-xl bg-brand-500 text-white flex-1 shadow-lg ring-4 ring-brand-100 dark:ring-brand-900/30">
+                  <span class="block text-xs opacity-80 font-bold mb-1">MAR</span>
+                  <span class="block font-bold text-lg">1</span>
                 </div>
-                <div class="p-3 rounded-xl bg-brand-600 text-center text-white shadow-lg shadow-brand-600/20">
-                  <p class="text-[10px] uppercase">Mié</p>
-                  <p class="font-bold">1</p>
-                </div>
-                <div class="p-3 rounded-xl bg-surface-50 text-center">
-                  <p class="text-[10px] text-surface-500 uppercase">Jue</p>
-                  <p class="font-bold text-surface-700">2</p>
-                </div>
-                <div class="p-3 rounded-xl bg-surface-50 text-center">
-                  <p class="text-[10px] text-surface-500 uppercase">Vie</p>
-                  <p class="font-bold text-surface-700">3</p>
+                <div class="p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex-1 hover:border-slate-300 dark:hover:border-slate-600 cursor-pointer">
+                  <span class="block text-xs text-slate-400 font-bold mb-1">MIE</span>
+                  <span class="block font-bold text-slate-900 dark:text-white text-lg">2</span>
                 </div>
               </div>
             </div>
             
             <!-- Time Selection -->
-            <div class="mb-6">
-              <p class="text-xs font-bold text-surface-400 uppercase tracking-wider mb-3">Horarios disponibles</p>
-              <div class="grid grid-cols-3 gap-2">
-                <button class="p-3 rounded-xl bg-brand-600 text-white font-bold text-sm shadow-lg shadow-brand-600/20">10:00</button>
-                <button class="p-3 rounded-xl bg-surface-50 text-surface-700 font-semibold text-sm hover:bg-surface-100">11:00</button>
-                <button class="p-3 rounded-xl bg-surface-50 text-surface-700 font-semibold text-sm hover:bg-surface-100">14:00</button>
-                <button class="p-3 rounded-xl bg-surface-50 text-surface-700 font-semibold text-sm hover:bg-surface-100">15:00</button>
-                <button class="p-3 rounded-xl bg-surface-50 text-surface-700 font-semibold text-sm hover:bg-surface-100">16:00</button>
-                <button class="p-3 rounded-xl bg-surface-50 text-surface-700 font-semibold text-sm hover:bg-surface-100">17:00</button>
+            <div class="mb-8">
+              <label class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-3 block">Horarios disponibles</label>
+              <div class="grid grid-cols-3 gap-3">
+                <button class="py-2.5 rounded-lg bg-brand-500 text-white text-sm font-bold shadow-md">10:00</button>
+                <button class="py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">11:00</button>
+                <button class="py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">14:00</button>
               </div>
             </div>
             
             <!-- CTA -->
-            <button class="w-full py-4 bg-brand-600 text-white font-bold rounded-xl hover:bg-brand-700 transition-colors shadow-lg shadow-brand-600/20">
+            <button class="w-full bg-slate-900 dark:bg-white dark:text-slate-900 text-white py-4 rounded-xl font-bold shadow-xl transition-transform hover:-translate-y-0.5">
               Reservar turno
             </button>
           </div>
-          
-          <!-- Decorative elements -->
-          <div class="absolute -z-10 top-8 -right-8 w-64 h-64 bg-brand-100 rounded-full blur-3xl opacity-50"></div>
-          <div class="absolute -z-10 -bottom-8 -left-8 w-48 h-48 bg-emerald-100 rounded-full blur-3xl opacity-50"></div>
         </div>
       </div>
     </div>
   </section>
 
   <!-- Premium Feature: WhatsApp Notifications -->
-  <section class="py-14 sm:py-20 lg:py-28 bg-gradient-to-br from-emerald-900 via-emerald-800 to-emerald-900 relative overflow-hidden">
-    <!-- Decorative elements -->
-    <div class="absolute inset-0">
-      <div class="absolute top-0 right-0 w-64 sm:w-96 h-64 sm:h-96 bg-emerald-500/10 rounded-full blur-3xl"></div>
-      <div class="absolute bottom-0 left-0 w-48 sm:w-80 h-48 sm:h-80 bg-emerald-400/10 rounded-full blur-3xl"></div>
-    </div>
+  <section class="py-24 lg:py-32 bg-[#042f2e] relative overflow-hidden">
+    <div class="absolute inset-0 opacity-10" style="background-image: radial-gradient(#ffffff 1px, transparent 1px); background-size: 30px 30px;"></div>
+    <div class="absolute top-1/2 right-0 transform -translate-y-1/2 w-[800px] h-[800px] bg-brand-600/20 rounded-full blur-[100px] pointer-events-none"></div>
     
-    <div class="relative max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
-      <div class="grid lg:grid-cols-2 gap-10 lg:gap-20 items-center">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+      <div class="grid lg:grid-cols-2 gap-20 items-center">
         <!-- Left: WhatsApp Mockup -->
-        <div class="relative order-2 lg:order-1">
-          <!-- Phone Frame -->
-          <div class="relative max-w-[280px] sm:max-w-sm mx-auto">
-            <div class="bg-surface-800 rounded-[2rem] sm:rounded-[3rem] p-2 sm:p-3 shadow-2xl">
-              <div class="bg-white rounded-[1.75rem] sm:rounded-[2.5rem] overflow-hidden">
-                <!-- WhatsApp Header -->
-                <div class="bg-emerald-600 px-3 sm:px-4 py-2 sm:py-3 flex items-center gap-2 sm:gap-3">
-                  <svg class="w-4 sm:w-5 h-4 sm:h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                  </svg>
-                  <div class="w-8 sm:w-10 h-8 sm:h-10 rounded-full bg-emerald-500 flex items-center justify-center text-white font-bold text-xs sm:text-sm">
-                    T
+        <div class="relative mx-auto lg:mx-0 w-full max-w-sm z-10">
+          <div class="absolute inset-0 bg-brand-400/20 blur-3xl rounded-full"></div>
+          <div class="relative bg-slate-900 border-[8px] border-slate-800 rounded-[3rem] shadow-2xl overflow-hidden aspect-[9/18] z-20">
+            <div class="bg-[#e5ddd5] w-full h-full flex flex-col">
+              <!-- WhatsApp Header -->
+              <div class="bg-[#075e54] text-white px-4 py-4 pt-12 flex items-center gap-3 shadow-md z-10">
+                <svg class="w-5 h-5 text-white/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                </svg>
+                <div class="w-8 h-8 bg-white rounded-full flex items-center justify-center text-[#075e54] font-bold text-xs">T</div>
+                <div class="flex-1">
+                  <p class="font-bold text-sm">Turni Online</p>
+                  <p class="text-[10px] opacity-80">Cuenta de empresa</p>
+                </div>
+                <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M10 6a2 2 0 110-4 2 2 0 010 4zM10 12a2 2 0 110-4 2 2 0 010 4zM10 18a2 2 0 110-4 2 2 0 010 4z" />
+                </svg>
+              </div>
+              
+              <!-- Chat Area -->
+              <div class="flex-1 p-4 space-y-4 overflow-y-auto text-sm" style="background-image: url('data:image/svg+xml,%3Csvg width=%2260%22 height=%2260%22 xmlns=%22http://www.w3.org/2000/svg%22%3E%3Cg fill=%22none%22 fill-rule=%22evenodd%22%3E%3Cg fill=%23d4d4d4%22 fill-opacity=%220.4%22%3E%3Cpath d=%22M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z%22/%3E%3C/g%3E%3C/g%3E%3C/svg%3E'); opacity: 0.9;">
+                <!-- WhatsApp notification message -->
+                <div class="bg-white rounded-tr-xl rounded-bl-xl rounded-br-xl p-3 shadow-sm max-w-[90%] text-slate-800 relative">
+                  <p class="font-bold text-slate-900 mb-1">👋 ¡Hola María!</p>
+                  <p class="text-slate-700 leading-snug">Te recordamos que tenés un turno <span class="font-bold">hoy</span> a las <span class="font-bold">10:00 hs</span> para <span class="font-bold">Corte de pelo</span>.</p>
+                  <p class="mt-2 text-[11px] text-slate-500 flex items-center gap-1">📍 Barbería Premium - Av. Corrientes 1234</p>
+                  <div class="mt-3 pt-2 border-t border-slate-100 text-center text-[#00a884] font-medium cursor-pointer hover:underline text-xs">
+                    ¿Necesitás cancelar? Respondé acá.
                   </div>
-                  <div class="flex-1">
-                    <p class="text-white font-semibold text-xs sm:text-sm">Turni</p>
-                    <p class="text-emerald-100 text-[10px] sm:text-xs">Online</p>
+                  <div class="text-[10px] text-slate-400 text-right mt-1">8:00 AM</div>
+                </div>
+                
+                <!-- Client response -->
+                <div class="bg-[#dcf8c6] ml-auto rounded-tl-xl rounded-bl-xl rounded-br-xl p-3 shadow-sm max-w-[85%] text-slate-800">
+                  <p>¡Perfecto! Ahí estaré 👍</p>
+                  <div class="text-[10px] text-slate-500 text-right mt-1 flex justify-end gap-1 items-center">
+                    8:02 AM <span class="text-[#53bdeb]">✓✓</span>
                   </div>
                 </div>
                 
-                <!-- Chat Area -->
-                <div class="bg-[#e5ddd5] p-3 sm:p-4 min-h-[320px] sm:min-h-[400px] space-y-3 sm:space-y-4">
-                  <!-- WhatsApp notification message -->
-                  <div class="flex justify-start">
-                    <div class="bg-white rounded-xl sm:rounded-2xl rounded-tl-sm p-3 sm:p-4 shadow-sm max-w-[90%] sm:max-w-[85%]">
-                      <p class="text-surface-900 text-xs sm:text-sm leading-relaxed">
-                        👋 ¡Hola María!
-                      </p>
-                      <p class="text-surface-900 text-xs sm:text-sm leading-relaxed mt-1.5 sm:mt-2">
-                        Te recordamos que tenés un turno <strong>hoy</strong> a las <strong>10:00 hs</strong> para <strong>Corte de pelo</strong>.
-                      </p>
-                      <p class="text-surface-900 text-xs sm:text-sm leading-relaxed mt-1.5 sm:mt-2">
-                        📍 Barbería Premium<br/>
-                        Av. Corrientes 1234
-                      </p>
-                      <p class="text-surface-600 text-[10px] sm:text-sm mt-2 sm:mt-3">
-                        ¿Necesitás cancelar? Respondé acá.
-                      </p>
-                      <p class="text-right text-[8px] sm:text-[10px] text-surface-400 mt-1.5 sm:mt-2">8:00 AM ✓✓</p>
-                    </div>
-                  </div>
-                  
-                  <!-- Client response -->
-                  <div class="flex justify-end">
-                    <div class="bg-emerald-100 rounded-xl sm:rounded-2xl rounded-tr-sm p-3 sm:p-4 shadow-sm max-w-[75%]">
-                      <p class="text-surface-900 text-xs sm:text-sm">¡Perfecto! Ahí estaré 👍</p>
-                      <p class="text-right text-[8px] sm:text-[10px] text-surface-400 mt-1">8:02 AM ✓✓</p>
-                    </div>
-                  </div>
-                  
-                  <!-- Confirmation message -->
-                  <div class="flex justify-start">
-                    <div class="bg-white rounded-xl sm:rounded-2xl rounded-tl-sm p-3 sm:p-4 shadow-sm max-w-[85%]">
-                      <p class="text-surface-900 text-xs sm:text-sm">
-                        ¡Genial! Te esperamos. 😊
-                      </p>
-                      <p class="text-right text-[8px] sm:text-[10px] text-surface-400 mt-1.5 sm:mt-2">8:02 AM ✓✓</p>
-                    </div>
-                  </div>
+                <!-- Confirmation message -->
+                <div class="bg-white rounded-tr-xl rounded-bl-xl rounded-br-xl p-3 shadow-sm max-w-[90%] text-slate-800">
+                  <p>¡Genial! Te esperamos. 😄</p>
+                  <div class="text-[10px] text-slate-400 text-right mt-1">8:02 AM</div>
                 </div>
               </div>
-            </div>
-            
-            <!-- Floating badge - hidden on mobile -->
-            <div class="hidden sm:block absolute -top-4 -right-4 bg-white rounded-2xl shadow-xl p-4 animate-float">
-              <div class="flex items-center gap-3">
-                <div class="w-12 h-12 rounded-xl bg-emerald-100 flex items-center justify-center">
-                  <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              
+              <!-- Input Area -->
+              <div class="bg-[#f0f2f5] px-2 py-2 flex items-center gap-2">
+                <div class="bg-white flex-1 rounded-full h-9 px-4 text-xs text-gray-400 flex items-center">Escribe un mensaje...</div>
+                <div class="w-9 h-9 bg-[#00a884] rounded-full flex items-center justify-center text-white">
+                  <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
                   </svg>
-                </div>
-                <div>
-                  <p class="text-xs font-bold text-surface-900">-40% no-shows</p>
-                  <p class="text-[10px] text-surface-500">Con recordatorios</p>
                 </div>
               </div>
             </div>
           </div>
+          
+          
         </div>
         
         <!-- Right: Content -->
-        <div class="space-y-5 sm:space-y-8 order-1 lg:order-2 text-center lg:text-left">
-          <div class="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-emerald-500/20 border border-emerald-500/30 text-emerald-300 text-xs sm:text-sm font-semibold">
-            <svg class="w-3.5 sm:w-4 h-3.5 sm:h-4" fill="currentColor" viewBox="0 0 20 20">
+        <div class="text-white">
+          <span class="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full bg-brand-500/10 border border-brand-500/20 text-brand-200 text-xs font-bold uppercase tracking-wider mb-6">
+            <svg class="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
               <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
             </svg>
             Función Premium
-          </div>
+          </span>
           
-          <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold text-white leading-tight">
-            Recordatorios automáticos
-            <span class="block text-emerald-300 mt-1 sm:mt-2">por WhatsApp</span>
+          <h2 class="text-4xl lg:text-5xl font-display font-extrabold mb-8 leading-tight">
+            Recordatorios automáticos <br/>
+            <span class="text-emerald-400">por WhatsApp</span>
           </h2>
           
-          <p class="text-sm sm:text-base lg:text-lg text-emerald-100 leading-relaxed max-w-xl mx-auto lg:mx-0">
+          <p class="text-slate-300 text-lg lg:text-xl mb-10 leading-relaxed font-light">
             Olvidate de los clientes que no aparecen. Con los recordatorios automáticos, tus clientes reciben un mensaje el día del turno y vos reducís las ausencias hasta un 40%.
           </p>
           
-          <div class="space-y-3 sm:space-y-4">
-            <div class="flex items-start gap-3 sm:gap-4 text-left">
-              <div class="w-9 sm:w-10 h-9 sm:h-10 rounded-lg sm:rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 sm:w-5 h-4 sm:h-5 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div class="space-y-8">
+            <div class="flex gap-5">
+              <div class="w-10 h-10 rounded-full bg-emerald-400/10 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                 </svg>
               </div>
               <div>
-                <h4 class="font-bold text-white text-sm sm:text-base">Automático y puntual</h4>
-                <p class="text-emerald-200 text-xs sm:text-sm">Se envía solo el día del turno, a la hora que configures</p>
+                <h4 class="font-bold text-white text-lg font-display">Automático y puntual</h4>
+                <p class="text-sm text-slate-400 leading-relaxed mt-1">Se envía solo el día del turno, a la hora que configures.</p>
               </div>
             </div>
-            <div class="flex items-start gap-3 sm:gap-4 text-left">
-              <div class="w-9 sm:w-10 h-9 sm:h-10 rounded-lg sm:rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 sm:w-5 h-4 sm:h-5 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+            <div class="flex gap-5">
+              <div class="w-10 h-10 rounded-full bg-emerald-400/10 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                 </svg>
               </div>
               <div>
-                <h4 class="font-bold text-white text-sm sm:text-base">Personalizado con tus datos</h4>
-                <p class="text-emerald-200 text-xs sm:text-sm">Incluye nombre del cliente, servicio, hora y tu dirección</p>
+                <h4 class="font-bold text-white text-lg font-display">Personalizado con tus datos</h4>
+                <p class="text-sm text-slate-400 leading-relaxed mt-1">Incluye nombre del cliente, servicio, hora y tu dirección.</p>
               </div>
             </div>
-            <div class="flex items-start gap-3 sm:gap-4 text-left">
-              <div class="w-9 sm:w-10 h-9 sm:h-10 rounded-lg sm:rounded-xl bg-emerald-500/20 flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 sm:w-5 h-4 sm:h-5 text-emerald-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+            <div class="flex gap-5">
+              <div class="w-10 h-10 rounded-full bg-emerald-400/10 flex items-center justify-center flex-shrink-0">
+                <svg class="w-5 h-5 text-emerald-400" fill="currentColor" viewBox="0 0 20 20">
+                  <path fill-rule="evenodd" d="M6.267 3.455a3.066 3.066 0 001.745-.723 3.066 3.066 0 013.976 0 3.066 3.066 0 001.745.723 3.066 3.066 0 012.812 2.812c.051.643.304 1.254.723 1.745a3.066 3.066 0 010 3.976 3.066 3.066 0 00-.723 1.745 3.066 3.066 0 01-2.812 2.812 3.066 3.066 0 00-1.745.723 3.066 3.066 0 01-3.976 0 3.066 3.066 0 00-1.745-.723 3.066 3.066 0 01-2.812-2.812 3.066 3.066 0 00-.723-1.745 3.066 3.066 0 010-3.976 3.066 3.066 0 00.723-1.745 3.066 3.066 0 012.812-2.812zm7.44 5.252a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                 </svg>
               </div>
               <div>
-                <h4 class="font-bold text-white text-sm sm:text-base">WhatsApp Business API oficial</h4>
-                <p class="text-emerald-200 text-xs sm:text-sm">Mensajes verificados, alta entregabilidad</p>
+                <h4 class="font-bold text-white text-lg font-display">WhatsApp Business API oficial</h4>
+                <p class="text-sm text-slate-400 leading-relaxed mt-1">Mensajes verificados, alta entregabilidad.</p>
               </div>
             </div>
           </div>
           
-          <a href="/registro" class="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-white text-emerald-700 font-bold rounded-xl sm:rounded-2xl hover:bg-emerald-50 shadow-xl shadow-black/10 transition-all group text-sm sm:text-base">
-            Probar 7 días gratis
-            <svg class="w-4 sm:w-5 h-4 sm:h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-          </a>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <!-- Premium Feature: Client Management -->
-  <section class="py-14 sm:py-20 lg:py-28 bg-white relative overflow-hidden">
-    <!-- Decorative elements -->
-    <div class="absolute top-0 right-0 w-64 sm:w-96 h-64 sm:h-96 bg-brand-100/50 rounded-full blur-3xl -translate-y-1/2"></div>
-    <div class="absolute bottom-0 left-0 w-48 sm:w-80 h-48 sm:h-80 bg-rose-100/50 rounded-full blur-3xl translate-y-1/2"></div>
-    
-    <div class="relative max-w-7xl mx-auto px-5 sm:px-6 lg:px-8">
-      <div class="grid lg:grid-cols-2 gap-10 lg:gap-20 items-center">
-        <!-- Left: Content -->
-        <div class="space-y-5 sm:space-y-8">
-          <div class="inline-flex items-center gap-2 px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-brand-50 border border-brand-200 text-brand-700 text-xs sm:text-sm font-semibold">
-            <svg class="w-3.5 sm:w-4 h-3.5 sm:h-4" fill="currentColor" viewBox="0 0 20 20">
-              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-            </svg>
-            Función Premium
-          </div>
-          
-          <h2 class="text-2xl sm:text-3xl md:text-4xl lg:text-5xl font-display font-bold text-surface-900 leading-tight">
-            Conocé a tus clientes
-            <span class="block text-brand-600 mt-1 sm:mt-2">como nunca antes</span>
-          </h2>
-          
-          <p class="text-sm sm:text-base lg:text-lg text-surface-600 leading-relaxed">
-            Cada vez que alguien reserva, sus datos se guardan automáticamente. Historial de turnos, gasto total, preferencias... Todo en un solo lugar para que puedas darles una atención personalizada.
-          </p>
-          
-          <div class="space-y-3 sm:space-y-4">
-            <div class="flex items-start gap-3 sm:gap-4">
-              <div class="w-9 sm:w-10 h-9 sm:h-10 rounded-lg sm:rounded-xl bg-brand-100 flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 sm:w-5 h-4 sm:h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
-                </svg>
-              </div>
-              <div>
-                <h4 class="font-bold text-surface-900 text-sm sm:text-base">Base de datos automática</h4>
-                <p class="text-surface-600 text-xs sm:text-sm">No cargás nada a mano. Cada reserva crea o actualiza el perfil.</p>
-              </div>
-            </div>
-            <div class="flex items-start gap-3 sm:gap-4">
-              <div class="w-9 sm:w-10 h-9 sm:h-10 rounded-lg sm:rounded-xl bg-brand-100 flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 sm:w-5 h-4 sm:h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
-                </svg>
-              </div>
-              <div>
-                <h4 class="font-bold text-surface-900 text-sm sm:text-base">Etiquetas personalizadas</h4>
-                <p class="text-surface-600 text-xs sm:text-sm">Marcá clientes VIP, frecuentes, nuevos o creá tus propias etiquetas.</p>
-              </div>
-            </div>
-            <div class="flex items-start gap-3 sm:gap-4">
-              <div class="w-9 sm:w-10 h-9 sm:h-10 rounded-lg sm:rounded-xl bg-brand-100 flex items-center justify-center flex-shrink-0">
-                <svg class="w-4 sm:w-5 h-4 sm:h-5 text-brand-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <div>
-                <h4 class="font-bold text-surface-900 text-sm sm:text-base">Historial y estadísticas</h4>
-                <p class="text-surface-600 text-xs sm:text-sm">Cuántos turnos, cuánto gastó, qué servicios prefiere, última visita...</p>
-              </div>
-            </div>
-          </div>
-          
-          <a href="/registro" class="inline-flex items-center gap-2 px-6 sm:px-8 py-3 sm:py-4 bg-brand-600 text-white font-bold rounded-xl sm:rounded-2xl hover:bg-brand-700 shadow-xl shadow-brand-600/20 transition-all group text-sm sm:text-base">
-            Probar 7 días gratis
-            <svg class="w-4 sm:w-5 h-4 sm:h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
-            </svg>
-          </a>
-        </div>
-        
-        <!-- Right: Clients List Mockup -->
-        <div class="relative mt-6 lg:mt-0">
-          <!-- Main Card -->
-          <div class="bg-white rounded-2xl sm:rounded-3xl shadow-2xl p-4 sm:p-6 border border-surface-200/50 mx-2 sm:mx-0">
-            <!-- Header -->
-            <div class="flex items-center justify-between mb-4 sm:mb-6 gap-2">
-              <div class="flex items-center gap-2 sm:gap-3">
-                <div class="w-8 sm:w-10 h-8 sm:h-10 rounded-lg sm:rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center shadow-lg shadow-brand-500/20">
-                  <svg class="w-4 sm:w-5 h-4 sm:h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z" />
-                  </svg>
-                </div>
-                <div>
-                  <p class="font-bold text-surface-900 text-sm sm:text-base">Mis Clientes</p>
-                  <p class="text-[10px] sm:text-xs text-surface-500 font-medium">127 registrados</p>
-                </div>
-              </div>
-              <div class="relative hidden sm:block">
-                <input type="text" placeholder="Buscar..." class="pl-9 pr-4 py-2 text-sm border border-surface-200 rounded-xl bg-surface-50 w-32 sm:w-40 focus:outline-none focus:ring-2 focus:ring-brand-500/20" disabled />
-                <svg class="w-4 h-4 text-surface-400 absolute left-3 top-1/2 -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-              </div>
-            </div>
-            
-            <!-- Client List -->
-            <div class="space-y-2 sm:space-y-3">
-              <!-- Client 1 - VIP -->
-              <div class="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-gradient-to-r from-brand-50 to-brand-100/50 border border-brand-100">
-                <div class="flex items-center gap-2 sm:gap-4">
-                  <div class="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-brand-600 flex items-center justify-center text-white font-bold text-sm sm:text-base shadow-lg shadow-brand-600/20">
-                    MG
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-1 sm:gap-2 flex-wrap">
-                      <p class="font-bold text-surface-900 text-sm sm:text-base truncate">María González</p>
-                      <span class="px-1.5 sm:px-2 py-0.5 bg-brand-600 text-white text-[8px] sm:text-[10px] font-bold rounded uppercase tracking-wider">VIP</span>
-                    </div>
-                    <p class="text-xs sm:text-sm text-surface-500 truncate">+54 11 1234-5678</p>
-                  </div>
-                  <div class="text-right hidden xs:block">
-                    <p class="text-xs sm:text-sm font-bold text-brand-600">$45.000</p>
-                    <p class="text-[8px] sm:text-[10px] text-surface-500">12 turnos</p>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Client 2 - Frecuente -->
-              <div class="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-surface-50 border border-surface-200">
-                <div class="flex items-center gap-2 sm:gap-4">
-                  <div class="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-blue-500 flex items-center justify-center text-white font-bold text-sm sm:text-base">
-                    JP
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-1 sm:gap-2 flex-wrap">
-                      <p class="font-bold text-surface-900 text-sm sm:text-base truncate">Juan Pérez</p>
-                      <span class="px-1.5 sm:px-2 py-0.5 bg-blue-100 text-blue-700 text-[8px] sm:text-[10px] font-bold rounded uppercase tracking-wider">Frecuente</span>
-                    </div>
-                    <p class="text-xs sm:text-sm text-surface-500 truncate">juan@email.com</p>
-                  </div>
-                  <div class="text-right hidden xs:block">
-                    <p class="text-xs sm:text-sm font-bold text-surface-700">$28.000</p>
-                    <p class="text-[8px] sm:text-[10px] text-surface-500">8 turnos</p>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- Client 3 - Nuevo -->
-              <div class="p-3 sm:p-4 rounded-xl sm:rounded-2xl bg-surface-50 border border-surface-200">
-                <div class="flex items-center gap-2 sm:gap-4">
-                  <div class="w-10 sm:w-12 h-10 sm:h-12 rounded-lg sm:rounded-xl bg-emerald-500 flex items-center justify-center text-white font-bold text-sm sm:text-base">
-                    AM
-                  </div>
-                  <div class="flex-1 min-w-0">
-                    <div class="flex items-center gap-1 sm:gap-2 flex-wrap">
-                      <p class="font-bold text-surface-900 text-sm sm:text-base truncate">Ana Martínez</p>
-                      <span class="px-1.5 sm:px-2 py-0.5 bg-emerald-100 text-emerald-700 text-[8px] sm:text-[10px] font-bold rounded uppercase tracking-wider">Nuevo</span>
-                    </div>
-                    <p class="text-xs sm:text-sm text-surface-500 truncate">ana@email.com</p>
-                  </div>
-                  <div class="text-right hidden xs:block">
-                    <p class="text-xs sm:text-sm font-bold text-surface-700">$5.500</p>
-                    <p class="text-[8px] sm:text-[10px] text-surface-500">1 turno</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-          
-          <!-- Floating Client Profile Card - Hidden on mobile -->
-          <div class="hidden sm:block absolute -bottom-4 -right-4 bg-white rounded-2xl shadow-xl p-4 sm:p-5 border border-surface-200 animate-float max-w-[260px]" style="animation-delay: 0.5s;">
-            <div class="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-4 pb-3 sm:pb-4 border-b border-surface-100">
-              <div class="w-11 sm:w-14 h-11 sm:h-14 rounded-lg sm:rounded-xl bg-brand-600 flex items-center justify-center text-white font-bold text-lg sm:text-xl shadow-lg shadow-brand-600/20">
-                MG
-              </div>
-              <div>
-                <p class="font-bold text-surface-900 text-sm sm:text-base">María González</p>
-                <p class="text-[10px] sm:text-xs text-surface-500">Cliente desde 2024</p>
-              </div>
-            </div>
-            <div class="space-y-2 sm:space-y-3">
-              <div class="flex items-center justify-between">
-                <span class="text-[10px] sm:text-xs text-surface-500">Total gastado</span>
-                <span class="text-xs sm:text-sm font-bold text-brand-600">$45.000</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-[10px] sm:text-xs text-surface-500">Turnos completados</span>
-                <span class="text-xs sm:text-sm font-bold text-surface-900">12</span>
-              </div>
-              <div class="flex items-center justify-between">
-                <span class="text-[10px] sm:text-xs text-surface-500">Último turno</span>
-                <span class="text-xs sm:text-sm font-bold text-surface-900">Hace 5 días</span>
-              </div>
-            </div>
-            <div class="flex gap-1.5 sm:gap-2 mt-3 sm:mt-4 pt-3 sm:pt-4 border-t border-surface-100">
-              <span class="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-brand-100 text-brand-700 text-[8px] sm:text-[10px] font-bold rounded-md sm:rounded-lg">VIP</span>
-              <span class="px-1.5 sm:px-2 py-0.5 sm:py-1 bg-purple-100 text-purple-700 text-[8px] sm:text-[10px] font-bold rounded-md sm:rounded-lg">Corte frecuente</span>
-            </div>
+          <div class="mt-12">
+            <a href="/registro" class="bg-white hover:bg-slate-100 text-[#042f2e] px-8 py-4 rounded-full font-bold transition-colors inline-flex items-center gap-3 shadow-[0_0_20px_rgba(255,255,255,0.3)]">
+              Probar {trialDays} días gratis
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+              </svg>
+            </a>
           </div>
         </div>
       </div>
@@ -779,76 +503,59 @@ import MainNavbar from '../components/MainNavbar.astro';
   </section>
 
   <!-- How it works -->
-  <section id="como-funciona" class="py-20 lg:py-28 bg-white">
+  <section id="como-funciona" class="py-24 lg:py-32 bg-slate-50 dark:bg-surface-800">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-16">
-        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-surface-100 text-surface-700 text-sm font-semibold mb-4">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-          </svg>
-          Empezá en minutos
+      <div class="text-center max-w-2xl mx-auto mb-20">
+        <span class="inline-block py-1 px-3 rounded-full bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 text-xs font-bold uppercase tracking-wide mb-6">
+          ⚡ Empezá en minutos
         </span>
-        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-surface-900 mb-4">
-          3 pasos y listo
-        </h2>
-        <p class="text-lg text-surface-600 max-w-2xl mx-auto">
+        <h2 class="text-3xl md:text-5xl font-display font-bold text-slate-900 dark:text-white mb-6">3 pasos y listo</h2>
+        <p class="text-slate-600 dark:text-slate-400 text-xl font-light">
           No necesitás ser experto en tecnología. Configurá tu agenda en menos de 5 minutos.
         </p>
       </div>
       
-      <div class="grid md:grid-cols-3 gap-8">
+      <div class="grid md:grid-cols-3 gap-12 relative">
+        <div class="hidden md:block absolute top-12 left-[20%] right-[20%] h-[2px] bg-gradient-to-r from-slate-200 via-brand-200 to-slate-200 dark:from-slate-700 dark:via-brand-900 dark:to-slate-700 -z-0"></div>
+        
         <!-- Step 1 -->
-        <div class="relative group">
-          <div class="absolute top-12 left-1/2 w-full h-1 bg-gradient-to-r from-brand-200 to-brand-400 hidden md:block -z-10"></div>
-          <div class="text-center">
-            <div class="relative inline-flex items-center justify-center mb-8">
-              <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white text-4xl font-bold shadow-xl shadow-brand-500/30 group-hover:scale-110 transition-transform">
-                1
-              </div>
-            </div>
-            <h3 class="text-xl font-bold text-surface-900 mb-3">Creá tu cuenta</h3>
-            <p class="text-surface-600 leading-relaxed">
-              Solo necesitás un email. En 30 segundos tenés tu cuenta lista para configurar.
-            </p>
+        <div class="relative z-10 text-center group">
+          <div class="w-24 h-24 bg-white dark:bg-slate-800 rounded-[2rem] border-2 border-brand-50 dark:border-brand-900 flex items-center justify-center mx-auto mb-8 shadow-card group-hover:-translate-y-2 transition-transform duration-300">
+            <div class="w-16 h-16 bg-brand-500 text-white rounded-2xl flex items-center justify-center text-3xl font-bold font-display shadow-lg shadow-brand-500/30">1</div>
           </div>
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3 font-display">Creá tu cuenta</h3>
+          <p class="text-sm text-slate-600 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
+            Solo necesitás un email. En 30 segundos tenés tu cuenta lista para configurar.
+          </p>
         </div>
         
         <!-- Step 2 -->
-        <div class="relative group">
-          <div class="absolute top-12 left-1/2 w-full h-1 bg-gradient-to-r from-brand-400 to-brand-600 hidden md:block -z-10"></div>
-          <div class="text-center">
-            <div class="relative inline-flex items-center justify-center mb-8">
-              <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white text-4xl font-bold shadow-xl shadow-brand-500/30 group-hover:scale-110 transition-transform">
-                2
-              </div>
-            </div>
-            <h3 class="text-xl font-bold text-surface-900 mb-3">Configurá tu negocio</h3>
-            <p class="text-surface-600 leading-relaxed">
-              Agregá tus servicios, definí tus horarios y personalizá tu página. Así de simple.
-            </p>
+        <div class="relative z-10 text-center group">
+          <div class="w-24 h-24 bg-white dark:bg-slate-800 rounded-[2rem] border-2 border-brand-50 dark:border-brand-900 flex items-center justify-center mx-auto mb-8 shadow-card group-hover:-translate-y-2 transition-transform duration-300">
+            <div class="w-16 h-16 bg-brand-500 text-white rounded-2xl flex items-center justify-center text-3xl font-bold font-display shadow-lg shadow-brand-500/30">2</div>
           </div>
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3 font-display">Configurá tu negocio</h3>
+          <p class="text-sm text-slate-600 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
+            Agregá tus servicios, definí tus horarios y personalizá tu página. Así de simple.
+          </p>
         </div>
         
         <!-- Step 3 -->
-        <div class="relative group">
-          <div class="text-center">
-            <div class="relative inline-flex items-center justify-center mb-8">
-              <div class="w-24 h-24 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center text-white text-4xl font-bold shadow-xl shadow-brand-500/30 group-hover:scale-110 transition-transform">
-                3
-              </div>
-            </div>
-            <h3 class="text-xl font-bold text-surface-900 mb-3">Compartí tu link</h3>
-            <p class="text-surface-600 leading-relaxed">
-              Enviá tu link por WhatsApp, redes o donde quieras. Tus clientes ya pueden reservar.
-            </p>
+        <div class="relative z-10 text-center group">
+          <div class="w-24 h-24 bg-white dark:bg-slate-800 rounded-[2rem] border-2 border-brand-50 dark:border-brand-900 flex items-center justify-center mx-auto mb-8 shadow-card group-hover:-translate-y-2 transition-transform duration-300">
+            <div class="w-16 h-16 bg-brand-500 text-white rounded-2xl flex items-center justify-center text-3xl font-bold font-display shadow-lg shadow-brand-500/30">3</div>
           </div>
+          <h3 class="text-xl font-bold text-slate-900 dark:text-white mb-3 font-display">Compartí tu link</h3>
+          <p class="text-sm text-slate-600 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
+            Enviá tu link por WhatsApp, redes o donde quieras. Tus clientes ya pueden reservar.
+          </p>
         </div>
       </div>
       
-      <div class="text-center mt-16">
-        <a href="/registro" class="inline-flex items-center gap-2 px-8 py-4 bg-surface-900 text-white font-bold rounded-2xl hover:bg-surface-800 shadow-xl shadow-surface-900/20 transition-all group">
+      <div class="text-center mt-20">
+        <a href="/registro" class="bg-slate-900 hover:bg-slate-800 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200 text-white px-10 py-4 rounded-full font-bold transition-all shadow-xl inline-flex items-center gap-3 mx-auto text-lg">
           Crear mi cuenta gratis
-          <svg class="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
           </svg>
         </a>
@@ -856,199 +563,170 @@ import MainNavbar from '../components/MainNavbar.astro';
     </div>
   </section>
 
-  <!-- Testimonials / Use Cases -->
-  <section class="py-20 lg:py-28 bg-surface-50">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-16">
-        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white text-surface-700 text-sm font-semibold mb-4 shadow-sm">
-          <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
-            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-          </svg>
-          Para todo tipo de negocios
-        </span>
-        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-surface-900 mb-4">
-          Ideal para tu rubro
-        </h2>
-        <p class="text-lg text-surface-600 max-w-2xl mx-auto">
-          Profesionales de todos los rubros ya usan turni.pro para gestionar sus turnos
-        </p>
-      </div>
-      
-      <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-        <!-- Card 1 -->
-        <div class="bg-white rounded-3xl p-6 shadow-sm border border-surface-200/50 hover:shadow-lg transition-shadow">
-          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-rose-100 to-rose-200 flex items-center justify-center mb-4">
-            <span class="text-2xl">💇‍♀️</span>
-          </div>
-          <h3 class="font-bold text-surface-900 mb-2">Peluquerías y Barberías</h3>
-          <p class="text-sm text-surface-600">Cortes, coloraciones, tratamientos. Gestioná todos tus servicios.</p>
-        </div>
-        
-        <!-- Card 2 -->
-        <div class="bg-white rounded-3xl p-6 shadow-sm border border-surface-200/50 hover:shadow-lg transition-shadow">
-          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-100 to-blue-200 flex items-center justify-center mb-4">
-            <span class="text-2xl">🩺</span>
-          </div>
-          <h3 class="font-bold text-surface-900 mb-2">Consultorios</h3>
-          <p class="text-sm text-surface-600">Médicos, psicólogos, nutricionistas. Turnos organizados.</p>
-        </div>
-        
-        <!-- Card 3 -->
-        <div class="bg-white rounded-3xl p-6 shadow-sm border border-surface-200/50 hover:shadow-lg transition-shadow">
-          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-200 flex items-center justify-center mb-4">
-            <span class="text-2xl">💆‍♀️</span>
-          </div>
-          <h3 class="font-bold text-surface-900 mb-2">Spa y Estética</h3>
-          <p class="text-sm text-surface-600">Masajes, tratamientos faciales, manicura y más.</p>
-        </div>
-        
-        <!-- Card 4 -->
-        <div class="bg-white rounded-3xl p-6 shadow-sm border border-surface-200/50 hover:shadow-lg transition-shadow">
-          <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center mb-4">
-            <span class="text-2xl">🏋️</span>
-          </div>
-          <h3 class="font-bold text-surface-900 mb-2">Entrenadores</h3>
-          <p class="text-sm text-surface-600">Personal trainers, profesores de yoga, instructores.</p>
-        </div>
-      </div>
-    </div>
-  </section>
-
   <!-- Pricing Preview -->
-  <section class="py-20 lg:py-28 bg-white">
-    <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-16">
-        <span class="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-brand-50 text-brand-700 text-sm font-semibold mb-4">
-          <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-          </svg>
+  <section id="precios" class="py-24 lg:py-32 bg-slate-50 dark:bg-surface-900">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="text-center mb-20">
+        <span class="inline-block py-1 px-3 rounded-full bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-300 text-xs font-bold uppercase tracking-wide mb-6 border border-blue-100 dark:border-blue-800">
           Precios simples
         </span>
-        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-surface-900 mb-4">
-          Empezá gratis, crecé sin límites
-        </h2>
-        <p class="text-lg text-surface-600 max-w-2xl mx-auto">
-          Plan gratuito para siempre. Actualizá cuando necesites más funcionalidades.
-        </p>
+        <h2 class="text-3xl md:text-5xl font-display font-bold text-slate-900 dark:text-white mb-6">Empezá gratis, crecé sin límites</h2>
+        <p class="text-slate-600 dark:text-slate-400 text-lg">Plan gratuito para siempre. Actualizá cuando necesites más funcionalidades.</p>
       </div>
       
-      <div class="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+      <div class="grid md:grid-cols-2 gap-8 max-w-5xl mx-auto items-start">
         <!-- Free Plan -->
-        <div class="bg-white rounded-3xl p-8 border-2 border-surface-200 hover:border-surface-300 transition-colors">
-          <div class="mb-6">
-            <h3 class="text-2xl font-bold text-surface-900 mb-2">Gratis</h3>
-            <p class="text-surface-600">Para empezar sin compromiso</p>
+        <div class="border border-slate-200 dark:border-slate-700 rounded-[2.5rem] p-10 bg-white dark:bg-surface-800 transition-all duration-300 hover:shadow-2xl hover:-translate-y-1">
+          <h3 class="text-2xl font-bold text-slate-900 dark:text-white mb-2 font-display">Gratis</h3>
+          <p class="text-sm text-slate-500 dark:text-slate-400 mb-8">Para empezar sin compromiso</p>
+          <div class="flex items-baseline mb-10">
+            <span class="text-5xl font-extrabold text-slate-900 dark:text-white tracking-tight">$0</span>
+            <span class="text-slate-500 dark:text-slate-400 ml-2 font-medium">/mes</span>
           </div>
-          <div class="mb-8">
-            <span class="text-5xl font-bold text-surface-900">$0</span>
-            <span class="text-surface-500">/mes</span>
-          </div>
-          <ul class="space-y-4 mb-8">
-            <li class="flex items-center gap-3 text-surface-700">
-              <svg class="w-5 h-5 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+          <ul class="space-y-5 mb-10">
+            <li class="flex items-start gap-3 text-sm text-slate-600 dark:text-slate-300">
+              <svg class="w-5 h-5 text-brand-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
               </svg>
-              Agenda online ilimitada
+              <span>Agenda online ilimitada</span>
             </li>
-            <li class="flex items-center gap-3 text-surface-700">
-              <svg class="w-5 h-5 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <li class="flex items-start gap-3 text-sm text-slate-600 dark:text-slate-300">
+              <svg class="w-5 h-5 text-brand-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
               </svg>
-              Hasta 3 servicios
+              <span>Hasta 3 servicios</span>
             </li>
-            <li class="flex items-center gap-3 text-surface-700">
-              <svg class="w-5 h-5 text-emerald-500 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <li class="flex items-start gap-3 text-sm text-slate-600 dark:text-slate-300">
+              <svg class="w-5 h-5 text-brand-500 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
               </svg>
-              Página de reservas personalizada
+              <span>Página de reservas personalizada</span>
             </li>
-            <li class="flex items-center gap-3 text-surface-400">
-              <svg class="w-5 h-5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <li class="flex items-start gap-3 text-sm text-slate-400 opacity-70">
+              <svg class="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                 <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
               </svg>
-              <span class="line-through">Recordatorios WhatsApp</span>
+              <span>Recordatorios WhatsApp</span>
             </li>
           </ul>
-          <a href="/registro" class="block w-full py-4 text-center bg-surface-100 text-surface-700 font-bold rounded-xl hover:bg-surface-200 transition-colors">
+          <a href="/registro" class="block w-full py-4 text-center bg-slate-50 hover:bg-slate-100 dark:bg-slate-700 dark:hover:bg-slate-600 text-slate-900 dark:text-white font-bold rounded-2xl transition-colors border border-slate-200 dark:border-slate-600">
             Empezar gratis
           </a>
         </div>
         
         <!-- Premium Plan -->
-        <div class="bg-gradient-to-br from-brand-600 to-brand-700 rounded-3xl p-8 text-white relative overflow-hidden">
-          <div class="absolute top-0 right-0 w-32 h-32 bg-white/10 rounded-full -translate-y-1/2 translate-x-1/2"></div>
-          <div class="relative">
-            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white/90 text-xs font-bold mb-4 uppercase tracking-wider">
-              <svg class="w-3 h-3" fill="currentColor" viewBox="0 0 20 20">
-                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-              </svg>
-              Más popular
+        <div class="relative bg-slate-900 text-white rounded-[2.5rem] p-10 shadow-2xl transform md:-translate-y-6 overflow-hidden border border-slate-700">
+          <div class="absolute inset-0 bg-gradient-to-br from-brand-600/20 to-brand-900/50 pointer-events-none"></div>
+          <div class="absolute top-0 right-0 bg-gradient-to-l from-brand-500 to-brand-600 text-white text-xs font-bold px-4 py-2 rounded-bl-2xl rounded-tr-2xl uppercase tracking-wider z-10 shadow-lg">
+            Más Popular
+          </div>
+          <div class="relative z-10">
+            <h3 class="text-2xl font-bold mb-2 font-display">Premium</h3>
+            <p class="text-sm text-slate-300 mb-8">Todo lo que necesitás para escalar</p>
+            <div class="flex items-baseline mb-10">
+              <span class="text-5xl font-extrabold tracking-tight">{formattedMonthlyPrice}</span>
+              <span class="text-slate-300 ml-2 font-medium">/mes</span>
             </div>
-            <div class="mb-6">
-              <h3 class="text-2xl font-bold mb-2">Premium</h3>
-              <p class="text-brand-100">Todo lo que necesitás</p>
-            </div>
-            <div class="mb-8">
-              <span class="text-5xl font-bold">$4.990</span>
-              <span class="text-brand-200">/mes</span>
-            </div>
-            <ul class="space-y-4 mb-8">
-              <li class="flex items-center gap-3">
-                <svg class="w-5 h-5 text-brand-200 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+            <ul class="space-y-5 mb-10">
+              <li class="flex items-start gap-3 text-sm font-medium">
+                <svg class="w-5 h-5 text-brand-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                 </svg>
-                Todo del plan gratis
+                <span>Todo del plan gratis</span>
               </li>
-              <li class="flex items-center gap-3">
-                <svg class="w-5 h-5 text-brand-200 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <li class="flex items-start gap-3 text-sm font-medium">
+                <svg class="w-5 h-5 text-brand-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                 </svg>
-                Servicios ilimitados
+                <span>Servicios ilimitados</span>
               </li>
-              <li class="flex items-center gap-3">
-                <svg class="w-5 h-5 text-brand-200 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <li class="flex items-start gap-3 text-sm font-medium">
+                <svg class="w-5 h-5 text-brand-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                 </svg>
-                <span class="font-semibold">Recordatorios por WhatsApp</span>
+                <span>Recordatorios por WhatsApp</span>
               </li>
-              <li class="flex items-center gap-3">
-                <svg class="w-5 h-5 text-brand-200 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+              <li class="flex items-start gap-3 text-sm font-medium">
+                <svg class="w-5 h-5 text-brand-400 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
                   <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
                 </svg>
-                Gestión avanzada de clientes
+                <span>Gestión avanzada de clientes</span>
               </li>
             </ul>
-            <a href="/registro" class="block w-full py-4 text-center bg-white text-brand-600 font-bold rounded-xl hover:bg-brand-50 transition-colors shadow-lg">
-              Probar 7 días gratis
+            <a href="/registro" class="block w-full py-4 text-center bg-brand-500 hover:bg-brand-400 text-white font-bold rounded-2xl transition-all shadow-lg shadow-brand-500/25">
+              Probar {trialDays} días gratis
             </a>
+            <p class="text-center text-xs mt-4 text-slate-400 font-medium">Cancela cuando quieras</p>
           </div>
         </div>
       </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="py-24 bg-white dark:bg-surface-900 border-t border-slate-100 dark:border-slate-800">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
+      <h2 class="text-3xl md:text-4xl font-display font-bold text-center text-slate-900 dark:text-white mb-3">Preguntas frecuentes</h2>
+      <p class="text-center text-slate-600 dark:text-slate-400 mb-16 text-lg">Todo lo que necesitás saber para empezar</p>
       
-      <p class="text-center text-surface-500 mt-8">
-        ¿Tenés dudas? <a href="/pricing" class="text-brand-600 font-semibold hover:underline">Ver todos los detalles</a>
-      </p>
+      <div class="space-y-4">
+        <details class="group bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 cursor-pointer open:ring-2 open:ring-brand-500/20 transition-all duration-300">
+          <summary class="flex justify-between items-center font-bold text-slate-900 dark:text-white list-none text-lg">
+            ¿Necesito instalar algo?
+            <svg class="w-5 h-5 transition-transform duration-300 group-open:rotate-180 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </summary>
+          <p class="text-slate-600 dark:text-slate-300 mt-4 leading-relaxed">
+            No, turni.pro funciona 100% en la web. Solo necesitás un navegador y conexión a internet. Tus clientes también pueden reservar desde cualquier dispositivo sin descargar nada.
+          </p>
+        </details>
+        
+        <details class="group bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 cursor-pointer open:ring-2 open:ring-brand-500/20 transition-all duration-300">
+          <summary class="flex justify-between items-center font-bold text-slate-900 dark:text-white list-none text-lg">
+            ¿Cómo funcionan los recordatorios por WhatsApp?
+            <svg class="w-5 h-5 transition-transform duration-300 group-open:rotate-180 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </summary>
+          <p class="text-slate-600 dark:text-slate-300 mt-4 leading-relaxed">
+            Los mensajes se envían automáticamente desde nuestro sistema oficial de WhatsApp. Vos no tenés que hacer nada, solo configurar cuántas horas antes querés que se envíe.
+          </p>
+        </details>
+        
+        <details class="group bg-slate-50 dark:bg-slate-800/50 rounded-2xl p-6 border border-slate-200 dark:border-slate-700 cursor-pointer open:ring-2 open:ring-brand-500/20 transition-all duration-300">
+          <summary class="flex justify-between items-center font-bold text-slate-900 dark:text-white list-none text-lg">
+            ¿Puedo cancelar en cualquier momento?
+            <svg class="w-5 h-5 transition-transform duration-300 group-open:rotate-180 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+            </svg>
+          </summary>
+          <p class="text-slate-600 dark:text-slate-300 mt-4 leading-relaxed">
+            Sí, no hay contratos a largo plazo. Podés cancelar tu suscripción Premium cuando quieras y volver al plan gratuito sin perder tus datos.
+          </p>
+        </details>
+      </div>
     </div>
   </section>
 
   <!-- CTA Section -->
-  <section class="py-20 lg:py-28 bg-surface-900 relative overflow-hidden">
-    <div class="absolute inset-0">
-      <div class="absolute top-0 left-1/4 w-96 h-96 bg-brand-500/10 rounded-full blur-3xl"></div>
-      <div class="absolute bottom-0 right-1/4 w-80 h-80 bg-brand-600/10 rounded-full blur-3xl"></div>
+  <section class="py-32 bg-surface-900 relative overflow-hidden">
+    <div class="absolute top-0 left-0 w-full h-full overflow-hidden opacity-30">
+      <div class="absolute top-[-50%] left-[-20%] w-[800px] h-[800px] bg-brand-600 rounded-full blur-[150px]"></div>
+      <div class="absolute bottom-[-50%] right-[-20%] w-[800px] h-[800px] bg-blue-600 rounded-full blur-[150px]"></div>
     </div>
     
-    <div class="relative max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-      <h2 class="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-white mb-6">
-        ¿Listo para simplificar tu agenda?
+    <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10 text-center">
+      <h2 class="text-4xl md:text-6xl font-display font-extrabold text-white mb-8 tracking-tight leading-tight">
+        ¿Listo para simplificar <br/> tu agenda?
       </h2>
-      <p class="text-xl text-surface-300 mb-10 max-w-2xl mx-auto">
+      <p class="text-xl text-slate-300 mb-12 max-w-2xl mx-auto font-light">
         Más de 500 profesionales ya gestionan sus turnos con turni.pro. Unite hoy, es gratis.
       </p>
-      <div class="flex flex-col sm:flex-row gap-4 justify-center">
+      <div class="flex flex-col sm:flex-row gap-5 justify-center">
         <a 
           href="/registro" 
-          class="inline-flex items-center justify-center gap-2 px-8 py-4 bg-brand-500 text-white font-bold rounded-2xl hover:bg-brand-400 shadow-xl shadow-brand-500/25 transition-all transform hover:-translate-y-0.5"
+          class="bg-brand-500 hover:bg-brand-400 text-white px-10 py-5 rounded-full font-bold text-lg transition-all flex items-center justify-center gap-3 shadow-glow hover:scale-105"
         >
           Empezar gratis ahora
           <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1057,7 +735,7 @@ import MainNavbar from '../components/MainNavbar.astro';
         </a>
         <a 
           href="/pricing" 
-          class="inline-flex items-center justify-center gap-2 px-8 py-4 text-white font-semibold rounded-2xl border-2 border-surface-600 hover:border-surface-500 hover:bg-surface-800/50 transition-all"
+          class="bg-transparent border border-slate-600 hover:bg-white/10 text-white px-10 py-5 rounded-full font-bold text-lg transition-colors"
         >
           Ver planes y precios
         </a>
@@ -1065,135 +743,47 @@ import MainNavbar from '../components/MainNavbar.astro';
     </div>
   </section>
 
-  <!-- FAQ -->
-  <section class="py-20 lg:py-28 bg-white">
-    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="text-center mb-16">
-        <h2 class="text-3xl sm:text-4xl lg:text-5xl font-display font-bold text-surface-900 mb-4">
-          Preguntas frecuentes
-        </h2>
-        <p class="text-lg text-surface-600">
-          Todo lo que necesitás saber para empezar
-        </p>
-      </div>
-      
-      <div class="space-y-4">
-        <details class="group bg-surface-50 rounded-2xl border border-surface-200 hover:border-brand-200 transition-colors" open>
-          <summary class="p-6 font-semibold text-surface-900 cursor-pointer list-none flex items-center justify-between">
-            <span>¿Necesito instalar algo?</span>
-            <svg class="w-5 h-5 text-surface-500 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </summary>
-          <div class="px-6 pb-6">
-            <p class="text-surface-600 leading-relaxed">
-              No, turni.pro funciona 100% en la web. Solo necesitás un navegador y conexión a internet. Tus clientes también pueden reservar desde cualquier dispositivo sin descargar nada.
-            </p>
-          </div>
-        </details>
-        
-        <details class="group bg-surface-50 rounded-2xl border border-surface-200 hover:border-brand-200 transition-colors">
-          <summary class="p-6 font-semibold text-surface-900 cursor-pointer list-none flex items-center justify-between">
-            <span>¿Cómo funcionan los recordatorios por WhatsApp?</span>
-            <svg class="w-5 h-5 text-surface-500 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </summary>
-          <div class="px-6 pb-6">
-            <p class="text-surface-600 leading-relaxed">
-              Los recordatorios se envían automáticamente el día del turno usando WhatsApp Business API. Es una función Premium que reduce significativamente los no-shows.
-            </p>
-          </div>
-        </details>
-        
-        <details class="group bg-surface-50 rounded-2xl border border-surface-200 hover:border-brand-200 transition-colors">
-          <summary class="p-6 font-semibold text-surface-900 cursor-pointer list-none flex items-center justify-between">
-            <span>¿Mis clientes necesitan crear cuenta?</span>
-            <svg class="w-5 h-5 text-surface-500 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </summary>
-          <div class="px-6 pb-6">
-            <p class="text-surface-600 leading-relaxed">
-              No, tus clientes no necesitan crear cuenta ni descargar nada. Solo entran a tu link, eligen servicio, fecha y hora, completan sus datos y listo. Súper simple.
-            </p>
-          </div>
-        </details>
-        
-        <details class="group bg-surface-50 rounded-2xl border border-surface-200 hover:border-brand-200 transition-colors">
-          <summary class="p-6 font-semibold text-surface-900 cursor-pointer list-none flex items-center justify-between">
-            <span>¿Puedo cancelar en cualquier momento?</span>
-            <svg class="w-5 h-5 text-surface-500 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </summary>
-          <div class="px-6 pb-6">
-            <p class="text-surface-600 leading-relaxed">
-              Sí, podés cancelar cuando quieras sin penalidades. Si cancelás, tu cuenta pasa al plan gratuito y seguís teniendo acceso a tus datos. Solo se limitan algunas funciones premium.
-            </p>
-          </div>
-        </details>
-        
-        <details class="group bg-surface-50 rounded-2xl border border-surface-200 hover:border-brand-200 transition-colors">
-          <summary class="p-6 font-semibold text-surface-900 cursor-pointer list-none flex items-center justify-between">
-            <span>¿Funciona en celular?</span>
-            <svg class="w-5 h-5 text-surface-500 group-open:rotate-180 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-            </svg>
-          </summary>
-          <div class="px-6 pb-6">
-            <p class="text-surface-600 leading-relaxed">
-              Sí, turni.pro está totalmente optimizado para móviles. Podés gestionar tus turnos desde tu celular y tus clientes también pueden reservar desde el suyo sin problemas.
-            </p>
-          </div>
-        </details>
-      </div>
-    </div>
-  </section>
-
   <!-- Footer -->
-  <footer class="bg-surface-900 text-surface-300 py-16">
+  <footer id="footer" class="bg-surface-900 border-t border-slate-800 pt-20 pb-10">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-      <div class="grid md:grid-cols-4 gap-8 mb-12">
-        <div class="md:col-span-2">
-          <div class="flex items-center gap-2 mb-4">
-            <div class="h-10 w-10 rounded-xl bg-gradient-to-br from-brand-500 to-brand-600 flex items-center justify-center shadow-lg">
-              <svg class="h-5 w-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <div class="grid md:grid-cols-4 gap-12 mb-16">
+        <div class="col-span-1 md:col-span-2">
+          <div class="flex items-center gap-3 mb-6">
+            <div class="w-10 h-10 bg-brand-600 rounded-xl flex items-center justify-center text-white">
+              <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <span class="text-xl font-display font-bold text-white">turni.pro</span>
+            <span class="text-2xl font-display font-bold text-white tracking-tight">turni.pro</span>
           </div>
-          <p class="text-surface-400 max-w-md leading-relaxed">
+          <p class="text-slate-400 text-sm max-w-sm mb-8 leading-relaxed">
             La plataforma de gestión de turnos que tu negocio necesita. Simple, profesional y confiable.
           </p>
         </div>
         
         <div>
-          <h3 class="font-semibold text-white mb-4">Producto</h3>
-          <ul class="space-y-3">
-            <li><a href="#como-funciona" class="hover:text-white transition-colors">Cómo funciona</a></li>
-            <li><a href="/pricing" class="hover:text-white transition-colors">Precios</a></li>
-            <li><a href="/registro" class="hover:text-white transition-colors">Empezar gratis</a></li>
+          <h4 class="text-white font-bold font-display mb-6">Producto</h4>
+          <ul class="space-y-4 text-sm text-slate-400">
+            <li><a class="hover:text-brand-400 transition-colors" href="#como-funciona">Cómo funciona</a></li>
+            <li><a class="hover:text-brand-400 transition-colors" href="#precios">Precios</a></li>
+            <li><a class="hover:text-brand-400 transition-colors" href="/registro">Empezar gratis</a></li>
           </ul>
         </div>
-
+        
         <div>
-          <h3 class="font-semibold text-white mb-4">Cuenta</h3>
-          <ul class="space-y-3">
-            <li><a href="/login" class="hover:text-white transition-colors">Iniciar sesión</a></li>
-            <li><a href="/registro" class="hover:text-white transition-colors">Crear cuenta</a></li>
+          <h4 class="text-white font-bold font-display mb-6">Cuenta</h4>
+          <ul class="space-y-4 text-sm text-slate-400">
+            <li><a class="hover:text-brand-400 transition-colors" href="/login">Iniciar sesión</a></li>
+            <li><a class="hover:text-brand-400 transition-colors" href="/registro">Crear cuenta</a></li>
           </ul>
         </div>
       </div>
       
-      <div class="pt-8 border-t border-surface-800 flex flex-col sm:flex-row justify-between items-center gap-4">
-        <p class="text-surface-500 text-sm">
-          © 2025 turni.pro. Todos los derechos reservados.
-        </p>
-        <div class="flex gap-6 text-sm">
-          <a href="#" class="text-surface-500 hover:text-white transition-colors">Términos</a>
-          <a href="#" class="text-surface-500 hover:text-white transition-colors">Privacidad</a>
+      <div class="border-t border-slate-800 pt-8 flex flex-col md:flex-row justify-between items-center text-xs text-slate-500">
+        <p>© 2024 turni.pro. Todos los derechos reservados.</p>
+        <div class="flex space-x-8 mt-4 md:mt-0">
+          <a class="hover:text-slate-300 transition-colors" href="#">Privacidad</a>
+          <a class="hover:text-slate-300 transition-colors" href="#">Términos</a>
         </div>
       </div>
     </div>
@@ -1201,13 +791,42 @@ import MainNavbar from '../components/MainNavbar.astro';
 </LandingLayout>
 
 <style>
-  @keyframes fadeIn {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
+  .hero-mesh {
+    background-color: #0f172a;
+    background-image: 
+      radial-gradient(at 0% 0%, hsla(168,76%,45%,0.15) 0px, transparent 50%),
+      radial-gradient(at 100% 0%, hsla(168,76%,45%,0.1) 0px, transparent 50%),
+      radial-gradient(at 100% 100%, hsla(220,30%,20%,1) 0px, transparent 50%);
+  }
+  
+  .glass-card {
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+  }
+  
+  .dark .glass-card {
+    background: rgba(30, 41, 59, 0.8);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+  }
+  
+  .text-gradient {
+    background: linear-gradient(135deg, #2dd4bf 0%, #38ef7d 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+  
+  .shadow-glow {
+    box-shadow: 0 0 20px rgba(20, 184, 166, 0.3);
+  }
+  
+  .shadow-card {
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  }
+  
+  .shadow-card-hover {
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.08), 0 4px 6px -2px rgba(0, 0, 0, 0.04);
   }
   
   @keyframes fadeInUp {
@@ -1221,25 +840,8 @@ import MainNavbar from '../components/MainNavbar.astro';
     }
   }
   
-  .animate-fade-in {
-    animation: fadeIn 0.8s ease-out forwards;
-  }
-  
   .animate-fade-in-up {
     animation: fadeInUp 0.8s ease-out forwards;
     opacity: 0;
-  }
-  
-  @keyframes float {
-    0%, 100% {
-      transform: translateY(0px);
-    }
-    50% {
-      transform: translateY(-10px);
-    }
-  }
-  
-  .animate-float {
-    animation: float 4s ease-in-out infinite;
   }
 </style>
