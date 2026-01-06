@@ -1,0 +1,59 @@
+---
+import PublicLayout from '../../../layouts/PublicLayout.astro';
+import BookingWidget from '../../../components/public/BookingWidget';
+import { supabase } from '../../../lib/supabase';
+
+const { token } = Astro.params;
+
+// Buscar cliente por booking_token
+let client = null;
+let store = null;
+
+if (token) {
+  const { data: clientData } = await supabase
+    .from('clients')
+    .select(`
+      *,
+      stores (
+        id,
+        name,
+        slug,
+        store_type,
+        whatsapp_url,
+        profile_image_url
+      )
+    `)
+    .eq('booking_token', token)
+    .single();
+
+  if (clientData) {
+    client = clientData;
+    store = clientData.stores;
+  }
+}
+
+if (!client || !store || store.store_type !== 'appointments') {
+  return Astro.redirect('/404');
+}
+---
+
+<PublicLayout title={`Reservar Turno - ${store.name}`} store={{ name: store.name, slug: store.slug, id: store.id, whatsapp_url: store.whatsapp_url, store_type: store.store_type, user_id: '', profile_image_url: store.profile_image_url }}>
+  <div class="min-h-screen bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+    <div class="max-w-4xl mx-auto">
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-6">
+        <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-6 py-6">
+          <h1 class="text-2xl font-bold text-white mb-2">Reservar Nuevo Turno</h1>
+          <p class="text-indigo-100">
+            Hola {client.first_name}{client.last_name ? ` ${client.last_name}` : ''}, reservá tu turno fácilmente
+          </p>
+        </div>
+      </div>
+
+      <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+        <div class="p-6 sm:p-8">
+          <BookingWidget client:load storeId={store.id} clientToken={token} />
+        </div>
+      </div>
+    </div>
+  </div>
+</PublicLayout>
