@@ -1,0 +1,273 @@
+---
+// =============================================================================
+// Panel de Administración: Mensajes de Contacto
+// Muestra y gestiona los mensajes del formulario de contacto
+// =============================================================================
+
+import AdminLayout from '../../layouts/AdminLayout.astro';
+import { supabaseAdmin } from '../../lib/supabase';
+
+// Obtener contactos
+const { data: contacts, error } = await supabaseAdmin
+  .from('contacts')
+  .select('*')
+  .order('created_at', { ascending: false })
+  .limit(100);
+
+const contactsList = contacts || [];
+const unreadCount = contactsList.filter(c => c.status === 'new').length;
+---
+
+<AdminLayout title="Mensajes de Contacto">
+  <div class="max-w-7xl space-y-6">
+    <!-- Header -->
+    <div class="flex items-center justify-between">
+      <div>
+        <h2 class="text-2xl font-bold text-white">Mensajes de Contacto</h2>
+        <p class="text-gray-400 mt-1">
+          {contactsList.length} mensaje{contactsList.length !== 1 ? 's' : ''} total{unreadCount > 0 ? ` • ${unreadCount} sin leer` : ''}
+        </p>
+      </div>
+      <div class="flex gap-3">
+        <select id="statusFilter" class="px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg text-white text-sm focus:outline-none focus:border-indigo-500">
+          <option value="all">Todos</option>
+          <option value="new">Sin leer</option>
+          <option value="read">Leídos</option>
+          <option value="replied">Respondidos</option>
+          <option value="archived">Archivados</option>
+        </select>
+      </div>
+    </div>
+
+    {error && (
+      <div class="bg-red-500/10 border border-red-500/30 rounded-xl p-4">
+        <p class="text-red-300">Error al cargar contactos: {error.message}</p>
+      </div>
+    )}
+
+    {contactsList.length === 0 ? (
+      <div class="bg-gray-800 rounded-xl border border-gray-700 p-12 text-center">
+        <svg class="w-16 h-16 text-gray-600 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+        </svg>
+        <p class="text-gray-400 text-lg">No hay mensajes de contacto todavía</p>
+      </div>
+    ) : (
+      <div class="space-y-4">
+        {contactsList.map((contact) => (
+          <div 
+            id={`contact-${contact.id}`}
+            data-status={contact.status}
+            class={`bg-gray-800 rounded-xl border overflow-hidden transition-all ${
+              contact.status === 'new' 
+                ? 'border-indigo-500/50 shadow-lg shadow-indigo-500/10' 
+                : 'border-gray-700'
+            }`}
+          >
+            <div class="p-6">
+              <div class="flex items-start justify-between gap-4">
+                <div class="flex-1">
+                  <div class="flex items-center gap-3 mb-3">
+                    <div class={`w-12 h-12 rounded-full flex items-center justify-center text-white font-bold ${
+                      contact.status === 'new' 
+                        ? 'bg-indigo-600' 
+                        : contact.status === 'replied'
+                        ? 'bg-emerald-600'
+                        : 'bg-gray-600'
+                    }`}>
+                      {contact.name[0]?.toUpperCase()}
+                    </div>
+                    <div class="flex-1">
+                      <div class="flex items-center gap-2 mb-1">
+                        <h3 class="text-lg font-bold text-white">{contact.name}</h3>
+                        {contact.status === 'new' && (
+                          <span class="px-2 py-0.5 bg-indigo-500/20 text-indigo-400 rounded text-xs font-semibold">
+                            Nuevo
+                          </span>
+                        )}
+                        {contact.status === 'replied' && (
+                          <span class="px-2 py-0.5 bg-emerald-500/20 text-emerald-400 rounded text-xs font-semibold">
+                            Respondido
+                          </span>
+                        )}
+                      </div>
+                      <p class="text-gray-400 text-sm">{contact.email}</p>
+                    </div>
+                    <div class="text-right">
+                      <p class="text-gray-500 text-xs mb-1">
+                        {new Date(contact.created_at).toLocaleDateString('es-AR', { 
+                          day: '2-digit', 
+                          month: 'short', 
+                          year: 'numeric',
+                          hour: '2-digit',
+                          minute: '2-digit'
+                        })}
+                      </p>
+                      {contact.read_at && (
+                        <p class="text-gray-600 text-xs">Leído {new Date(contact.read_at).toLocaleDateString('es-AR')}</p>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div class="mb-4">
+                    <p class="text-sm font-semibold text-gray-300 mb-1">Asunto:</p>
+                    <p class="text-white">{contact.subject}</p>
+                  </div>
+                  
+                  <div class="mb-4">
+                    <p class="text-sm font-semibold text-gray-300 mb-1">Mensaje:</p>
+                    <p class="text-gray-300 whitespace-pre-wrap leading-relaxed">{contact.message}</p>
+                  </div>
+
+                  <div class="flex items-center gap-4 pt-4 border-t border-gray-700">
+                    <a 
+                      href={`mailto:${contact.email}?subject=Re: ${encodeURIComponent(contact.subject)}`}
+                      class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
+                    >
+                      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                      </svg>
+                      Responder por email
+                    </a>
+                    
+                    <div class="flex gap-2">
+                      {contact.status === 'new' && (
+                        <button 
+                          onclick={`markAsRead('${contact.id}')`}
+                          class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors"
+                        >
+                          Marcar como leído
+                        </button>
+                      )}
+                      {contact.status !== 'replied' && (
+                        <button 
+                          onclick={`markAsReplied('${contact.id}')`}
+                          class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-medium transition-colors"
+                        >
+                          Marcar como respondido
+                        </button>
+                      )}
+                      {contact.status !== 'archived' && (
+                        <button 
+                          onclick={`archiveContact('${contact.id}')`}
+                          class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors"
+                        >
+                          Archivar
+                        </button>
+                      )}
+                      {contact.status === 'archived' && (
+                        <button 
+                          onclick={`unarchiveContact('${contact.id}')`}
+                          class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-white rounded-lg text-sm font-medium transition-colors"
+                        >
+                          Desarchivar
+                        </button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+  </div>
+</AdminLayout>
+
+<script>
+  import { createClient } from '@supabase/supabase-js';
+  
+  const supabase = createClient(
+    import.meta.env.PUBLIC_SUPABASE_URL,
+    import.meta.env.PUBLIC_SUPABASE_ANON_KEY
+  );
+
+  async function markAsRead(contactId: string) {
+    const { error } = await supabase
+      .from('contacts')
+      .update({ 
+        status: 'read',
+        read_at: new Date().toISOString()
+      })
+      .eq('id', contactId);
+    
+    if (error) {
+      alert('Error: ' + error.message);
+    } else {
+      location.reload();
+    }
+  }
+
+  async function markAsReplied(contactId: string) {
+    const { error } = await supabase
+      .from('contacts')
+      .update({ 
+        status: 'replied',
+        replied_at: new Date().toISOString()
+      })
+      .eq('id', contactId);
+    
+    if (error) {
+      alert('Error: ' + error.message);
+    } else {
+      location.reload();
+    }
+  }
+
+  async function archiveContact(contactId: string) {
+    if (!confirm('¿Archivar este mensaje?')) return;
+    
+    const { error } = await supabase
+      .from('contacts')
+      .update({ 
+        status: 'archived',
+        archived_at: new Date().toISOString()
+      })
+      .eq('id', contactId);
+    
+    if (error) {
+      alert('Error: ' + error.message);
+    } else {
+      location.reload();
+    }
+  }
+
+  async function unarchiveContact(contactId: string) {
+    const { error } = await supabase
+      .from('contacts')
+      .update({ 
+        status: 'read',
+        archived_at: null
+      })
+      .eq('id', contactId);
+    
+    if (error) {
+      alert('Error: ' + error.message);
+    } else {
+      location.reload();
+    }
+  }
+
+  // Funciones globales para onclick
+  (window as any).markAsRead = markAsRead;
+  (window as any).markAsReplied = markAsReplied;
+  (window as any).archiveContact = archiveContact;
+  (window as any).unarchiveContact = unarchiveContact;
+
+  // Filtro por estado
+  const statusFilter = document.getElementById('statusFilter') as HTMLSelectElement;
+  statusFilter?.addEventListener('change', (e) => {
+    const filter = (e.target as HTMLSelectElement).value;
+    const contacts = document.querySelectorAll('[id^="contact-"]');
+    
+    contacts.forEach((contact) => {
+      const status = contact.getAttribute('data-status') || '';
+      if (filter === 'all' || status === filter) {
+        (contact as HTMLElement).style.display = '';
+      } else {
+        (contact as HTMLElement).style.display = 'none';
+      }
+    });
+  });
+</script>

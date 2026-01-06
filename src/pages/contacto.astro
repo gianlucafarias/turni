@@ -210,8 +210,8 @@ import MainNavbar from '../components/MainNavbar.astro';
 </style>
 
 <script>
-  const form = document.getElementById('contact-form');
-  const submitButton = form?.querySelector('button[type="submit"]');
+  const form = document.getElementById('contact-form') as HTMLFormElement | null;
+  const submitButton = form?.querySelector('button[type="submit"]') as HTMLButtonElement | null;
   
   if (form && submitButton) {
     form.addEventListener('submit', async (e) => {

@@ -24,6 +24,7 @@ const navItems = [
   { href: '/admin/subscriptions', icon: 'credit-card', label: 'Suscripciones' },
   { href: '/admin/coupons', icon: 'tag', label: 'Cupones' },
   { href: '/admin/plans', icon: 'sliders', label: 'Planes' },
+  { href: '/admin/contacts', icon: 'mail', label: 'Contactos' },
   { href: '/admin/config', icon: 'settings', label: 'Configuración' },
 ];
 
@@ -45,7 +46,7 @@ function isActive(href: string, exact: boolean = false) {
 </head>
 <body class="bg-gray-900 min-h-screen">
   <!-- Vista bloqueada -->
-  <div id="admin-denied" class="min-h-screen flex items-center justify-center p-4 hidden">
+  <div id="admin-denied" class="min-h-screen hidden items-center justify-center p-4">
     <div class="text-center">
       <div class="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
         <svg class="w-10 h-10 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -81,7 +82,7 @@ function isActive(href: string, exact: boolean = false) {
   </div>
 
   <!-- Vista admin -->
-  <div id="admin-main" class="flex hidden">
+  <div id="admin-main" class="hidden">
     <!-- Sidebar -->
     <aside class="w-64 min-h-screen bg-gray-800 border-r border-gray-700 fixed">
       <div class="p-4 border-b border-gray-700">
@@ -137,6 +138,11 @@ function isActive(href: string, exact: boolean = false) {
               <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            )}
+            {item.icon === 'mail' && (
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
               </svg>
             )}
             {item.label}
@@ -199,7 +205,7 @@ function isActive(href: string, exact: boolean = false) {
     if (debugEl) debugEl.textContent = 'Verificando sesión...';
     const { data: { session } } = await supabase.auth.getSession();
     if (!session?.access_token) {
-      debugEl.textContent = 'No hay sesión. Cerrá sesión y volvé a iniciar.';
+      if (debugEl) debugEl.textContent = 'No hay sesión. Cerrá sesión y volvé a iniciar.';
       showDenied();
       return;
     }
@@ -219,7 +225,7 @@ function isActive(href: string, exact: boolean = false) {
       .single();
 
     if (error) {
-      debugEl.textContent = `Error tienda: ${error.message}`;
+      if (debugEl) debugEl.textContent = `Error tienda: ${error.message}`;
       showDenied();
       return;
     }
@@ -230,16 +236,19 @@ function isActive(href: string, exact: boolean = false) {
       if (userAvatarEl) userAvatarEl.textContent = (session.user.email || 'A')[0].toUpperCase();
 
       mainEl?.classList.remove('hidden');
+      mainEl?.classList.add('flex');
       deniedEl?.classList.add('hidden');
     } else {
-      debugEl.textContent = `No sos admin. Tienda: ${store?.name || 'N/A'}`;
+      if (debugEl) debugEl.textContent = `No sos admin. Tienda: ${store?.name || 'N/A'}`;
       showDenied();
     }
   }
 
   function showDenied() {
     deniedEl?.classList.remove('hidden');
+    deniedEl?.classList.add('flex');
     mainEl?.classList.add('hidden');
+    mainEl?.classList.remove('flex');
   }
 
   if (btn) {

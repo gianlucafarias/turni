@@ -32,7 +32,7 @@ export interface PricingConfig {
 /**
  * Cache de precios para evitar múltiples llamadas a la DB
  */
-let pricingCache: PricingConfig | null = null;
+let pricingCache: PricingConfig | null = DEFAULT_PRICING;
 let cacheTimestamp: number = 0;
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutos
 
@@ -44,7 +44,7 @@ export async function getPricing(): Promise<PricingConfig> {
   const now = Date.now();
   
   // Retornar cache si es válido
-  if (pricingCache && (now - cacheTimestamp) < CACHE_TTL) {
+  if ((now - cacheTimestamp) < CACHE_TTL && pricingCache) {
     return pricingCache;
   }
 
@@ -61,13 +61,14 @@ export async function getPricing(): Promise<PricingConfig> {
     }
 
     // Mergear con defaults para asegurar todos los campos
-    pricingCache = {
+    const newPricing: PricingConfig = {
       ...DEFAULT_PRICING,
       ...data.pricing,
     };
+    pricingCache = newPricing;
     cacheTimestamp = now;
 
-    return pricingCache;
+    return newPricing;
   } catch (err) {
     console.error('Error obteniendo pricing:', err);
     return DEFAULT_PRICING;

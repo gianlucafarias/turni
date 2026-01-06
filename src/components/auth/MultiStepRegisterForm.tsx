@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { supabase } from '../../lib/supabase'
 import { useDynamicPricing } from '../../hooks/useDynamicPricing'
 
@@ -88,20 +88,6 @@ const BUSINESS_CATEGORIES = [
     description: 'Otro tipo de negocio',
     icon: (
       <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
-      </svg>
-    ),
-  },
-]
-
-// Tipos de tienda con descripciones
-const STORE_TYPES = [
-  {
-    id: 'appointments',
-    name: 'Agendar Turnos',
-    description: 'Gestioná reservas y turnos para tu negocio',
-    icon: (
-      <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
       </svg>
     ),
@@ -200,7 +186,7 @@ export default function MultiStepRegisterForm() {
   const [showCouponInput, setShowCouponInput] = useState(false)
   
   // Obtener precios dinámicos
-  const { formattedMonthlyPrice, plans: dynamicPlans, isLoading: pricingLoading } = useDynamicPricing()
+  const { plans: dynamicPlans, isLoading: pricingLoading } = useDynamicPricing()
   const premiumPrice = dynamicPlans?.premium.priceMonthly || 4990
   const PLANS = getPlans(premiumPrice)
   
