@@ -2,7 +2,6 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from '../../lib/supabase'
 import AppointmentDetailModal from './AppointmentDetailModal'
 import NewAppointmentModal from './NewAppointmentModal'
-import UpcomingAppointmentsEnhanced from './UpcomingAppointmentsEnhanced'
 
 // Tipos para toast de confirmación
 interface ConfirmToast {

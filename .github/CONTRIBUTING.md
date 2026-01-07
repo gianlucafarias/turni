@@ -2,55 +2,62 @@
 
 ## Flujo de Trabajo con Git
 
+> 📖 **Guía completa:** Ver [docs/GIT_WORKFLOW.md](../../docs/GIT_WORKFLOW.md) para detalles completos
+
 ### Estructura de Ramas
 
-- **`main`**: Rama de producción. Solo se actualiza mediante Pull Requests desde `develop`.
-- **`develop`**: Rama de desarrollo. Integra todas las features antes de ir a producción.
-- **`feature/*`**: Ramas para nuevas funcionalidades (ej: `feature/notificaciones-whatsapp`)
-- **`fix/*`**: Ramas para correcciones de bugs (ej: `fix/login-error`)
-- **`hotfix/*`**: Ramas para correcciones urgentes en producción (ej: `hotfix/security-patch`)
+- **`main`**: ✅ **Producción** - Solo código estable. Protegida, requiere PR.
+- **`develop`**: 🧪 **Desarrollo** - Integración de features (opcional pero recomendado)
+- **`feature/*`**: 🚀 Nuevas funcionalidades
+- **`fix/*`**: 🐛 Correcciones de bugs
+- **`hotfix/*`**: 🔥 Correcciones urgentes en producción
 
-### Flujo de Trabajo
+### Flujo Recomendado (GitHub Flow Simplificado)
 
-1. **Crear una nueva feature:**
-   ```bash
-   git checkout develop
-   git pull origin develop
-   git checkout -b feature/nombre-de-la-feature
-   ```
+#### 1. Nueva Feature o Fix
 
-2. **Trabajar en la feature:**
-   - Hacer commits descriptivos siguiendo Conventional Commits
-   - Hacer push regularmente: `git push origin feature/nombre-de-la-feature`
+```bash
+# Actualizar main
+git checkout main
+git pull origin main
 
-3. **Terminar la feature:**
-   ```bash
-   git checkout develop
-   git pull origin develop
-   git merge feature/nombre-de-la-feature
-   git push origin develop
-   git branch -d feature/nombre-de-la-feature  # Eliminar rama local
-   ```
+# Crear rama
+git checkout -b feature/nombre-descriptivo
+# O: git checkout -b fix/descripcion-del-bug
+```
 
-4. **Deploy a producción:**
-   - Crear Pull Request de `develop` → `main` en GitHub
-   - Revisar y aprobar
-   - Merge a `main` (esto dispara el deploy automático)
+#### 2. Trabajar y Hacer Commits
 
-5. **Hotfix (corrección urgente en producción):**
-   ```bash
-   git checkout main
-   git pull origin main
-   git checkout -b hotfix/descripcion-del-fix
-   # Hacer cambios y commit
-   git checkout main
-   git merge hotfix/descripcion-del-fix
-   git push origin main
-   # También mergear a develop
-   git checkout develop
-   git merge hotfix/descripcion-del-fix
-   git push origin develop
-   ```
+```bash
+git add .
+git commit -m "feat(citas): agregar filtros por fecha"
+git push origin feature/nombre-descriptivo
+```
+
+#### 3. Crear Pull Request
+
+- Ir a GitHub → Pull Requests → New Pull Request
+- Base: `main` (o `develop` si usas Git Flow)
+- Compare: `feature/tu-rama`
+- El PR automáticamente ejecuta tests y linter
+
+#### 4. Review y Merge
+
+- Revisar cambios
+- Si tests pasan → Merge (Squash and merge recomendado)
+- Merge a `main` → Deploy automático a producción
+
+#### 5. Hotfix (Urgente)
+
+```bash
+git checkout main
+git pull origin main
+git checkout -b hotfix/critical-bug
+# Hacer fix
+git push origin hotfix/critical-bug
+# Crear PR → main → Merge inmediato
+# IMPORTANTE: También mergear a develop después
+```
 
 ## Conventional Commits
 
