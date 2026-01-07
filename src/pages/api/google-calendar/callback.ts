@@ -160,7 +160,6 @@ export const GET: APIRoute = async ({ request, url }) => {
       });
     }
 
-    const result = await handleCallback(request, code, state);
     
     // Redirigir a la página de configuración con éxito
     return new Response(null, {
