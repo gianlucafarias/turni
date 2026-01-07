@@ -10,7 +10,7 @@
 
 import type { APIRoute } from 'astro';
 import { supabaseAdmin } from '../../../lib/supabase';
-import { processWebhook, getSubscription, mapMPStatusToLocal, calculatePeriodEnd } from '../../../services/subscriptions';
+import { getSubscription, mapMPStatusToLocal, calculatePeriodEnd } from '../../../services/subscriptions';
 import type { WebhookEvent } from '../../../services/subscriptions';
 import { markAsPastDue } from '../../../lib/subscription';
 

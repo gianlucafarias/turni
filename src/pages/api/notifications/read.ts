@@ -57,7 +57,7 @@ export const POST: APIRoute = async ({ request }) => {
 };
 
 // Obtener notificaciones (para futuro uso con DB)
-export const GET: APIRoute = async ({ request, url }) => {
+export const GET: APIRoute = async ({ request }) => {
   try {
     // Verificar autenticación
     const authHeader = request.headers.get('Authorization');

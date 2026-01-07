@@ -32,7 +32,7 @@ function getUserIdFromToken(token: string): string | null {
   }
 }
 
-export const POST: APIRoute = async ({ request, cookies }) => {
+export const POST: APIRoute = async ({ request }) => {
   try {
     console.log('Iniciando creación de tienda...');
     

@@ -3,7 +3,7 @@
 // Gestiona la creación, cancelación y estado de suscripciones recurrentes
 // =============================================================================
 
-import { PRICING, getPlan, getPlansWithDynamicPricing, getPricing, type PlanId } from '../lib/subscription';
+import { PRICING, getPlansWithDynamicPricing, getPricing, type PlanId } from '../lib/subscription';
 
 // Configuración de la API de Mercado Pago
 const MP_API_URL = 'https://api.mercadopago.com';

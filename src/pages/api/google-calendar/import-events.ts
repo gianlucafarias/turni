@@ -176,7 +176,6 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
     // Crear turnos para eventos nuevos
     let imported = 0;
-    const timeZone = 'America/Argentina/Buenos_Aires';
 
     for (const event of events) {
       // Saltar si ya existe

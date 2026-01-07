@@ -3,7 +3,6 @@
 // =============================================================================
 
 import type { APIRoute } from 'astro';
-import { supabase } from '../../../lib/supabase';
 import { getNotificationScheduler } from '../../../lib/notifications/scheduler';
 import { getSegmentationService } from '../../../lib/notifications/segmentation';
 import { getNotificationService } from '../../../lib/notifications';

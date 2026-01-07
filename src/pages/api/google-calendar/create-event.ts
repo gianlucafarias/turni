@@ -9,10 +9,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     // Verificar autenticación (opcional, ya que también puede ser llamado desde BookingWidget)
     const authHeader = request.headers.get('authorization');
-    const bearerToken = authHeader?.toLowerCase().startsWith('bearer ')
-      ? authHeader.slice(7)
-      : null;
-    const supabaseAccessToken = bearerToken || cookies.get('sb-access-token')?.value;
+   
 
     // Parsear body
     const body = await request.json();
